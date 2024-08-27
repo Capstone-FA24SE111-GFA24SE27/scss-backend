@@ -1,5 +1,5 @@
 # This workflow will build a Springboot project into docker image, and then push to docker hub. Eventually, access to VM, pull latest image and run container
-name: Build and Deploy Docker Image
+name: Build and Deploy
 
 on:
   workflow_dispatch:  # manuaaly
