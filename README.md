@@ -31,8 +31,8 @@ Digital Document Indexing (DDI) is a Spring Boot-based application designed to p
 
 1. **Clone the repository**:
    ```sh
-   git clone https://github.com/your-username/ddi.git
-   cd ddi
+   git clone https://github.com/trinhvinhphat2003/capstone-backend.git
+   cd capstone-backend
 2. **Install dependencies and build the project**:
     ```sh
    mvn clean install
