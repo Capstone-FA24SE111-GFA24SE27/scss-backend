@@ -1,5 +1,6 @@
 package com.capstone2024.gym_management_system.domain.account.entities;
 
+import com.capstone2024.gym_management_system.domain.account.enums.LoginMethod;
 import com.capstone2024.gym_management_system.domain.common.entity.BaseEntity;
 import com.capstone2024.gym_management_system.domain.account.enums.Role;
 import com.capstone2024.gym_management_system.domain.account.enums.Status;
@@ -30,9 +31,6 @@ public class Account extends BaseEntity implements UserDetails {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password", nullable = false)
-    private String password;
-
     @OneToOne(mappedBy = "account")
     private Profile profile;
 
@@ -44,6 +42,15 @@ public class Account extends BaseEntity implements UserDetails {
     @Column(name = "status", nullable = false, length = 20)
     private Status status;
 
+    @SuppressWarnings("java:S1948")
+    @OneToMany(mappedBy = "account")
+    private List<LoginType> loginTypes;
+
+    @PrePersist
+    protected void onCreate() {
+        super.onCreate();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role.asSecurityRole()));
@@ -51,7 +58,15 @@ public class Account extends BaseEntity implements UserDetails {
 
     @Override
     public String getPassword() {
-        return this.password;
+        List<LoginType> loginTypes = getLoginTypes();
+        if(loginTypes != null) {
+            for (LoginType loginType : loginTypes) {
+                if (loginType.getMethod().name().equals(LoginMethod.DEFAULT.name())) {
+                    return loginType.getPassword();
+                }
+            }
+        }
+        return null;
     }
 
     @Override

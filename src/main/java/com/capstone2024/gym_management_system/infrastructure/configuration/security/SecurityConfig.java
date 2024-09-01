@@ -1,6 +1,8 @@
 package com.capstone2024.gym_management_system.infrastructure.configuration.security;
 
 import com.capstone2024.gym_management_system.domain.account.enums.Role;
+import com.capstone2024.gym_management_system.infrastructure.configuration.oauth.google.CustomOAuth2AuthenticationSuccessHandler;
+import com.capstone2024.gym_management_system.infrastructure.configuration.oauth.google.CustomOAuth2UserService;
 import com.capstone2024.gym_management_system.infrastructure.configuration.security.authentication.CustomAccessDeniedHandler;
 import com.capstone2024.gym_management_system.infrastructure.configuration.security.authentication.JwtAuthenticationEntryPoint;
 import com.capstone2024.gym_management_system.infrastructure.configuration.security.authentication.JwtAuthenticationFilter;
@@ -21,10 +23,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -35,14 +40,18 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsService userDetailsService;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final CustomOAuth2AuthenticationSuccessHandler customOAuth2AuthenticationSuccessHandler;
 
     @Autowired
     public SecurityConfig(JwtAuthenticationEntryPoint authenticationEntryPoint,
-                          JwtAuthenticationFilter jwtAuthenticationFilter, UserDetailsService userDetailsService, CustomAccessDeniedHandler customAccessDeniedHandler) {
+                          JwtAuthenticationFilter jwtAuthenticationFilter, UserDetailsService userDetailsService, CustomAccessDeniedHandler customAccessDeniedHandler, CustomOAuth2UserService customOAuth2UserService, CustomOAuth2AuthenticationSuccessHandler customOAuth2AuthenticationSuccessHandler) {
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.userDetailsService = userDetailsService;
         this.customAccessDeniedHandler = customAccessDeniedHandler;
+        this.customOAuth2UserService = customOAuth2UserService;
+        this.customOAuth2AuthenticationSuccessHandler = customOAuth2AuthenticationSuccessHandler;
     }
 
     @Bean
@@ -60,8 +69,16 @@ public class SecurityConfig {
                                 .permitAll())
 
                 .authorizeHttpRequests(config ->
-                        config.requestMatchers(HttpMethod.GET,"/api/profile/**")
-                                .hasAnyRole(Role.ADMIN.name(), Role.MEMBER.name()))
+                        config.requestMatchers("/ws/**")
+                                .permitAll())
+
+//                .authorizeHttpRequests(config ->
+//                        config.requestMatchers(HttpMethod.GET,"/api/profile/**")
+//                                .hasAnyRole(Role.ADMINISTRATOR.name(), Role.STUDENT.name()))
+
+                .authorizeHttpRequests(config ->
+                        config.requestMatchers(HttpMethod.GET,"/api/account/**")
+                                .hasAnyRole(Role.ADMINISTRATOR.name()))
 
                 .authorizeHttpRequests(config ->
                         config.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/api-docs/**")
@@ -79,6 +96,12 @@ public class SecurityConfig {
                 })
                 .sessionManagement(config ->
                         config.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint()
+                        .userService(customOAuth2UserService)
+                        .and()
+                        .successHandler(customOAuth2AuthenticationSuccessHandler)
+                )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
@@ -99,5 +122,20 @@ public class SecurityConfig {
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
+    }
+
+    @Bean
+    public CorsFilter corsFilter() {
+        CorsConfiguration config = new CorsConfiguration();
+//        config.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000"));
+        config.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // Replace with your frontend URL
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(Arrays.asList("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+
+        return new CorsFilter(source);
     }
 }

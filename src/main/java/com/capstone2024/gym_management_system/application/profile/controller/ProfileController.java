@@ -59,7 +59,7 @@ public class ProfileController {
                     mediaType = "application/json"
             )
     )
-    public ResponseEntity<Object> getProfileByAccountId(@AuthenticationPrincipal @NotNull Account principal) {
+    public ResponseEntity<Object> getProfile(@AuthenticationPrincipal @NotNull Account principal) {
         logger.info("Fetching profile for account ID: {}", principal.getId());
         ProfileDTO profileDTO = profileService.getProfileByAccountId(principal.getId());
         return ResponseUtil.getResponse(profileDTO, HttpStatus.OK);

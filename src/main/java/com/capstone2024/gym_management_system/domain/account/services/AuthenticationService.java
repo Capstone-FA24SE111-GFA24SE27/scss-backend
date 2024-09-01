@@ -9,7 +9,9 @@ import jakarta.servlet.http.HttpServletResponse;
 
 
 public interface AuthenticationService {
-    public JwtTokenDTO login(LoginRequestDTO loginRequestDTO, HttpServletResponse response) throws NotFoundException;
+    JwtTokenDTO loginWithDefault(LoginRequestDTO loginRequestDTO, HttpServletResponse response) throws NotFoundException;
 
     JwtTokenDTO refreshAccessToken(HttpServletResponse response, HttpServletRequest request);
+
+    JwtTokenDTO loginWithGoogle(String accessToken);
 }

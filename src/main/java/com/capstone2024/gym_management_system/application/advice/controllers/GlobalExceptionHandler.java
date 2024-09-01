@@ -1,5 +1,6 @@
 package com.capstone2024.gym_management_system.application.advice.controllers;
 
+import com.capstone2024.gym_management_system.application.advice.exeptions.InternalServerException;
 import com.capstone2024.gym_management_system.application.advice.exeptions.NotFoundException;
 import com.capstone2024.gym_management_system.application.advice.exeptions.BadRequestException;
 import com.capstone2024.gym_management_system.application.common.utils.ResponseUtil;
@@ -23,8 +24,8 @@ public class GlobalExceptionHandler {
         return ResponseUtil.getResponse(exception.getMessage(), exception.getStatus());
     }
 
-//    @ExceptionHandler(Exception.class)
-//    public ResponseEntity<Object> handleBadRequestException(Exception exception) {
-//        return ResponseUtil.getResponse("Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
-//    }
+    @ExceptionHandler(InternalServerException.class)
+    public ResponseEntity<Object> handleInternalServerException(InternalServerException internalServerException) {
+        return ResponseUtil.getResponse(internalServerException.getMessage(), internalServerException.getStatus());
+    }
 }

@@ -1,9 +1,6 @@
 package com.capstone2024.gym_management_system.domain.common.entity;
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,6 +19,17 @@ public class BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "created_date", nullable = false, updatable = false)
+    private Long createdDate;
+
+    @Column(name = "soft_delete", nullable = false)
+    private boolean softDelete = false;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdDate = System.currentTimeMillis();
+    }
 
     @Override
     public boolean equals(Object object) {

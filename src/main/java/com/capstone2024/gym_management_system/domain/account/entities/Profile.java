@@ -32,4 +32,9 @@ public class Profile extends BaseEntity {
 
     @Column(name = "date_of_birth")
     private Long dateOfBirth;
+
+    @PrePersist
+    protected void onCreate() {
+        super.onCreate();
+    }
 }
