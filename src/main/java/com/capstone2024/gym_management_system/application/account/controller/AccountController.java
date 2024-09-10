@@ -6,9 +6,11 @@ import com.capstone2024.gym_management_system.application.advice.exeptions.BadRe
 import com.capstone2024.gym_management_system.application.authentication.dto.AccountDTO;
 import com.capstone2024.gym_management_system.application.common.dto.PaginationDTO;
 import com.capstone2024.gym_management_system.application.common.utils.ResponseUtil;
+import com.capstone2024.gym_management_system.application.notification.dtos.NotificationDTO;
 import com.capstone2024.gym_management_system.domain.account.entities.Account;
 import com.capstone2024.gym_management_system.domain.account.enums.Status;
 import com.capstone2024.gym_management_system.domain.account.services.AccountService;
+import com.capstone2024.gym_management_system.infrastructure.configuration.rabbitmq.RabbitMQConfig;
 import com.capstone2024.gym_management_system.infrastructure.configuration.socket.service.NotificationSocketService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,6 +19,7 @@ import jakarta.validation.constraints.NotNull;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,11 +36,11 @@ public class AccountController {
     private static final Logger logger = LoggerFactory.getLogger(AccountController.class);
 
     private final AccountService accountService;
-    private final NotificationSocketService notificationSocketService;
+    private final RabbitTemplate rabbitTemplate;
 
-    public AccountController(AccountService accountService, NotificationSocketService notificationSocketService) {
+    public AccountController(AccountService accountService, RabbitTemplate rabbitTemplate) {
         this.accountService = accountService;
-        this.notificationSocketService = notificationSocketService;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @GetMapping()
@@ -92,6 +95,29 @@ public class AccountController {
                 .build());
 
         logger.debug("Successfully fetched accounts with filter - Total elements: {}", responseDTO.getTotalElements());
+
+        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_QUEUE, NotificationDTO.builder()
+                .receiverId(1L)
+                .message("This is a test message")
+                .title("Test")
+                .sender("TEST")
+                .build());
+
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/{accountId}")
+    @Operation(
+            summary = "Retrieve a specific account by ID",
+            description = "Fetches detailed information about a specific account by its ID.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully fetched the account."),
+                    @ApiResponse(responseCode = "404", description = "Account not found.")
+            }
+    )
+    public ResponseEntity<Object> getOne(@PathVariable("accountId") Long accountId) {
+
+        AccountDTO responseDTO = accountService.getOne(accountId);
 
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }

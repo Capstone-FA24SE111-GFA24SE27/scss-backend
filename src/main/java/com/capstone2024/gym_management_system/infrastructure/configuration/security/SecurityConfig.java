@@ -69,6 +69,10 @@ public class SecurityConfig {
                                 .permitAll())
 
                 .authorizeHttpRequests(config ->
+                        config.requestMatchers("/api/information/**")
+                                .permitAll())
+
+                .authorizeHttpRequests(config ->
                         config.requestMatchers("/ws/**")
                                 .permitAll())
 

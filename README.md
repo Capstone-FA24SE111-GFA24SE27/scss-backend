@@ -49,6 +49,20 @@ To run the application in the development environment, follow these steps:
 2. **Run the application**:
    ```sh
    ./mvnw spring-boot:run --define spring-boot.run.arguments="--spring.profiles.active=dev"
+### Development Environment Integrating With Front-End
+
+To run the application in the development environment, follow these steps:
+1. **Build**:
+   ```sh
+   docker build -f Dockerfile.frontend -t trinhvinhphat2003/capstone-backend-server-fe .
+2. **Push**:
+   ```sh
+   docker push trinhvinhphat2003/capstone-backend-server-fe:latest
+3. **Run Docker Compose**:
+   This is what FE team have to do to run server:
+
+   ```sh
+   docker-compose -f docker-compose.fe.yml up -d
 ### Production Environment (TBD)
 
 To run the application in the production environment, follow these steps:

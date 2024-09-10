@@ -8,6 +8,7 @@ import com.capstone2024.gym_management_system.application.authentication.dto.Acc
 import com.capstone2024.gym_management_system.application.common.dto.PaginationDTO;
 import com.capstone2024.gym_management_system.application.profile.dto.ProfileDTO;
 import com.capstone2024.gym_management_system.domain.account.entities.Account;
+import com.capstone2024.gym_management_system.domain.account.enums.Role;
 import com.capstone2024.gym_management_system.domain.account.enums.Status;
 import com.capstone2024.gym_management_system.domain.account.services.AccountService;
 import com.capstone2024.gym_management_system.infrastructure.repositories.account.AccountRepository;
@@ -65,10 +66,12 @@ public class AccountServiceImpl implements AccountService {
         }
 
         List<AccountDTO> accountDTOs = accountsPage.getContent().stream()
+                .filter(account -> !account.getRole().name().equals(Role.ADMINISTRATOR.name()))  // Lọc bỏ những tài khoản có role là ADMIN
                 .map(account -> AccountDTO.builder()
                         .id(account.getId())
                         .email(account.getEmail())
                         .status(account.getStatus())
+                        .role(account.getRole())
                         .profile(ProfileDTO.builder()
                                 .fullName(account.getProfile().getFullName())
                                 .build())
@@ -135,5 +138,30 @@ public class AccountServiceImpl implements AccountService {
         accountRepository.save(account);
 
         return "Account has been unblocked";
+    }
+
+    @Override
+    public AccountDTO getOne(Long accountId) {
+        Optional<Account> optionalAccount = accountRepository.findById(accountId);
+
+        if (optionalAccount.isEmpty()) {
+            throw new NotFoundException("Account not found");
+        }
+
+        Account account = optionalAccount.get();
+
+        if (account.getRole().name().equals(Role.ADMINISTRATOR.name())) {
+            throw new BadRequestException("Cannot retrieve other administrator");
+        }
+
+        return AccountDTO.builder()
+                .id(account.getId())
+                .email(account.getEmail())
+                .status(account.getStatus())
+                .role(account.getRole())
+                .profile(ProfileDTO.builder()
+                        .fullName(account.getProfile().getFullName())
+                        .build())
+                .build();
     }
 }

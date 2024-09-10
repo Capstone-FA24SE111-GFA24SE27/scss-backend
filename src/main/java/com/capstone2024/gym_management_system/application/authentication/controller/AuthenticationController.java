@@ -121,7 +121,7 @@ public class AuthenticationController {
     @GetMapping("/refresh-token")
     @Operation(
             summary = "Refresh access token",
-            description = "Refreshes the access token using the refresh token from the request.",
+            description = "Refreshes the access token using the refresh token from the request, in the first time you login into system, server will attach a cookie with refresh token inside of it, so if you are already login, jut call api without attach any parameter.",
             responses = {
                     @ApiResponse(
                             responseCode = "200",

@@ -2,6 +2,7 @@ package com.capstone2024.gym_management_system.domain.account.services.impl;
 
 import com.capstone2024.gym_management_system.application.advice.exeptions.BadRequestException;
 import com.capstone2024.gym_management_system.application.advice.exeptions.NotFoundException;
+import com.capstone2024.gym_management_system.application.authentication.dto.AccountDTO;
 import com.capstone2024.gym_management_system.application.authentication.dto.request.LoginRequestDTO;
 import com.capstone2024.gym_management_system.application.authentication.dto.JwtTokenDTO;
 import com.capstone2024.gym_management_system.domain.account.entities.Account;
@@ -38,7 +39,7 @@ import java.util.Optional;
 public class AuthenticationServiceImpl implements AuthenticationService {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
-    private static final String ACCESS_TOKEN_TYPE = "BEARER";
+    private static final String ACCESS_TOKEN_TYPE = "Bearer";
     private static final String COOKIE_REFRESH_TOKEN_KEY = "refreshToken";
 
     @Value("${jwt.refresh_token.lifetime}")
@@ -80,9 +81,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         setRefreshTokenInCookie(userDetails, response);
         logger.info("Refresh token generated and added to cookie for email: {}.", loginRequestDTO.getEmail());
 
+        Account account = (Account) userDetails;
+
         return JwtTokenDTO.builder()
                 .accessToken(accessToken)
                 .type(ACCESS_TOKEN_TYPE)
+                .account(AccountDTO.builder()
+                        .id(account.getId())
+                        .email(account.getEmail())
+                        .role(account.getRole())
+                        .status(account.getStatus())
+                        .build())
                 .build();
     }
 
@@ -188,6 +197,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return JwtTokenDTO.builder()
                 .accessToken(accessToken)
                 .type(ACCESS_TOKEN_TYPE)
+                .account(AccountDTO.builder()
+                        .id(userDetails.getId())
+                        .email(userDetails.getEmail())
+                        .role(userDetails.getRole())
+                        .status(userDetails.getStatus())
+                        .build())
                 .build();
     }
 

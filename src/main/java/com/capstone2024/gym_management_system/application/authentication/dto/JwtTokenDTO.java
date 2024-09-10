@@ -8,4 +8,5 @@ import lombok.Getter;
 public class JwtTokenDTO {
     private String accessToken;
     private String type;
+    private AccountDTO account;
 }

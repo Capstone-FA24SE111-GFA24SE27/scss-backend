@@ -13,4 +13,6 @@ public interface AccountService {
     String blockAccount(Long accountId, Account principal);
 
     String unblockAccount(Long accountId, Account principal);
+
+    AccountDTO getOne(Long accountId);
 }
