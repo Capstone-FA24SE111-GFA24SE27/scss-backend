@@ -14,6 +14,8 @@ import java.io.Serializable;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NotificationDTO implements Serializable {
+    private Long notificationId;
+
     private Long receiverId;
 
     private String title;

@@ -17,4 +17,5 @@ public interface NotificationService {
                                                              Account receiver);
 
     String readNotification(Account principle, Long notificationId);
+    int markAllAsRead(Long receiverId);
 }

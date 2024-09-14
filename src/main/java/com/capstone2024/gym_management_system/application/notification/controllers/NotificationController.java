@@ -70,4 +70,10 @@ public class NotificationController {
         logger.info("Successfully marked notification as read - NotificationId: {}, User: {}", notificationId, principal.getUsername());
         return ResponseUtil.getResponse(response, HttpStatus.OK);
     }
+
+    @PutMapping("/mark-all-read")
+    public ResponseEntity<Object> markAllAsRead(@AuthenticationPrincipal @NotNull Account principal) {
+        int updatedCount = notificationService.markAllAsRead(principal.getId());
+        return ResponseUtil.getResponse("Marked " + updatedCount + " notifications as read.", HttpStatus.OK);
+    }
 }

@@ -14,6 +14,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@Inheritance(strategy = InheritanceType.JOINED)
 @Table(name = "profile")
 public class Profile extends BaseEntity {
 
@@ -23,6 +24,9 @@ public class Profile extends BaseEntity {
 
     @Column(name = "full_name", nullable = false)
     private String fullName;
+
+    @Column(name = "avatar_link", nullable = true)
+    private String avatarLink;
 
     @Column(name = "phone_number")
     private String phoneNumber;

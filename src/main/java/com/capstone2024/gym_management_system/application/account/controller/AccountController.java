@@ -97,7 +97,7 @@ public class AccountController {
         logger.debug("Successfully fetched accounts with filter - Total elements: {}", responseDTO.getTotalElements());
 
         rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_QUEUE, NotificationDTO.builder()
-                .receiverId(1L)
+                .receiverId(2L)
                 .message("This is a test message")
                 .title("Test")
                 .sender("TEST")

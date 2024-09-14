@@ -5,7 +5,7 @@ import com.capstone2024.gym_management_system.domain.account.entities.Account;
 import com.capstone2024.gym_management_system.domain.notification.entities.Notification;
 import com.capstone2024.gym_management_system.infrastructure.configuration.socket.service.NotificationSocketService;
 import com.capstone2024.gym_management_system.infrastructure.repositories.account.AccountRepository;
-import com.capstone2024.gym_management_system.infrastructure.repositories.notification.NotificationRepository;
+import com.capstone2024.gym_management_system.infrastructure.repositories.NotificationRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -26,7 +26,7 @@ public class RabbitMQNotificationReceiver {
     public void receiveNotificationMessage(NotificationDTO notificationMessage) {
         try {
             persistNotification(notificationMessage);
-            notificationSocketService.sendNotificationToUser(1L, notificationMessage);
+            notificationSocketService.sendNotificationToUser(2L, notificationMessage);
             System.out.println("Notification sent to WebSocket successfully!");
         } catch (Exception ex) {
             ex.printStackTrace();

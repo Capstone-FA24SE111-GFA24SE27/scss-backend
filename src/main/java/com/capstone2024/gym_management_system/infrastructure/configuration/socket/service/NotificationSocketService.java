@@ -18,7 +18,7 @@ public class NotificationSocketService {
     public void sendNotificationToUser(Long accountId, NotificationDTO notificationMessage) {
         System.out.println(String.valueOf(accountId));
         messagingTemplate.convertAndSendToUser(
-                "1",
+                "2",
                 "/private/notification",
                 notificationMessage
         );

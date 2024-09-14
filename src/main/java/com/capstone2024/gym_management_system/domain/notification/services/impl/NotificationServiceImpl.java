@@ -7,7 +7,7 @@ import com.capstone2024.gym_management_system.application.notification.dtos.Noti
 import com.capstone2024.gym_management_system.domain.account.entities.Account;
 import com.capstone2024.gym_management_system.domain.notification.entities.Notification;
 import com.capstone2024.gym_management_system.domain.notification.services.NotificationService;
-import com.capstone2024.gym_management_system.infrastructure.repositories.notification.NotificationRepository;
+import com.capstone2024.gym_management_system.infrastructure.repositories.NotificationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +47,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         List<NotificationDTO> notificationDTOs = notificationsPage.getContent().stream()
                 .map(notification -> NotificationDTO.builder()
+                        .notificationId(notification.getId())
                         .receiverId(notification.getReceiver().getId())
                         .message(notification.getMessage())
                         .title(notification.getTitle())
@@ -66,6 +68,7 @@ public class NotificationServiceImpl implements NotificationService {
         return responseDTO;
     }
 
+    @Transactional
     @Override
     public String readNotification(Account principle, Long notificationId) {
         logger.debug("Entering readNotification method with parameters - Principle: {}, NotificationId: {}", principle.getUsername(), notificationId);
@@ -85,5 +88,10 @@ public class NotificationServiceImpl implements NotificationService {
         logger.info("Notification marked as read - Principle: {}, NotificationId: {}", principle.getUsername(), notificationId);
 
         return "notification is read";
+    }
+
+    @Transactional
+    public int markAllAsRead(Long receiverId) {
+        return notificationRepository.markAllAsRead(receiverId);
     }
 }
