@@ -2,7 +2,7 @@ package com.capstone2024.scss.domain.counseling_booking.services;
 
 import com.capstone2024.scss.application.booking_counseling.dto.SlotDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;
-import com.capstone2024.scss.application.booking_counseling.dto.request.AppointmentFilterDTO;
+import com.capstone2024.scss.application.booking_counseling.dto.request.AppointmentRequestFilterDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
@@ -17,5 +17,5 @@ public interface CounselingAppointmentRequestService {
 
     CounselingAppointmentRequest createAppointmentRequest(String slotCode, LocalDate date, Long counselorId, boolean isOnline, String reason, Student student);
 
-    PaginationDTO<List<CounselingAppointmentRequestDTO>> getAppointmentsRequest(Account principle, AppointmentFilterDTO filterRequest);
+    PaginationDTO<List<CounselingAppointmentRequestDTO>> getAppointmentsRequest(Account principle, AppointmentRequestFilterDTO filterRequest);
 }

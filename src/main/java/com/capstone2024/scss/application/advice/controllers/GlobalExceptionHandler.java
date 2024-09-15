@@ -1,5 +1,6 @@
 package com.capstone2024.scss.application.advice.controllers;
 
+import com.capstone2024.scss.application.advice.exeptions.ForbiddenException;
 import com.capstone2024.scss.application.advice.exeptions.InternalServerException;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
@@ -12,6 +13,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 public class GlobalExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<Object> handleAccountNotFoundException(NotFoundException exception) {
+        return ResponseUtil.getResponse(exception.getMessage(), exception.getStatus());
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Object> handleForbiddenException(ForbiddenException exception) {
         return ResponseUtil.getResponse(exception.getMessage(), exception.getStatus());
     }
 

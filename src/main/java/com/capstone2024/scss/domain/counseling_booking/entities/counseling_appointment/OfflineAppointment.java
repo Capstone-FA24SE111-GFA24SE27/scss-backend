@@ -1,6 +1,5 @@
-package com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request;
+package com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment;
 
-import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.CounselingAppointment;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.PrimaryKeyJoinColumn;

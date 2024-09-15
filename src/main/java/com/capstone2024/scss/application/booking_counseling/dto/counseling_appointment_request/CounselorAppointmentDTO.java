@@ -3,6 +3,8 @@ package com.capstone2024.scss.application.booking_counseling.dto.counseling_appo
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @Builder
 public class CounselorAppointmentDTO {
@@ -10,4 +12,6 @@ public class CounselorAppointmentDTO {
     private String phoneNumber;
     private Long dateOfBirth;
     private String avatarLink;
+
+    private BigDecimal rating;
 }

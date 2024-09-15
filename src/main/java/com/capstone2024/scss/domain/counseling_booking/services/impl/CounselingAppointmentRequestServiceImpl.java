@@ -4,20 +4,17 @@ import com.capstone2024.scss.application.account.dto.enums.SortDirection;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.booking_counseling.dto.SlotDTO;
-import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.AppointmentDetailsDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselorAppointmentDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.StudentAppointmentDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.enums.SlotStatus;
-import com.capstone2024.scss.application.booking_counseling.dto.request.AppointmentFilterDTO;
+import com.capstone2024.scss.application.booking_counseling.dto.request.AppointmentRequestFilterDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.notification.dtos.NotificationDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
-import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.OfflineAppointment;
-import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.OnlineAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
 import com.capstone2024.scss.domain.counseling_booking.entities.counselor.Counselor;
@@ -184,7 +181,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
         }
     }
 
-    public PaginationDTO<List<CounselingAppointmentRequestDTO>> getAppointmentsRequest(Account principle, AppointmentFilterDTO filterRequest) {
+    public PaginationDTO<List<CounselingAppointmentRequestDTO>> getAppointmentsRequest(Account principle, AppointmentRequestFilterDTO filterRequest) {
         Sort sort = Sort.by(filterRequest.getSortBy());
         sort = filterRequest.getSortDirection() == SortDirection.ASC ? sort.ascending() : sort.descending();
 

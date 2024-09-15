@@ -11,7 +11,6 @@ import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.CounselingAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
-import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.OnlineAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
 import com.capstone2024.scss.domain.counseling_booking.entities.counselor.Counselor;
