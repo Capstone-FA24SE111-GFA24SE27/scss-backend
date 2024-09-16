@@ -43,7 +43,7 @@ services:
 #      - redis
       - rabbitmq
   mobile_socket_server:
-    image: mobile-socket-capstone-server
+    image: trinhvinhphat2003/mobile-socket-capstone-server
     container_name: mobile_socket_capstone_server
     build:
       context: .
