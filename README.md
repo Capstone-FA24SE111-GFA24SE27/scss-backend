@@ -1,6 +1,6 @@
-# Digital Document Indexing (DDI)
+# Student Counseling and Support System with Advanced Search at FPTU HCM Campus (SCSS)
 
-Digital Document Indexing (DDI) is a Spring Boot-based application designed to provide efficient indexing and retrieval of digital documents. It offers features such as document storage, indexing, search capabilities, and metadata management. The project aims to streamline document management processes for organizations and individuals.
+The Student Counseling and Support System (SCSS) is designed to offer comprehensive support services to students at FPT University HCM Campus, including academic counseling, career advice, and mental health resources.
 
 ## Table of Contents
 
