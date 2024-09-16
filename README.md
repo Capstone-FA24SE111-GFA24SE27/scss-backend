@@ -9,6 +9,7 @@ Digital Document Indexing (DDI) is a Spring Boot-based application designed to p
 - [Installation](#installation)
 - [Running the Application](#running-the-application)
     - [Development Environment](#development-environment)
+    - [Development Environment Integrating With Front-End](#development-environment-integrating-with-front-end)
     - [Production Environment (TBD)](#production-environment-tbd)
     - [Run .Jar file after being built by using maven](#run-jar-file-after-being-built-by-using-maven)
 - [API Documentation](#api-documentation)
