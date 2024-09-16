@@ -33,9 +33,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,7 +64,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                 .orElseThrow(() -> new NotFoundException("Counselor not found"));
         List<CounselingAppointmentRequest> requests = requestRepository.findByCounselorIdAndRequireDateBetween(counselorId, from, to);
         List<CounselingSlot> slots = slotRepository.findAllSlots();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDateTime();
 
         Map<LocalDate, List<SlotDTO>> dailySlots = new LinkedHashMap<>();
         LocalDate currentDate = from;
@@ -155,6 +153,13 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                 .build();
 
         rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_QUEUE, NotificationDTO.builder()
+                .receiverId(counselorId)
+                .message("Student named -" + student.getFullName() + "-" + student.getStudentCode() + "- has sent you a counseling appointment request")
+                .title("Counseling appointment request from student")
+                .sender("SYSTEM")
+                .build());
+
+        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_MOBILE_QUEUE, NotificationDTO.builder()
                 .receiverId(counselorId)
                 .message("Student named -" + student.getFullName() + "-" + student.getStudentCode() + "- has sent you a counseling appointment request")
                 .title("Counseling appointment request from student")

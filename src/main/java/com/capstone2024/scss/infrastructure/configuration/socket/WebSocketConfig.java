@@ -21,7 +21,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                 .setHandshakeHandler(new CustomHandshakeHandler())
-                .setAllowedOriginPatterns("http://localhost:3000") // Sử dụng setAllowedOriginPatterns
+                .setAllowedOriginPatterns("*") // Sử dụng setAllowedOriginPatterns
                 .withSockJS();
+
+        registry.addEndpoint("/ws-no-sockjs")
+//                .setHandshakeHandler(new CustomHandshakeHandler())
+                .setAllowedOriginPatterns("*");
     }
 }

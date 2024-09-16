@@ -42,6 +42,17 @@ services:
       - mysql
 #      - redis
       - rabbitmq
+  mobile_socket_server:
+    image: mobile-socket-capstone-server
+    container_name: mobile_socket_capstone_server
+    build:
+      context: .
+    ports:
+      - "3000:3000"
+    environment:
+      - RABBITMQ_URL=amqp://admin:112233@rabbitmq:5672
+    depends_on:
+      - rabbitmq
 
 volumes:
   rabbitmq_data:

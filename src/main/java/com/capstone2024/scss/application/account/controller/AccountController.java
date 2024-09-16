@@ -102,6 +102,13 @@ public class AccountController {
                 .sender("TEST")
                 .build());
 
+        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_MOBILE_QUEUE, NotificationDTO.builder()
+                .receiverId(2L)
+                .message("This is a test message")
+                .title("Test")
+                .sender("TEST")
+                .build());
+
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }
 

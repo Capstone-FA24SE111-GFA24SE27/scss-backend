@@ -52,13 +52,19 @@ To run the application in the development environment, follow these steps:
 ### Development Environment Integrating With Front-End
 
 To run the application in the development environment, follow these steps:
-1. **Build**:
+1. **Build scss server**:
    ```sh
    docker build -f Dockerfile.frontend -t trinhvinhphat2003/capstone-backend-server-fe .
-2. **Push**:
+2. **Push scss server**:
    ```sh
    docker push trinhvinhphat2003/capstone-backend-server-fe:latest
-3. **Run Docker Compose**:
+3. **Build mobile socket server**:
+   ```sh
+   docker build -t mobile-socket-capstone-server .
+4. **Build mobile socket server**:
+   ```sh
+   docker push mobile-socket-capstone-server:latest
+5. **Run Docker Compose**:
    This is what FE team have to do to run server:
 
    ```sh
