@@ -2,7 +2,6 @@ package com.capstone2024.scss.domain.account.services.impl;
 
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
-import com.capstone2024.scss.application.authentication.dto.AccountDTO;
 import com.capstone2024.scss.application.authentication.dto.request.LoginRequestDTO;
 import com.capstone2024.scss.application.authentication.dto.JwtTokenDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
@@ -12,6 +11,7 @@ import com.capstone2024.scss.domain.account.enums.LoginMethod;
 import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.account.enums.Status;
 import com.capstone2024.scss.domain.account.services.AuthenticationService;
+import com.capstone2024.scss.domain.common.mapper.account.AccountMapper;
 import com.capstone2024.scss.infrastructure.configuration.security.authentication.JwtService;
 import com.capstone2024.scss.infrastructure.repositories.account.AccountRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.LoginTypeRepository;
@@ -86,12 +86,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return JwtTokenDTO.builder()
                 .accessToken(accessToken)
                 .type(ACCESS_TOKEN_TYPE)
-                .account(AccountDTO.builder()
-                        .id(account.getId())
-                        .email(account.getEmail())
-                        .role(account.getRole())
-                        .status(account.getStatus())
-                        .build())
+                .account(AccountMapper.toAccountDTO((Account) userDetails))
                 .build();
     }
 
@@ -119,6 +114,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return JwtTokenDTO.builder()
                 .accessToken(accessToken)
                 .type(ACCESS_TOKEN_TYPE)
+                .account(AccountMapper.toAccountDTO((Account) userDetails))
                 .build();
     }
 
@@ -140,9 +136,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         String email = jsonNode.get("email").asText();
 
-        if(email == null || !email.endsWith("@fpt.edu.vn")) {
-            throw new BadRequestException("Only FPT accounts are allowed", HttpStatus.BAD_REQUEST);
-        }
+//        if(email == null || !email.endsWith("@fpt.edu.vn")) {
+//            throw new BadRequestException("Only FPT accounts are allowed", HttpStatus.BAD_REQUEST);
+//        }
 
         String name = jsonNode.get("name").asText();
         logger.info("Attempting to find account with email: {}", email);
@@ -157,7 +153,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             Account newAccountWithGoogle = Account.builder()
                     .email(email)
-                    .role(Role.ADMINISTRATOR)
+                    .role(Role.STUDENT)
                     .status(Status.ACTIVE)
                     .build();
 
@@ -197,12 +193,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return JwtTokenDTO.builder()
                 .accessToken(accessToken)
                 .type(ACCESS_TOKEN_TYPE)
-                .account(AccountDTO.builder()
-                        .id(userDetails.getId())
-                        .email(userDetails.getEmail())
-                        .role(userDetails.getRole())
-                        .status(userDetails.getStatus())
-                        .build())
+                .account(AccountMapper.toAccountDTO((Account) userDetails))
                 .build();
     }
 

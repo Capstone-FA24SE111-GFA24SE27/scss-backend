@@ -1,11 +1,11 @@
-package com.capstone2024.scss.domain.counseling_booking.services.impl;
+package com.capstone2024.scss.domain.counselor.services.impl;
 
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.counselor.dto.CounselorDTO;
 import com.capstone2024.scss.application.counselor.dto.request.CounselorFilterRequestDTO;
-import com.capstone2024.scss.domain.counseling_booking.entities.counselor.Counselor;
-import com.capstone2024.scss.domain.counseling_booking.services.CounselorService;
+import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.counselor.services.CounselorService;
 import com.capstone2024.scss.infrastructure.repositories.CounselorRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;

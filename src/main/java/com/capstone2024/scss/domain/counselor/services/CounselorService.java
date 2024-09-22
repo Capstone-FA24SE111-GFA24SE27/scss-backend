@@ -1,4 +1,4 @@
-package com.capstone2024.scss.domain.counseling_booking.services;
+package com.capstone2024.scss.domain.counselor.services;
 
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.counselor.dto.CounselorDTO;

@@ -1,6 +1,7 @@
 package com.capstone2024.scss.infrastructure.repositories;
 
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,7 +31,7 @@ public interface CounselingAppointmentRequestRepository extends JpaRepository<Co
             @Param("studentId") Long studentId,
             @Param("dateFrom") LocalDate dateFrom,
             @Param("dateTo") LocalDate dateTo,
-            @Param("meetingType") String meetingType,
+            @Param("meetingType") MeetingType meetingType,
             Pageable pageable
     );
 
@@ -43,7 +44,7 @@ public interface CounselingAppointmentRequestRepository extends JpaRepository<Co
             @Param("counselorId") Long counselorId,
             @Param("dateFrom") LocalDate dateFrom,
             @Param("dateTo") LocalDate dateTo,
-            @Param("meetingType") String meetingType,
+            @Param("meetingType") MeetingType meetingType,
             Pageable pageable
     );
 }

@@ -10,6 +10,7 @@ import com.capstone2024.scss.application.notification.dtos.NotificationDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.enums.Status;
 import com.capstone2024.scss.domain.account.services.AccountService;
+import com.capstone2024.scss.domain.notification.services.NotificationService;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -35,11 +36,11 @@ public class AccountController {
     private static final Logger logger = LoggerFactory.getLogger(AccountController.class);
 
     private final AccountService accountService;
-    private final RabbitTemplate rabbitTemplate;
+    private final NotificationService notificationService;
 
-    public AccountController(AccountService accountService, RabbitTemplate rabbitTemplate) {
+    public AccountController(AccountService accountService, NotificationService notificationService) {
         this.accountService = accountService;
-        this.rabbitTemplate = rabbitTemplate;
+        this.notificationService = notificationService;
     }
 
     @GetMapping()
@@ -95,18 +96,12 @@ public class AccountController {
 
         logger.debug("Successfully fetched accounts with filter - Total elements: {}", responseDTO.getTotalElements());
 
-        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_QUEUE, NotificationDTO.builder()
+        notificationService.sendNotification(NotificationDTO.builder()
                 .receiverId(2L)
                 .message("This is a test message")
                 .title("Test")
                 .sender("TEST")
-                .build());
-
-        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_MOBILE_QUEUE, NotificationDTO.builder()
-                .receiverId(2L)
-                .message("This is a test message")
-                .title("Test")
-                .sender("TEST")
+                .readStatus(false)
                 .build());
 
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);

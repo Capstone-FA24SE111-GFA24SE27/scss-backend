@@ -8,7 +8,7 @@ import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentRequestService;
-import com.capstone2024.scss.domain.counseling_booking.services.CounselorService;
+import com.capstone2024.scss.domain.counselor.services.CounselorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

@@ -7,6 +7,7 @@ import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppoin
 import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppointmentRequestResponseDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.AppointmentRequestFilterDTO;
+import com.capstone2024.scss.application.booking_counseling.dto.request.UpdateAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OfflineAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OnlineAppointmentRequestDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
@@ -16,7 +17,7 @@ import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
-import com.capstone2024.scss.domain.counseling_booking.entities.student.Student;
+import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentRequestService;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -221,5 +222,15 @@ public class BookingCounselingController {
         }
 
         return ResponseUtil.getResponse(appointments, HttpStatus.OK);
+    }
+
+    @PutMapping("/{requestId}/update-details")
+    public ResponseEntity<Object> updateAppointmentDetails(
+            @PathVariable Long requestId,
+            @RequestBody UpdateAppointmentRequestDTO updateRequest,
+            @AuthenticationPrincipal @NotNull Account principal
+    ) {
+        counselingAppointmentRequestService.updateAppointmentDetails(requestId, updateRequest, principal.getId());
+        return ResponseUtil.getResponse("Appointment details updated successfully", HttpStatus.OK);
     }
 }

@@ -17,6 +17,7 @@ public class CounselingAppointmentRequestDTO {
     private String status;
     private MeetingType meetingType;
     private String reason;
+    private AppointmentDetailsDTO appointmentDetails;
 
     private CounselorAppointmentDTO counselor;
     private StudentAppointmentDTO student;

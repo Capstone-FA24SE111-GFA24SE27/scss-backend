@@ -1,4 +1,4 @@
-package com.capstone2024.scss.application.profile.dto;
+package com.capstone2024.scss.application.account.dto;
 
 import lombok.*;
 
@@ -14,6 +14,7 @@ public class CounselorProfileDTO {
     private String phoneNumber;
     private Long dateOfBirth;
     private String avatarLink;
+    private ProfileDTO profile;
 
     private BigDecimal rating;
 }

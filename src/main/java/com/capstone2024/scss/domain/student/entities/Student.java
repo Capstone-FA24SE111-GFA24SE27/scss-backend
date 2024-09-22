@@ -1,4 +1,4 @@
-package com.capstone2024.scss.domain.counseling_booking.entities.counselor;
+package com.capstone2024.scss.domain.student.entities;
 
 import com.capstone2024.scss.domain.account.entities.Profile;
 import jakarta.persistence.*;
@@ -8,22 +8,16 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-import java.math.BigDecimal;
-
 @Getter
 @Setter
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "counselor")
+@Table(name = "student")
 @PrimaryKeyJoinColumn(name = "profile_id")
-public class Counselor extends Profile {
+public class Student extends Profile {
 
-    @Column(name = "rating")
-    private BigDecimal rating;
-
-//    @ManyToOne
-//    @JoinColumn(name = "expertise_id", nullable = false)
-//    private Expertise expertise;
+    @Column(name = "student_code", nullable = false, unique = true)
+    private String studentCode;
 }

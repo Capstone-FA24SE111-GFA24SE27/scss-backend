@@ -7,9 +7,13 @@ import com.capstone2024.scss.application.notification.dtos.NotificationDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.notification.entities.Notification;
 import com.capstone2024.scss.domain.notification.services.NotificationService;
+import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
+import com.capstone2024.scss.infrastructure.configuration.socket.service.NotificationSocketService;
 import com.capstone2024.scss.infrastructure.repositories.NotificationRepository;
+import com.capstone2024.scss.infrastructure.repositories.account.AccountRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,8 +31,17 @@ public class NotificationServiceImpl implements NotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationServiceImpl.class);
 
-    @Autowired
-    private NotificationRepository notificationRepository;
+    private final NotificationRepository notificationRepository;
+    private final RabbitTemplate rabbitTemplate;
+    private final AccountRepository accountRepository;
+    private final NotificationSocketService notificationSocketService;
+
+    public NotificationServiceImpl(NotificationRepository notificationRepository, RabbitTemplate rabbitTemplate, AccountRepository accountRepository, NotificationSocketService notificationSocketService) {
+        this.notificationRepository = notificationRepository;
+        this.rabbitTemplate = rabbitTemplate;
+        this.accountRepository = accountRepository;
+        this.notificationSocketService = notificationSocketService;
+    }
 
     @Override
     public PaginationDTO<List<NotificationDTO>> getAllNotifications(int page,
@@ -88,6 +101,47 @@ public class NotificationServiceImpl implements NotificationService {
         logger.info("Notification marked as read - Principle: {}, NotificationId: {}", principle.getUsername(), notificationId);
 
         return "notification is read";
+    }
+
+    public void sendNotification(NotificationDTO notificationMessage) {
+
+        try {
+            Notification notification = persistNotification(notificationMessage);
+            if(notification != null) {
+                rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_QUEUE, buildNotificationDTO(notification));
+
+                rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_MOBILE_QUEUE, buildNotificationDTO(notification));
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private NotificationDTO buildNotificationDTO(Notification notification) {
+        return NotificationDTO.builder()
+                .notificationId(notification.getId())
+                .receiverId(notification.getReceiver().getId())
+                .message(notification.getMessage())
+                .readStatus(notification.isReadStatus())
+                .title(notification.getTitle())
+                .sender(notification.getSender())
+                .build();
+    }
+
+    private Notification persistNotification(NotificationDTO notificationMessage) {
+        Optional<Account> accountOptional = accountRepository.findById(notificationMessage.getReceiverId());
+
+        if (accountOptional.isPresent()) {
+            Notification notification = Notification.builder()
+                    .title(notificationMessage.getTitle())
+                    .message(notificationMessage.getMessage())
+                    .sender(notificationMessage.getSender())
+                    .receiver(accountOptional.get())
+                    .build();
+            return notificationRepository.save(notification);
+        }
+
+        return null;
     }
 
     @Transactional

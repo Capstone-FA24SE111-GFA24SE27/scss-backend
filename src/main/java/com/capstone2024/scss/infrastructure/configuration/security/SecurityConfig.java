@@ -118,10 +118,10 @@ public class SecurityConfig {
 //                .authorizeHttpRequests(config ->
 //                        config.anyRequest()
 //                                .permitAll())
-//                .exceptionHandling(config -> {
-//                    config.authenticationEntryPoint(authenticationEntryPoint);
-//                    config.accessDeniedHandler(customAccessDeniedHandler);
-//                })
+                .exceptionHandling(config -> {
+                    config.authenticationEntryPoint(authenticationEntryPoint);
+                    config.accessDeniedHandler(customAccessDeniedHandler);
+                })
                 .sessionManagement(config ->
                         config.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2Login(oauth2 -> oauth2
@@ -156,7 +156,7 @@ public class SecurityConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 //        config.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000"));
-        config.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://192.168.0.150:8082")); // Replace with your frontend URL
+        config.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // Replace with your frontend URL
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setAllowCredentials(true);

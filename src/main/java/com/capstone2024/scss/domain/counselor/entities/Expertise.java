@@ -1,4 +1,4 @@
-package com.capstone2024.scss.domain.counseling_booking.entities.counselor;
+package com.capstone2024.scss.domain.counselor.entities;
 
 import com.capstone2024.scss.domain.common.entity.BaseEntity;
 import jakarta.persistence.Entity;

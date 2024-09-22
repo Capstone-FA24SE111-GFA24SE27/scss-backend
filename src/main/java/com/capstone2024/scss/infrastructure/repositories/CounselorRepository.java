@@ -1,6 +1,6 @@
 package com.capstone2024.scss.infrastructure.repositories;
 
-import com.capstone2024.scss.domain.counseling_booking.entities.counselor.Counselor;
+import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

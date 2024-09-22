@@ -1,10 +1,11 @@
 package com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request;
 
 import com.capstone2024.scss.domain.common.entity.BaseEntity;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.CounselingAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
-import com.capstone2024.scss.domain.counseling_booking.entities.counselor.Counselor;
-import com.capstone2024.scss.domain.counseling_booking.entities.student.Student;
+import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.student.entities.Student;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,6 +15,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -51,4 +53,7 @@ public class CounselingAppointmentRequest extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "student_id")
     private Student student;
+
+    @OneToMany(mappedBy = "appointmentRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CounselingAppointment> counselingAppointments;
 }

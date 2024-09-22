@@ -2,25 +2,33 @@ package com.capstone2024.scss.domain.counseling_booking.services.impl;
 
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
+import com.capstone2024.scss.application.advice.exeptions.ForbiddenException;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.booking_counseling.dto.SlotDTO;
+import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.AppointmentDetailsDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselorAppointmentDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.StudentAppointmentDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.enums.SlotStatus;
 import com.capstone2024.scss.application.booking_counseling.dto.request.AppointmentRequestFilterDTO;
+import com.capstone2024.scss.application.booking_counseling.dto.request.UpdateAppointmentRequestDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.notification.dtos.NotificationDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.enums.Role;
+import com.capstone2024.scss.domain.common.mapper.account.ProfileMapper;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.CounselingAppointment;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OfflineAppointment;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OnlineAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
-import com.capstone2024.scss.domain.counseling_booking.entities.counselor.Counselor;
-import com.capstone2024.scss.domain.counseling_booking.entities.student.Student;
+import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentRequestService;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
+import com.capstone2024.scss.infrastructure.repositories.CounselingAppointmentRepository;
 import com.capstone2024.scss.infrastructure.repositories.CounselingAppointmentRequestRepository;
 import com.capstone2024.scss.infrastructure.repositories.CounselingSlotRepository;
 import com.capstone2024.scss.infrastructure.repositories.CounselorRepository;
@@ -32,7 +40,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.*;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -47,12 +57,14 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
     private final CounselingAppointmentRequestRepository requestRepository;
     private final CounselingSlotRepository slotRepository;
     private final CounselorRepository counselorRepository;
+    private final CounselingAppointmentRepository counselingAppointmentRepository;
     private final RabbitTemplate rabbitTemplate;
 
-    public CounselingAppointmentRequestServiceImpl(CounselingAppointmentRequestRepository requestRepository, CounselingSlotRepository slotRepository, CounselorRepository counselorRepository, RabbitTemplate rabbitTemplate) {
+    public CounselingAppointmentRequestServiceImpl(CounselingAppointmentRequestRepository requestRepository, CounselingSlotRepository slotRepository, CounselorRepository counselorRepository, CounselingAppointmentRepository counselingAppointmentRepository, RabbitTemplate rabbitTemplate) {
         this.requestRepository = requestRepository;
         this.slotRepository = slotRepository;
         this.counselorRepository = counselorRepository;
+        this.counselingAppointmentRepository = counselingAppointmentRepository;
         this.rabbitTemplate = rabbitTemplate;
     }
 
@@ -202,7 +214,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                         student.getId(),
                         filterRequest.getDateFrom(),
                         filterRequest.getDateTo(),
-                        filterRequest.getMeetingType() != null ? filterRequest.getMeetingType().name() : null,
+                        filterRequest.getMeetingType() != null ? filterRequest.getMeetingType() : null,
                         pageable
                 );
             }
@@ -212,7 +224,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                         counselor.getId(),
                         filterRequest.getDateFrom(),
                         filterRequest.getDateTo(),
-                        filterRequest.getMeetingType() != null ? filterRequest.getMeetingType().name() : null,
+                        filterRequest.getMeetingType() != null ? filterRequest.getMeetingType() : null,
                         pageable
                 );
             }
@@ -231,20 +243,28 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
     }
 
     private CounselingAppointmentRequestDTO convertToDTO(CounselingAppointmentRequest request) {
-//        AppointmentDetailsDTO appointmentDetails = switch (request) {
-//            case OnlineAppointment online -> AppointmentDetailsDTO.builder()
-//                    .meetUrl(online.getMeetUrl())
-//                    .build();
-//            case OfflineAppointment offline -> AppointmentDetailsDTO.builder()
-//                    .address(offline.getAddress())
-//                    .build();
-//            default -> null;
-//        };
+        List<CounselingAppointment> appointments = request.getCounselingAppointments();
+        AppointmentDetailsDTO appointmentDetails = null;
+        if(appointments != null && !appointments.isEmpty()) {
+            CounselingAppointment appointment = appointments.getLast();
+
+            if (appointment instanceof OnlineAppointment onlineAppointment) {
+                appointmentDetails = AppointmentDetailsDTO.builder()
+                        .meetUrl(onlineAppointment.getMeetUrl())
+                        .build();
+            } else if (appointment instanceof OfflineAppointment offlineAppointment) {
+                appointmentDetails = AppointmentDetailsDTO.builder()
+                        .address(offlineAppointment.getAddress())
+                        .build();
+            }
+        }
 
         CounselorAppointmentDTO counselorDTO = request.getCounselor() != null
                 ? CounselorAppointmentDTO.builder()
                 .fullName(request.getCounselor().getFullName())
                 .avatarLink(request.getCounselor().getAvatarLink())
+                .rating(BigDecimal.valueOf(request.getCounselingAppointments().size()))
+                .profile(ProfileMapper.toProfileDTO(request.getCounselor()))
                 .build()
                 : null;
 
@@ -253,6 +273,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                 .fullName(request.getStudent().getFullName())
                 .avatarLink(request.getStudent().getAvatarLink())
                 .studentCode(request.getStudent().getStudentCode())
+                .profile(ProfileMapper.toProfileDTO(request.getStudent()))
                 .build()
                 : null;
 
@@ -266,7 +287,38 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                 .reason(request.getReason())
                 .counselor(counselorDTO)
                 .student(studentDTO)
-//                .appointmentDetails(appointmentDetails)
+                .appointmentDetails(appointmentDetails)
                 .build();
+    }
+
+    @Transactional
+    public void updateAppointmentDetails(Long requestId, UpdateAppointmentRequestDTO updateRequest, Long counselorId) {
+        // Lấy CounselingAppointmentRequest dựa trên requestId
+        CounselingAppointmentRequest request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new NotFoundException("Request not found with id: " + requestId));
+
+        if (!request.getCounselor().getId().equals(counselorId)) {
+            throw new ForbiddenException("You do not have permission to modify this request.");
+        }
+
+        // Lấy danh sách các appointment liên quan tới request này
+        CounselingAppointment appointment = request.getCounselingAppointments().getLast(); // Giả sử chỉ có 1 appointment
+
+        if (appointment instanceof OnlineAppointment onlineAppointment) {
+            // Cập nhật meetUrl cho OnlineAppointment
+            if (updateRequest.getMeetUrl() != null) {
+                onlineAppointment.setMeetUrl(updateRequest.getMeetUrl());
+            }
+        } else if (appointment instanceof OfflineAppointment offlineAppointment) {
+            // Cập nhật address cho OfflineAppointment
+            if (updateRequest.getAddress() != null) {
+                offlineAppointment.setAddress(updateRequest.getAddress());
+            }
+        } else {
+            throw new BadRequestException("Invalid appointment request");
+        }
+
+        // Lưu thông tin đã cập nhật
+        counselingAppointmentRepository.save(appointment);
     }
 }

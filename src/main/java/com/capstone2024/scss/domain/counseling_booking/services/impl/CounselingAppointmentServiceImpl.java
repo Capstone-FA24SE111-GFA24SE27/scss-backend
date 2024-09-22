@@ -7,6 +7,7 @@ import com.capstone2024.scss.application.booking_counseling.dto.counseling_appoi
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.StudentAppointmentDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OfflineAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OnlineAppointmentRequestDTO;
+import com.capstone2024.scss.domain.common.mapper.account.ProfileMapper;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.CounselingAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OfflineAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OnlineAppointment;
@@ -14,8 +15,8 @@ import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appoi
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
-import com.capstone2024.scss.domain.counseling_booking.entities.counselor.Counselor;
-import com.capstone2024.scss.domain.counseling_booking.entities.student.Student;
+import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
 import com.capstone2024.scss.infrastructure.repositories.CounselingAppointmentRepository;
 import com.capstone2024.scss.infrastructure.repositories.CounselingAppointmentRequestRepository;
@@ -220,6 +221,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
                 .dateOfBirth(student.getDateOfBirth())
                 .avatarLink(student.getAvatarLink())
                 .studentCode(student.getStudentCode())
+                .profile(ProfileMapper.toProfileDTO(student))
                 .build());
 
         return dtoBuilder.build();
@@ -248,6 +250,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
                 .dateOfBirth(counselor.getDateOfBirth())
                 .avatarLink(counselor.getAvatarLink())
                 .rating(counselor.getRating())
+                .profile(ProfileMapper.toProfileDTO(counselor))
                 .build());
 
         return dtoBuilder.build();

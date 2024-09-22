@@ -14,36 +14,14 @@ import java.util.Optional;
 public class RabbitMQNotificationReceiver {
 
     private final NotificationSocketService notificationSocketService;
-    private final NotificationRepository notificationRepository;
-    private final AccountRepository accountRepository;
 
-    public RabbitMQNotificationReceiver(NotificationSocketService notificationSocketService, NotificationRepository notificationRepository, AccountRepository accountRepository) {
+    public RabbitMQNotificationReceiver(NotificationSocketService notificationSocketService) {
         this.notificationSocketService = notificationSocketService;
-        this.notificationRepository = notificationRepository;
-        this.accountRepository = accountRepository;
     }
 
     public void receiveNotificationMessage(NotificationDTO notificationMessage) {
-        try {
-            persistNotification(notificationMessage);
-            notificationSocketService.sendNotificationToUser(2L, notificationMessage);
-            System.out.println("Notification sent to WebSocket successfully!");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+        notificationSocketService.sendNotificationToUser(notificationMessage.getReceiverId(), notificationMessage);
+        System.out.println("Notification sent to WebSocket successfully!");
     }
 
-    private void persistNotification(NotificationDTO notificationMessage) {
-        Optional<Account> accountOptional = accountRepository.findById(notificationMessage.getReceiverId());
-
-        if (accountOptional.isPresent()) {
-            Notification notification = Notification.builder()
-                    .title(notificationMessage.getTitle())
-                    .message(notificationMessage.getMessage())
-                    .sender(notificationMessage.getSender())
-                    .receiver(accountOptional.get())
-                    .build();
-            notificationRepository.save(notification);
-        }
-    }
 }

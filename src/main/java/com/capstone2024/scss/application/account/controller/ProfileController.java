@@ -1,13 +1,14 @@
-package com.capstone2024.scss.application.profile.controller;
+package com.capstone2024.scss.application.account.controller;
 
-import com.capstone2024.scss.application.profile.dto.CounselorProfileDTO;
-import com.capstone2024.scss.application.profile.dto.ProfileDTO;
-import com.capstone2024.scss.application.profile.dto.StudentProfileDTO;
+import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
+import com.capstone2024.scss.application.account.dto.ProfileDTO;
+import com.capstone2024.scss.application.account.dto.StudentProfileDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.services.ProfileService;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
-import com.capstone2024.scss.domain.counseling_booking.entities.counselor.Counselor;
-import com.capstone2024.scss.domain.counseling_booking.entities.student.Student;
+import com.capstone2024.scss.domain.common.mapper.account.ProfileMapper;
+import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.student.entities.Student;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -70,6 +71,7 @@ public class ProfileController {
                         .dateOfBirth(student.getDateOfBirth())
                         .studentCode(student.getStudentCode())
                         .avatarLink(student.getAvatarLink())
+                        .profile(ProfileMapper.toProfileDTO(student))
                         .build();
                 return ResponseUtil.getResponse(studentProfileDTO, HttpStatus.OK);
             }
@@ -81,6 +83,7 @@ public class ProfileController {
                         .dateOfBirth(counselor.getDateOfBirth())
                         .rating(counselor.getRating())
                         .avatarLink(counselor.getAvatarLink())
+                        .profile(ProfileMapper.toProfileDTO(counselor))
                         .build();
                 return ResponseUtil.getResponse(counselorProfileDTO, HttpStatus.OK);
             }
