@@ -28,7 +28,8 @@ public class CloudinaryService {
         return cloudinary.uploader().upload(file.getBytes(),
                 ObjectUtils.asMap(
                         "resource_type", "video",
-                        "folder", folderName
+                        "folder", folderName,
+                        "format", "mp4"
                 ));
     }
 }

@@ -9,6 +9,7 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -22,7 +23,10 @@ public class EventDTO {
     private String content;
     private int view;
     private Boolean isNeedAccept;
-    private String displayImage; // Thêm trường cho hình ảnh hiển thị
-    private SemesterDTO semester; // Thêm SemesterDTO
-    private CategoryDTO category; // Thêm CategoryDTO
+    private String displayImage;
+    private SemesterDTO semester;
+    private CategoryDTO category;
+    private List<RecapVideoDTO> recapVideos;
+    private List<ContentImageDTO> contentImages;
+    private List<EventScheduleDTO> eventSchedules;
 }

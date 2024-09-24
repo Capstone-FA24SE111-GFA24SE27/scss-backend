@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface EventService {
     PaginationDTO<List<EventDTO>> getAllEvents(EventFilterDTO filterRequest);
+
+    EventDTO getOneEvent(Long eventId, Long accountId, boolean isFilter);
 }

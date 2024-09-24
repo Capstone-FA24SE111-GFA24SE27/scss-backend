@@ -34,7 +34,10 @@ public class CounselingAppointment {
     private CounselingAppointmentStatus status;
 
     @OneToOne
-    @JoinColumn(name = "appointment_request_id", nullable = false)
+    @JoinColumn(name = "appointment_request_id", nullable = true)
     private CounselingAppointmentRequest appointmentRequest;
+
+    @OneToOne(mappedBy = "appointment", cascade = CascadeType.ALL, optional = true)
+    private AppointmentFeedback feedback;
 }
 

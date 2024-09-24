@@ -32,7 +32,7 @@ COPY --from=builder /usr/src/app .
 COPY .env .env
 
 # Expose port mà ứng dụng của bạn sẽ chạy
-EXPOSE 3000
+EXPOSE 4000
 
 # Chạy ứng dụng khi container khởi động
 CMD ["node", "app.js"]

@@ -57,9 +57,11 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final EventRepository eventRepository;
     private final EventScheduleRepository eventScheduleRepository;
     private final TrainingPointRepository trainingPointRepository;
+    private final RecapVideoRepository recapVideoRepository;
+    private final ContentImageRepository contentImageRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public DatabaseSeeder(AccountRepository accountRepository, LoginTypeRepository loginTypeRepository, NotificationRepository notificationRepository, CounselorRepository counselorRepository, StudentRepository studentRepository, CounselingAppointmentRequestRepository counselingAppointmentRequestRepository, CounselingAppointmentRepository counselingAppointmentRepository, CounselingSlotRepository counselingSlotRepository, ProfileRepository profileRepository, CategoryRepository categoryRepository, SemesterRepository semesterRepository, EventRepository eventRepository, EventScheduleRepository eventScheduleRepository, TrainingPointRepository trainingPointRepository, PasswordEncoder passwordEncoder) {
+    public DatabaseSeeder(AccountRepository accountRepository, LoginTypeRepository loginTypeRepository, NotificationRepository notificationRepository, CounselorRepository counselorRepository, StudentRepository studentRepository, CounselingAppointmentRequestRepository counselingAppointmentRequestRepository, CounselingAppointmentRepository counselingAppointmentRepository, CounselingSlotRepository counselingSlotRepository, ProfileRepository profileRepository, CategoryRepository categoryRepository, SemesterRepository semesterRepository, EventRepository eventRepository, EventScheduleRepository eventScheduleRepository, TrainingPointRepository trainingPointRepository, RecapVideoRepository recapVideoRepository, ContentImageRepository contentImageRepository, PasswordEncoder passwordEncoder) {
         this.accountRepository = accountRepository;
         this.loginTypeRepository = loginTypeRepository;
         this.notificationRepository = notificationRepository;
@@ -74,6 +76,8 @@ public class DatabaseSeeder implements CommandLineRunner {
         this.eventRepository = eventRepository;
         this.eventScheduleRepository = eventScheduleRepository;
         this.trainingPointRepository = trainingPointRepository;
+        this.recapVideoRepository = recapVideoRepository;
+        this.contentImageRepository = contentImageRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -174,19 +178,44 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             eventRepository.save(event);
 
-            // Tạo lịch cho các sự kiện
-            LocalDate startDate = LocalDate.of(2024, semester.getStartDate().getMonthValue(), i * 5); // Bắt đầu vào ngày 5, 10, 15...
-            LocalDate endDate = startDate.plusDays(2); // Kéo dài 2 ngày
+            // Tạo lịch cho các sự kiện trong phạm vi thời gian của học kỳ
+            LocalDateTime startDateTime = semester.getStartDate().atTime(10, 0) // Bắt đầu vào 10:00 của ngày bắt đầu học kỳ
+                    .plusDays(i * 5); // Thay đổi ngày bắt đầu cho từng sự kiện
+            LocalDateTime endDateTime = startDateTime.plusHours(2); // Kéo dài 2 tiếng
+
+            // Đảm bảo thời gian kết thúc không vượt quá ngày kết thúc của học kỳ
+            if (endDateTime.isAfter(semester.getEndDate().atTime(23, 59))) {
+                endDateTime = semester.getEndDate().atTime(23, 59);
+            }
 
             EventSchedule schedule = EventSchedule.builder()
                     .event(event)
-                    .startDate(startDate)
-                    .endDate(endDate)
+                    .startDate(startDateTime)
+                    .endDate(endDateTime)
                     .maxParticipants(10)
                     .currentParticipants(0)
                     .build();
 
             eventScheduleRepository.save(schedule);
+
+            // Tạo RecapVideo
+            RecapVideo recapVideo = RecapVideo.builder()
+                    .event(event)
+                    .videoUrl("https://res.cloudinary.com/dd8y8sska/video/upload/v1727066591/video/hulrayq22xw75ofaoxrg.mp4")
+                    .build();
+            recapVideoRepository.save(recapVideo);
+
+            // Tạo ContentImage
+            ContentImage contentImage = ContentImage.builder()
+                    .event(event)
+                    .imageUrl("https://res.cloudinary.com/dd8y8sska/image/upload/v1724948516/cld-sample-5.jpg")
+                    .build();
+            contentImageRepository.save(contentImage);
+            ContentImage contentImage2 = ContentImage.builder()
+                    .event(event)
+                    .imageUrl("https://res.cloudinary.com/dd8y8sska/image/upload/v1724948516/cld-sample-5.jpg")
+                    .build();
+            contentImageRepository.save(contentImage2);
         }
     }
 
@@ -416,7 +445,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         OnlineAppointment appointment = OnlineAppointment.builder()
                 .startDateTime(LocalDateTime.of(appointmentRequest.getRequireDate(), appointmentRequest.getStartTime()))
                 .endDateTime(LocalDateTime.of(appointmentRequest.getRequireDate(), appointmentRequest.getEndTime()))
-                .status(CounselingAppointmentStatus.WAITING)
+                .status(CounselingAppointmentStatus.ATTEND)
                 .appointmentRequest(appointmentRequest)
                 .meetUrl("hehehehe")
                 .build();

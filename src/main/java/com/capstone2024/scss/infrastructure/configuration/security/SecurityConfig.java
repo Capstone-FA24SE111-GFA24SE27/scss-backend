@@ -101,6 +101,10 @@ public class SecurityConfig {
                                 .hasAnyRole(Role.STUDENT.name()))
 
                 .authorizeHttpRequests(config ->
+                        config.requestMatchers(HttpMethod.POST,"/api/booking-counseling/feedback/**")
+                                .hasAnyRole(Role.STUDENT.name()))
+
+                .authorizeHttpRequests(config ->
                         config.requestMatchers(HttpMethod.PUT,"/api/booking-counseling/approve/**")
                                 .hasAnyRole(Role.COUNSELOR.name()))
 

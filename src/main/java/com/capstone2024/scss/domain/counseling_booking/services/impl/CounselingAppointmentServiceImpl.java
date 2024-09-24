@@ -1,13 +1,17 @@
 package com.capstone2024.scss.domain.counseling_booking.services.impl;
 
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
+import com.capstone2024.scss.application.advice.exeptions.ForbiddenException;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppointmentDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselorAppointmentDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.StudentAppointmentDTO;
+import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.AppointmentFeedbackDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OfflineAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OnlineAppointmentRequestDTO;
 import com.capstone2024.scss.domain.common.mapper.account.ProfileMapper;
+import com.capstone2024.scss.domain.common.mapper.appointment_counseling.AppointmentFeedbackMapper;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.AppointmentFeedback;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.CounselingAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OfflineAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OnlineAppointment;
@@ -18,13 +22,18 @@ import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appoi
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
+import com.capstone2024.scss.infrastructure.repositories.AppointmentFeedbackRepository;
 import com.capstone2024.scss.infrastructure.repositories.CounselingAppointmentRepository;
 import com.capstone2024.scss.infrastructure.repositories.CounselingAppointmentRequestRepository;
+import com.capstone2024.scss.infrastructure.repositories.CounselorRepository;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -32,16 +41,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CounselingAppointmentServiceImpl implements CounselingAppointmentService {
     private static final Logger logger = LoggerFactory.getLogger(CounselingAppointmentServiceImpl.class);
     private final CounselingAppointmentRequestRepository requestRepository;
     private final CounselingAppointmentRepository appointmentRepository;
-
-    public CounselingAppointmentServiceImpl(CounselingAppointmentRequestRepository requestRepository,
-                                        CounselingAppointmentRepository appointmentRepository) {
-        this.requestRepository = requestRepository;
-        this.appointmentRepository = appointmentRepository;
-    }
+    private final AppointmentFeedbackRepository appointmentFeedbackRepository;
+    private final CounselorRepository counselorRepository;
 
     @Transactional
     public void approveOnlineAppointment(Long requestId, Long counselorId, OnlineAppointmentRequestDTO dto) {
@@ -198,6 +204,82 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public void submitFeedback(Long appointmentId, AppointmentFeedbackDTO feedbackDTO, Long studentId) {
+        // Check if the appointment exists
+        CounselingAppointment appointment = appointmentRepository.findById(appointmentId) // Use the new repository
+                .orElseThrow(() -> new NotFoundException("Appointment not found"));
+
+        // Check if the appointment status allows feedback
+        if (appointment.getStatus() != CounselingAppointmentStatus.ATTEND) {
+            throw new BadRequestException("Feedback can only be given for attended appointments");
+        }
+
+        if (appointment.getFeedback() != null) {
+            throw new BadRequestException("This appointment already had feedback");
+        }
+
+        if (!appointment.getAppointmentRequest().getStudent().getId().equals(studentId)) {
+            throw new ForbiddenException("You are not allowed to feedback this appointment");
+        }
+
+        // Update counselor rating
+        Counselor counselor = appointment.getAppointmentRequest().getCounselor(); // Assuming Counselor is linked to Appointment
+        counselor.setRating(calculateNewRating(counselor, feedbackDTO.getRating()));
+        counselorRepository.save(counselor);
+
+        // Create feedback entity
+        AppointmentFeedback feedback = AppointmentFeedback.builder()
+                .rating(feedbackDTO.getRating())
+                .comment(feedbackDTO.getComment())
+                .appointment(appointment)
+                .counselor(counselor)
+                .build();
+
+        appointmentFeedbackRepository.save(feedback);
+    }
+
+    @Override
+    public void takeAttendanceForAppointment(Long appointmentId, CounselingAppointmentStatus counselingAppointmentStatus, Long counselorId) {
+        // Check if the appointment exists
+        CounselingAppointment appointment = appointmentRepository.findById(appointmentId) // Use the new repository
+                .orElseThrow(() -> new NotFoundException("Appointment not found"));
+
+        if (!appointment.getAppointmentRequest().getCounselor().getId().equals(counselorId)) {
+            throw new ForbiddenException("You have no permission for this appointment");
+        }
+
+        if (counselingAppointmentStatus.equals(CounselingAppointmentStatus.ATTEND) || counselingAppointmentStatus.equals(CounselingAppointmentStatus.ABSENT)) {
+            appointment.setStatus(counselingAppointmentStatus);
+            appointmentRepository.save(appointment);
+        } else {
+            throw new BadRequestException("Invalid parameter, only ATTEND or ABSENT");
+        }
+    }
+
+    private BigDecimal calculateNewRating(Counselor counselor, BigDecimal newRating) {
+        // Fetch existing ratings for the counselor
+        List<AppointmentFeedback> feedbackList = counselor.getFeedbackList();
+
+        // Calculate the new average rating
+        BigDecimal totalRating = BigDecimal.ZERO;
+        int feedbackCount = feedbackList.size();
+
+        // Sum the existing ratings
+        for (AppointmentFeedback feedback : feedbackList) {
+            totalRating = totalRating.add(feedback.getRating());
+        }
+
+        // Add the new rating to the total
+        totalRating = totalRating.add(newRating);
+        feedbackCount++; // Increase the count to include the new rating
+
+        // Calculate the average and keep one decimal place
+        return feedbackCount > 0
+                ? totalRating.divide(BigDecimal.valueOf(feedbackCount), 1, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO.setScale(1); // Ensure it returns a BigDecimal with one decimal place
+    }
+
     private CounselingAppointmentDTO convertToCounselorAppointmentDTO(CounselingAppointment appointment) {
         CounselingAppointmentDTO.CounselingAppointmentDTOBuilder dtoBuilder = CounselingAppointmentDTO.builder()
                 .id(appointment.getId())
@@ -211,6 +293,11 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
             dtoBuilder.meetUrl(((OnlineAppointment) appointment).getMeetUrl());
         } else if (appointment instanceof OfflineAppointment) {
             dtoBuilder.address(((OfflineAppointment) appointment).getAddress());
+        }
+
+        AppointmentFeedback appointmentFeedback = appointment.getFeedback();
+        if (appointmentFeedback != null) {
+            dtoBuilder.appointmentFeedback(AppointmentFeedbackMapper.toDTO(appointmentFeedback));
         }
 
         // Thêm thông tin counselor vào DTO
@@ -240,6 +327,11 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
             dtoBuilder.meetUrl(((OnlineAppointment) appointment).getMeetUrl());
         } else if (appointment instanceof OfflineAppointment) {
             dtoBuilder.address(((OfflineAppointment) appointment).getAddress());
+        }
+
+        AppointmentFeedback appointmentFeedback = appointment.getFeedback();
+        if (appointmentFeedback != null) {
+            dtoBuilder.appointmentFeedback(AppointmentFeedbackMapper.toDTO(appointmentFeedback));
         }
 
         // Thêm thông tin student vào DTO

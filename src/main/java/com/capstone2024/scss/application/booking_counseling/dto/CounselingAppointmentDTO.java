@@ -17,8 +17,9 @@ public class CounselingAppointmentDTO {
     private LocalDateTime endDateTime;
     private CounselingAppointmentStatus status;
     private MeetingType meetingType;
-    private String meetUrl;  // Dành cho OnlineAppointment
-    private String address;  // Dành cho OfflineAppointment
-    private CounselorAppointmentDTO counselorInfo;  // Dành cho counselor
-    private StudentAppointmentDTO studentInfo;  // Dành cho student
+    private String meetUrl;
+    private String address;
+    private CounselorAppointmentDTO counselorInfo;
+    private StudentAppointmentDTO studentInfo;
+    private AppointmentFeedbackDTO appointmentFeedback;
 }

@@ -292,17 +292,14 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
     }
 
     @Transactional
-    public void updateAppointmentDetails(Long requestId, UpdateAppointmentRequestDTO updateRequest, Long counselorId) {
+    public void updateAppointmentDetails(Long appointmentId, UpdateAppointmentRequestDTO updateRequest, Long counselorId) {
         // Lấy CounselingAppointmentRequest dựa trên requestId
-        CounselingAppointmentRequest request = requestRepository.findById(requestId)
-                .orElseThrow(() -> new NotFoundException("Request not found with id: " + requestId));
+        CounselingAppointment appointment = counselingAppointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new NotFoundException("Appointment not found with id: " + appointmentId));
 
-        if (!request.getCounselor().getId().equals(counselorId)) {
+        if (!appointment.getAppointmentRequest().getCounselor().getId().equals(counselorId)) {
             throw new ForbiddenException("You do not have permission to modify this request.");
         }
-
-        // Lấy danh sách các appointment liên quan tới request này
-        CounselingAppointment appointment = request.getCounselingAppointments().getLast(); // Giả sử chỉ có 1 appointment
 
         if (appointment instanceof OnlineAppointment onlineAppointment) {
             // Cập nhật meetUrl cho OnlineAppointment

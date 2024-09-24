@@ -8,6 +8,7 @@ import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppoin
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.AppointmentRequestFilterDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.UpdateAppointmentRequestDTO;
+import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.AppointmentFeedbackDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OfflineAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OnlineAppointmentRequestDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
@@ -15,11 +16,14 @@ import com.capstone2024.scss.application.common.utils.ResponseUtil;
 import com.capstone2024.scss.application.booking_counseling.dto.request.CreateCounselingAppointmentRequestDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.enums.Role;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
+import com.capstone2024.scss.domain.event.entities.enums.AttendanceStatus;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentRequestService;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -46,6 +50,7 @@ public class BookingCounselingController {
 
     private static final Logger logger = LoggerFactory.getLogger(BookingCounselingController.class);
     private final CounselingAppointmentRequestService counselingAppointmentRequestService;
+    private final CounselingAppointmentService counselingAppointmentService;
     private final CounselingAppointmentService appointmentService;
 
     @PostMapping("/{counselorId}/appointment-request/create")
@@ -224,13 +229,41 @@ public class BookingCounselingController {
         return ResponseUtil.getResponse(appointments, HttpStatus.OK);
     }
 
-    @PutMapping("/{requestId}/update-details")
+    @PutMapping("/{appointmentId}/update-details")
     public ResponseEntity<Object> updateAppointmentDetails(
-            @PathVariable Long requestId,
+            @PathVariable Long appointmentId,
             @RequestBody UpdateAppointmentRequestDTO updateRequest,
             @AuthenticationPrincipal @NotNull Account principal
     ) {
-        counselingAppointmentRequestService.updateAppointmentDetails(requestId, updateRequest, principal.getId());
+        counselingAppointmentRequestService.updateAppointmentDetails(appointmentId, updateRequest, principal.getId());
+        return ResponseUtil.getResponse("Appointment details updated successfully", HttpStatus.OK);
+    }
+
+    @PostMapping("/feedback/{appointmentId}")
+    @io.swagger.v3.oas.annotations.Operation(
+            summary = "Submit feedback for an appointment",
+            description = "Submit feedback for an appointment"
+    )
+    public ResponseEntity<Object> submitFeedback(@PathVariable Long appointmentId,
+                                                 @Valid @RequestBody AppointmentFeedbackDTO feedbackDTO,
+                                                 BindingResult bindingResult,
+                                                 @AuthenticationPrincipal @NotNull Account principal) {
+        if (bindingResult.hasErrors()) {
+            throw new BadRequestException("Invalid data", bindingResult, HttpStatus.BAD_REQUEST);
+        }
+
+        counselingAppointmentService.submitFeedback(appointmentId, feedbackDTO, principal.getProfile().getId());
+
+        return ResponseUtil.getResponse("Feedback submitted successfully", HttpStatus.OK);
+    }
+
+    @PutMapping("/take-attendance/{appointmentId}/{counselingAppointmentStatus}")
+    public ResponseEntity<Object> takeAttendance(
+            @PathVariable Long appointmentId,
+            @PathVariable CounselingAppointmentStatus counselingAppointmentStatus,
+            @AuthenticationPrincipal @NotNull Account principal
+    ) {
+        counselingAppointmentService.takeAttendanceForAppointment(appointmentId, counselingAppointmentStatus, principal.getProfile().getId());
         return ResponseUtil.getResponse("Appointment details updated successfully", HttpStatus.OK);
     }
 }

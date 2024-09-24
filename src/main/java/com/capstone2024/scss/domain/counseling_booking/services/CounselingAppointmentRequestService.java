@@ -20,5 +20,5 @@ public interface CounselingAppointmentRequestService {
 
     PaginationDTO<List<CounselingAppointmentRequestDTO>> getAppointmentsRequest(Account principle, AppointmentRequestFilterDTO filterRequest);
 
-    void updateAppointmentDetails(Long requestId, UpdateAppointmentRequestDTO updateRequest, Long counselorId);
+    void updateAppointmentDetails(Long appointmentId, UpdateAppointmentRequestDTO updateRequest, Long counselorId);
 }

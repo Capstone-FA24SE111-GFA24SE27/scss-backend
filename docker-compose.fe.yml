@@ -48,7 +48,7 @@ services:
     build:
       context: .
     ports:
-      - "3000:3000"
+      - "4000:4000"
     environment:
       - RABBITMQ_URL=amqp://admin:112233@rabbitmq:5672
     depends_on:
