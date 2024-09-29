@@ -35,7 +35,6 @@ public class EventMapper {
         return EventDTO.builder()
                 .id(event.getId())
                 .title(event.getTitle())
-                .address(event.getAddress())
                 .content(event.getContent())
                 .view(event.getView())
                 .isNeedAccept(event.getIsNeedAccept())

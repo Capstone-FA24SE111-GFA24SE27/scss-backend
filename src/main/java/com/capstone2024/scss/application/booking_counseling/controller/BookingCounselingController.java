@@ -107,7 +107,7 @@ public class BookingCounselingController {
 
         } catch (RuntimeException e) {
             logger.error("Error creating appointment request: {}", e.getMessage());
-            throw new BadRequestException("An error occurred while processing the request", HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new BadRequestException("An error occurred while processing the request");
         }
     }
 
@@ -121,8 +121,8 @@ public class BookingCounselingController {
             @RequestParam(name = "dateFrom", required = false) LocalDate dateFrom,
             @RequestParam(name = "dateTo", required = false) LocalDate dateTo,
             @RequestParam(name = "meetingType", required = false) MeetingType meetingType,
-            @RequestParam(name = "sortBy", defaultValue = "requireDate") String sortBy,
-            @RequestParam(name = "sortDirection", defaultValue = "ASC") SortDirection sortDirection,
+            @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
+            @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
             @RequestParam(name = "page", defaultValue = "1") Integer page) {
 
         logger.info("Received getAppointmentsRequest - User: {}, Date From: {}, Date To: {}",

@@ -19,9 +19,6 @@ public class Event extends BaseEntity {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false)
-    private String address;
-
     @Column(nullable = false, name = "display_image")
     private String displayImage;
 

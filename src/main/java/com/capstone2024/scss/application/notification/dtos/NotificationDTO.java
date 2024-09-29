@@ -23,4 +23,6 @@ public class NotificationDTO implements Serializable {
     private boolean readStatus;
 
     private String sender;
+
+    private Long createdDate;
 }

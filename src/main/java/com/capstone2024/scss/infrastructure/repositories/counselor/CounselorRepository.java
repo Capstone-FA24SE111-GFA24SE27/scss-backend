@@ -1,4 +1,4 @@
-package com.capstone2024.scss.infrastructure.repositories;
+package com.capstone2024.scss.infrastructure.repositories.counselor;
 
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import io.lettuce.core.dynamic.annotation.Param;

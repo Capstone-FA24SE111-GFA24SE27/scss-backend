@@ -4,6 +4,7 @@ import com.capstone2024.scss.application.account.dto.enums.SortDirection;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.event.dto.EventDTO;
+import com.capstone2024.scss.application.event.dto.EventScheduleDTO;
 import com.capstone2024.scss.application.event.dto.request.EventFilterDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.enums.Role;
@@ -12,10 +13,12 @@ import com.capstone2024.scss.domain.event.entities.Event;
 import com.capstone2024.scss.domain.event.entities.StudentInteraction;
 import com.capstone2024.scss.domain.event.entities.enums.InteractionType;
 import com.capstone2024.scss.domain.event.service.EventService;
+import com.capstone2024.scss.domain.event_register.entity.StudentEventSchedule;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.infrastructure.repositories.StudentRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.AccountRepository;
 import com.capstone2024.scss.infrastructure.repositories.event.EventRepository;
+import com.capstone2024.scss.infrastructure.repositories.event.StudentEventScheduleRepository;
 import com.capstone2024.scss.infrastructure.repositories.event.StudentInteractionRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -28,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +40,7 @@ public class EventServiceImpl implements EventService {
 
     private final EventRepository eventRepository;
     private final StudentInteractionRepository studentInteractionRepository;
+    private final StudentEventScheduleRepository studentEventScheduleRepository;
     private final AccountRepository accountRepository;
     private final Logger logger = LoggerFactory.getLogger(EventServiceImpl.class);
 
@@ -84,6 +89,8 @@ public class EventServiceImpl implements EventService {
                     return new NotFoundException("Event not found with id " + eventId);
                 });
 
+        EventDTO eventDTO = EventMapper.toDTO(event);
+
         Account account = accountRepository.findById(accountID)
                 .orElseThrow(() -> {
                     logger.error("Account not found with ID: {}", accountID);
@@ -91,6 +98,16 @@ public class EventServiceImpl implements EventService {
                 });
 
         if (account.getRole().equals(Role.STUDENT)) {
+
+            Optional<StudentEventSchedule> studentEventSchedule = studentEventScheduleRepository.findByStudentIdAndEventId(account.getProfile().getId(), eventId);
+            if (studentEventSchedule.isPresent()) {
+                for(EventScheduleDTO eventScheduleDTO : eventDTO.getEventSchedules()) {
+                    if(eventDTO.getId().equals(studentEventSchedule.get().getEventSchedule().getId())) {
+                        eventScheduleDTO.setRegistered(true);
+                    }
+                }
+            }
+
             InteractionType interactionType = isFilter ? InteractionType.FILTER : InteractionType.VIEW;
 
             if (interactionType == InteractionType.VIEW) {
@@ -111,6 +128,6 @@ public class EventServiceImpl implements EventService {
         }
 
         logger.info("Returning event DTO for event ID: {}", eventId);
-        return EventMapper.toDTO(event);
+        return eventDTO;
     }
 }

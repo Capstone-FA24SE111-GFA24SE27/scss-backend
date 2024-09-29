@@ -22,6 +22,7 @@ import com.capstone2024.scss.infrastructure.repositories.*;
 import com.capstone2024.scss.infrastructure.repositories.account.AccountRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.LoginTypeRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.ProfileRepository;
+import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import com.capstone2024.scss.infrastructure.repositories.event.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -167,7 +167,6 @@ public class DatabaseSeeder implements CommandLineRunner {
             String eventContent = "This is the detailed content for Event " + i + " in " + semester.getName();
             Event event = Event.builder()
                     .title("Event " + i + " - " + semester.getName())
-                    .address("Address for Event " + i)
                     .content(eventContent)
                     .displayImage("https://www.mecc.nl/wp-content/uploads/2021/12/Header_zakelijk_event_IC_1440x600.jpg")
                     .view(0)
@@ -180,7 +179,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             // Tạo lịch cho các sự kiện trong phạm vi thời gian của học kỳ
             LocalDateTime startDateTime = semester.getStartDate().atTime(10, 0) // Bắt đầu vào 10:00 của ngày bắt đầu học kỳ
-                    .plusDays(i * 5); // Thay đổi ngày bắt đầu cho từng sự kiện
+                    .plusDays(i * 9); // Thay đổi ngày bắt đầu cho từng sự kiện
             LocalDateTime endDateTime = startDateTime.plusHours(2); // Kéo dài 2 tiếng
 
             // Đảm bảo thời gian kết thúc không vượt quá ngày kết thúc của học kỳ
@@ -194,6 +193,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .endDate(endDateTime)
                     .maxParticipants(10)
                     .currentParticipants(0)
+                    .address("Address for Event " + i)
                     .build();
 
             eventScheduleRepository.save(schedule);
@@ -308,10 +308,22 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             profileRepository.save(studentProfile);
 
+            createNotificationForStudent(student);
+
             logger.info("student account created with email '{}'.", studentEmail);
         } else {
             logger.warn("student account with email '{}' already exists.", studentEmail);
         }
+    }
+
+    private void createNotificationForStudent(Account student) {
+        Notification notification = Notification.builder()
+                .receiver(student)
+                .title("new noti")
+                .message("content")
+                .sender("SYSTEM")
+                .build();
+        notificationRepository.save(notification);
     }
 
     private void createStudentAccount2() {

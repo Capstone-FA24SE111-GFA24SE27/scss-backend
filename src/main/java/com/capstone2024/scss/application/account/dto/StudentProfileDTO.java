@@ -8,10 +8,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StudentProfileDTO {
-    private String fullName;
-    private String phoneNumber;
-    private Long dateOfBirth;
-    private String avatarLink;
+    private Long id;
+
     private ProfileDTO profile;
 
     private String studentCode;

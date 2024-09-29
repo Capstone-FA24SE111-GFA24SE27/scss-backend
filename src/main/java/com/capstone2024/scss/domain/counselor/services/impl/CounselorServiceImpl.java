@@ -6,7 +6,7 @@ import com.capstone2024.scss.application.counselor.dto.CounselorDTO;
 import com.capstone2024.scss.application.counselor.dto.request.CounselorFilterRequestDTO;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import com.capstone2024.scss.domain.counselor.services.CounselorService;
-import com.capstone2024.scss.infrastructure.repositories.CounselorRepository;
+import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 

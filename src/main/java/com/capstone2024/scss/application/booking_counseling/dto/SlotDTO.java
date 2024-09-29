@@ -11,6 +11,7 @@ import java.time.LocalTime;
 @Setter
 @Builder
 public class SlotDTO {
+    private Long slotId;
     private String slotCode;
     private LocalTime startTime;
     private LocalTime endTime;

@@ -1,5 +1,7 @@
 package com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request;
 
+import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
+import com.capstone2024.scss.application.account.dto.StudentProfileDTO;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +21,6 @@ public class CounselingAppointmentRequestDTO {
     private String reason;
     private AppointmentDetailsDTO appointmentDetails;
 
-    private CounselorAppointmentDTO counselor;
-    private StudentAppointmentDTO student;
+    private CounselorProfileDTO counselor;
+    private StudentProfileDTO student;
 }

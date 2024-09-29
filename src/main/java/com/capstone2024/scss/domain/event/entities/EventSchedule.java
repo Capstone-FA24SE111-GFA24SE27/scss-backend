@@ -22,6 +22,9 @@ public class EventSchedule extends BaseEntity {
     @JoinColumn(name = "event_id", nullable = false) // Specify nullable constraint if necessary
     private Event event;
 
+    @Column(nullable = false)
+    private String address;
+
     @Column(name = "start_date", nullable = false)
     private LocalDateTime startDate;
 

@@ -41,17 +41,56 @@ async function startRabbitMQ() {
         const channel = await connection.createChannel();
         const queue = 'notification_mobile_queue'; // Adjust based on your RabbitMQ setup
 
+        function formatDate(arr) {
+            let [year, month, day] = arr;
+            
+            // Pad month and day with leading zeros if necessary
+            month = String(month).padStart(2, '0');
+            day = String(day).padStart(2, '0');
+        
+            return `${year}-${month}-${day}`;
+        }
+
         await channel.assertQueue(queue, { durable: false });
 
         console.log('Waiting for messages in %s. To exit press CTRL+C', queue);
 
-        channel.consume(queue, (msg) => {
+        channel.consume("notification_mobile_queue", (msg) => {
             if (msg.content) {
                 const notificationMessage = JSON.parse(msg.content.toString());
                 console.log('Received message from RabbitMQ:', notificationMessage);
 
                 // Send notification to all connected clients
                 io.emit(`/user/${notificationMessage.receiverId}/private/notification`, notificationMessage);
+
+                // Acknowledge the message
+                channel.ack(msg);
+            }
+        });
+
+        channel.consume("real_time_counseling_slot", (msg) => {
+            if (msg.content) {
+                let realTimeSlotMsg = JSON.parse(msg.content.toString());
+                realTimeSlotMsg = {...realTimeSlotMsg, dateChange: formatDate(realTimeSlotMsg.dateChange)}
+                console.log('Received message from RabbitMQ:', realTimeSlotMsg);
+                console.log(`/user/${realTimeSlotMsg.dateChange}/${realTimeSlotMsg.counselorId}/slot`)
+                // Send notification to all connected clients
+                io.emit(`/user/${realTimeSlotMsg.dateChange}/${realTimeSlotMsg.counselorId}/slot`, realTimeSlotMsg);
+
+                // Acknowledge the message
+                channel.ack(msg);
+            }
+        });
+
+        channel.consume("real_time_counseling_appointment", (msg) => {
+            if (msg.content) {
+                let realTimeSlotMsg = JSON.parse(msg.content.toString());
+                console.log('Received message from RabbitMQ:', realTimeSlotMsg);
+                // Send notification to all connected clients
+                console.log(`/user/${realTimeSlotMsg.studentId}/appointment`)
+                console.log(`/user/${realTimeSlotMsg.counselorId}/appointment`)
+                io.emit(`/user/${realTimeSlotMsg.studentId}/appointment`, "Update");
+                io.emit(`/user/${realTimeSlotMsg.counselorId}/appointment`, "Update");
 
                 // Acknowledge the message
                 channel.ack(msg);

@@ -33,7 +33,7 @@ public class NotificationController {
 
     @GetMapping()
     public ResponseEntity<Object> getAll(
-            @RequestParam(name = "SortDirection", defaultValue = "ASC") SortDirection sortDirection,
+            @RequestParam(name = "SortDirection", defaultValue = "DESC") SortDirection sortDirection,
             @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
             @RequestParam(name = "page", defaultValue = "1") Integer page,
             @AuthenticationPrincipal @NotNull Account principal) {

@@ -1,16 +1,27 @@
 package com.capstone2024.scss.domain.counseling_booking.services.impl;
 
+import com.capstone2024.scss.application.account.dto.enums.SortDirection;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
 import com.capstone2024.scss.application.advice.exeptions.ForbiddenException;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppointmentDTO;
+import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselorAppointmentDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.StudentAppointmentDTO;
+import com.capstone2024.scss.application.booking_counseling.dto.enums.SlotStatus;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.AppointmentFeedbackDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OfflineAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OnlineAppointmentRequestDTO;
+import com.capstone2024.scss.application.common.dto.PaginationDTO;
+import com.capstone2024.scss.application.counseling_appointment.dto.AppointmentFilterDTO;
+import com.capstone2024.scss.application.notification.dtos.NotificationDTO;
 import com.capstone2024.scss.domain.common.mapper.account.ProfileMapper;
 import com.capstone2024.scss.domain.common.mapper.appointment_counseling.AppointmentFeedbackMapper;
+import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselingAppointmentMapper;
+import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselorProfileMapper;
+import com.capstone2024.scss.domain.common.mapper.appointment_counseling.StudentProfileMapper;
+import com.capstone2024.scss.domain.common.utils.DateTimeUtil;
+import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.AppointmentFeedback;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.CounselingAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OfflineAppointment;
@@ -20,15 +31,25 @@ import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appoi
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.notification.services.NotificationService;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
+import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
+import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeAppointmentDTO;
+import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeCounselingSlotDTO;
 import com.capstone2024.scss.infrastructure.repositories.AppointmentFeedbackRepository;
 import com.capstone2024.scss.infrastructure.repositories.CounselingAppointmentRepository;
 import com.capstone2024.scss.infrastructure.repositories.CounselingAppointmentRequestRepository;
-import com.capstone2024.scss.infrastructure.repositories.CounselorRepository;
+import com.capstone2024.scss.infrastructure.repositories.CounselingSlotRepository;
+import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +58,9 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,6 +71,9 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
     private final CounselingAppointmentRepository appointmentRepository;
     private final AppointmentFeedbackRepository appointmentFeedbackRepository;
     private final CounselorRepository counselorRepository;
+    private final NotificationService notificationService;
+    private final CounselingSlotRepository counselingSlotRepository;
+    private final RabbitTemplate rabbitTemplate;
 
     @Transactional
     public void approveOnlineAppointment(Long requestId, Long counselorId, OnlineAppointmentRequestDTO dto) {
@@ -105,6 +131,49 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
 
         requestRepository.save(request);
         logger.info("Appointment request with id {} has been updated and saved", requestId);
+
+        Optional<CounselingSlot> slot = counselingSlotRepository.findByStartTimeAndEndTime(appointment.getStartDateTime().toLocalTime(), appointment.getEndDateTime().toLocalTime());
+
+        slot.ifPresent(counselingSlot -> rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_COUNSELING_SLOT, RealTimeCounselingSlotDTO.builder()
+                .counselorId(appointment.getAppointmentRequest().getCounselor().getId())
+                .slotId(counselingSlot.getId())
+                .dateChange(appointment.getStartDateTime().toLocalDate())
+                .newStatus(SlotStatus.UNAVAILABLE)
+                .studentId(appointment.getAppointmentRequest().getStudent().getId())
+                .build()));
+
+        sendOnlineAppointmentApprovalNotification(request, appointment);
+    }
+
+    private void sendOnlineAppointmentApprovalNotification(CounselingAppointmentRequest request, OnlineAppointment appointment) {
+        Counselor counselor = request.getCounselor();
+        Student student = request.getStudent();
+
+        // Format date and time using DateTimeUtil
+        String formattedStart = DateTimeUtil.formatDateTime(appointment.getStartDateTime());
+        String formattedEnd = DateTimeUtil.formatDateTime(appointment.getEndDateTime());
+
+        // Notify counselor
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(counselor.getId())
+                .message(String.format("Your counseling appointment request for student -%s- (%s) has been approved.\nAppointment Time: %s to %s\nMeet URL: %s",
+                        student.getFullName(), student.getStudentCode(), formattedStart, formattedEnd, appointment.getMeetUrl()))
+                .title("Online Appointment Approved")
+                .sender("Counseling System")
+                .readStatus(false)
+                .build());
+
+        // Notify student
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(student.getId())
+                .message(String.format("Your counseling appointment with counselor -%s- has been approved.\nAppointment Time: %s to %s\nMeet URL: %s",
+                        counselor.getFullName(), formattedStart, formattedEnd, appointment.getMeetUrl()))
+                .title("Online Appointment Approved")
+                .sender("Counselor: " + counselor.getFullName())
+                .readStatus(false)
+                .build());
+
+        logger.info("Notifications sent to counselorId: {} and studentId: {} for appointmentId: {}", counselor.getId(), student.getId(), appointment.getId());
     }
 
     @Transactional
@@ -148,10 +217,53 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
 
         request.setStatus(CounselingAppointmentRequestStatus.APPROVED);
 
-        appointmentRepository.save(appointment);
+        OfflineAppointment appointmentPersist = appointmentRepository.save(appointment);
         requestRepository.save(request);
 
+        Optional<CounselingSlot> slot = counselingSlotRepository.findByStartTimeAndEndTime(appointment.getStartDateTime().toLocalTime(), appointment.getEndDateTime().toLocalTime());
+
+        slot.ifPresent(counselingSlot -> rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_COUNSELING_SLOT, RealTimeCounselingSlotDTO.builder()
+                .counselorId(appointment.getAppointmentRequest().getCounselor().getId())
+                .slotId(counselingSlot.getId())
+                .dateChange(appointment.getStartDateTime().toLocalDate())
+                .newStatus(SlotStatus.UNAVAILABLE)
+                .studentId(appointment.getAppointmentRequest().getStudent().getId())
+                .build()));
+
         logger.info("Successfully approved offline appointment for requestId: {}", requestId);
+
+        sendOfflineAppointmentApprovalNotification(request, appointmentPersist);
+    }
+
+    private void sendOfflineAppointmentApprovalNotification(CounselingAppointmentRequest request, OfflineAppointment appointment) {
+        Counselor counselor = request.getCounselor();
+        Student student = request.getStudent();
+
+        // Format date and time using DateTimeUtil
+        String formattedStart = DateTimeUtil.formatDateTime(appointment.getStartDateTime());
+        String formattedEnd = DateTimeUtil.formatDateTime(appointment.getEndDateTime());
+
+        // Notify counselor
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(counselor.getId())
+                .message(String.format("Your counseling appointment request for student -%s- (%s) has been approved.\nAppointment Time: %s to %s\nLocation: %s",
+                        student.getFullName(), student.getStudentCode(), formattedStart, formattedEnd, appointment.getAddress()))
+                .title("Offline Appointment Approved")
+                .sender("Counseling System")
+                .readStatus(false)
+                .build());
+
+        // Notify student
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(student.getId())
+                .message(String.format("Your counseling appointment with counselor -%s- has been approved.\nAppointment Time: %s to %s\nLocation: %s",
+                        counselor.getFullName(), formattedStart, formattedEnd, appointment.getAddress()))
+                .title("Offline Appointment Approved")
+                .sender("Counselor: " + counselor.getFullName())
+                .readStatus(false)
+                .build());
+
+        logger.info("Notifications sent to counselorId: {} and studentId: {} for appointmentId: {}", counselor.getId(), student.getId(), appointment.getId());
     }
 
     @Transactional
@@ -178,6 +290,52 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
         requestRepository.save(request);
 
         logger.info("Successfully denied appointment request for requestId: {}", requestId);
+
+        Optional<CounselingSlot> slot = counselingSlotRepository.findByStartTimeAndEndTime(request.getStartTime(), request.getEndTime());
+
+        slot.ifPresent((counselingSlot) -> rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_COUNSELING_SLOT, RealTimeCounselingSlotDTO.builder()
+                .counselorId(request.getCounselor().getId())
+                .slotId(counselingSlot.getId())
+                .dateChange(request.getRequireDate())
+                .newStatus(SlotStatus.AVAILABLE)
+                .build()));
+
+        sendAppointmentDenialNotification(request);
+    }
+
+    private void sendAppointmentDenialNotification(CounselingAppointmentRequest request) {
+        Counselor counselor = request.getCounselor();
+        Student student = request.getStudent();
+        LocalDate appointmentDate = request.getRequireDate();
+        LocalTime startTime = request.getStartTime();
+        LocalTime endTime = request.getEndTime();
+
+        // Format the date and time for the notification message
+        String formattedDate = appointmentDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+        String formattedStartTime = startTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+        String formattedEndTime = endTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+
+        // Notify counselor
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(counselor.getId())
+                .message(String.format("You have successfully denied the counseling appointment request for student -%s- (%s) on %s from %s to %s.",
+                        student.getFullName(), student.getStudentCode(), formattedDate, formattedStartTime, formattedEndTime))
+                .title("Appointment Request Denied")
+                .sender("Counseling System")
+                .readStatus(false)
+                .build());
+
+        // Notify student
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(student.getId())
+                .message(String.format("Your counseling appointment request with counselor -%s- has been denied. The requested date was %s, from %s to %s.",
+                        counselor.getFullName(), formattedDate, formattedStartTime, formattedEndTime))
+                .title("Appointment Request Denied")
+                .sender("Counselor: " + counselor.getFullName())
+                .readStatus(false)
+                .build());
+
+        logger.info("Denial notifications with date and time slot sent to counselorId: {} and studentId: {} for requestId: {}", counselor.getId(), student.getId(), request.getId());
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -237,6 +395,40 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
                 .build();
 
         appointmentFeedbackRepository.save(feedback);
+
+        rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_COUNSELING_APPOINTMENT, RealTimeAppointmentDTO.builder()
+                .studentId(appointment.getAppointmentRequest().getStudent().getId())
+                .counselorId(appointment.getAppointmentRequest().getCounselor().getId())
+                .build());
+
+        // Send notifications
+        sendFeedbackNotification(counselor, appointment, feedbackDTO, studentId);
+    }
+
+    private void sendFeedbackNotification(Counselor counselor, CounselingAppointment appointment, AppointmentFeedbackDTO feedbackDTO, Long studentId) {
+        Student student = appointment.getAppointmentRequest().getStudent();
+        String studentFullName = student.getFullName();
+
+        // Notify counselor
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(counselor.getId())
+                .message(String.format("You have received new feedback from student -%s- for appointment on %s.",
+                        studentFullName, appointment.getStartDateTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"))))
+                .title("New Feedback Received")
+                .sender("Student: " + student.getFullName() + "-" + student.getStudentCode())
+                .readStatus(false)
+                .build());
+
+        // Notify student
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(student.getId())
+                .message("Thank you for your feedback on the appointment. Your input helps us improve our services!")
+                .title("Feedback Submitted")
+                .sender("Counseling System")
+                .readStatus(false)
+                .build());
+
+        logger.info("Feedback notification sent to counselorId: {} and studentId: {} for appointmentId: {}", counselor.getId(), student.getId(), appointment.getId());
     }
 
     @Override
@@ -251,10 +443,104 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
 
         if (counselingAppointmentStatus.equals(CounselingAppointmentStatus.ATTEND) || counselingAppointmentStatus.equals(CounselingAppointmentStatus.ABSENT)) {
             appointment.setStatus(counselingAppointmentStatus);
-            appointmentRepository.save(appointment);
+            CounselingAppointment counselingAppointment = appointmentRepository.save(appointment);
+
+            sendAttendanceNotification(appointment, counselingAppointmentStatus);
+
+            rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_COUNSELING_APPOINTMENT, RealTimeAppointmentDTO.builder()
+                            .studentId(appointment.getAppointmentRequest().getStudent().getId())
+                            .counselorId(appointment.getAppointmentRequest().getCounselor().getId())
+                    .build());
         } else {
             throw new BadRequestException("Invalid parameter, only ATTEND or ABSENT");
         }
+    }
+
+    @Override
+    public PaginationDTO<List<CounselingAppointmentDTO>> getAppointmentsWithFilterForCounselor(AppointmentFilterDTO filterDTO, Counselor counselor) {
+        Pageable pageable = createPageable(filterDTO);
+
+        LocalDateTime fromDateTime = filterDTO.getFromDate() != null ? filterDTO.getFromDate().atStartOfDay() : null;
+        LocalDateTime toDateTime = filterDTO.getToDate() != null ? filterDTO.getToDate().atTime(LocalTime.MAX) : null;
+
+        Page<CounselingAppointment> appointmentsPage = appointmentRepository.findAppointmentsForCounselorWithFilter(
+                filterDTO.getStudentCode(),
+                fromDateTime,
+                toDateTime,
+                filterDTO.getStatus(),
+                counselor,
+                pageable);
+
+        List<CounselingAppointmentDTO> appointmentDTOs = appointmentsPage.getContent()
+                .stream()
+                .map(CounselingAppointmentMapper::toCounselingAppointmentDTO)
+                .collect(Collectors.toList());
+
+        return PaginationDTO.<List<CounselingAppointmentDTO>>builder()
+                .data(appointmentDTOs)
+                .totalPages(appointmentsPage.getTotalPages())
+                .totalElements((int) appointmentsPage.getTotalElements())
+                .build();
+    }
+
+    @Override
+    public PaginationDTO<List<CounselingAppointmentDTO>> getAppointmentsWithFilterForStudent(AppointmentFilterDTO filterDTO, Student student) {
+        Pageable pageable = createPageable(filterDTO);
+
+        LocalDateTime fromDateTime = filterDTO.getFromDate() != null ? filterDTO.getFromDate().atStartOfDay() : null;
+        LocalDateTime toDateTime = filterDTO.getToDate() != null ? filterDTO.getToDate().atTime(LocalTime.MAX) : null;
+
+        Page<CounselingAppointment> appointmentsPage = appointmentRepository.findAppointmentsForStudentWithFilter(
+                fromDateTime,
+                toDateTime,
+                filterDTO.getStatus(),
+                student,
+                pageable);
+
+        List<CounselingAppointmentDTO> appointmentDTOs = appointmentsPage.getContent()
+                .stream()
+                .map(CounselingAppointmentMapper::toCounselingAppointmentDTO)
+                .collect(Collectors.toList());
+
+        return PaginationDTO.<List<CounselingAppointmentDTO>>builder()
+                .data(appointmentDTOs)
+                .totalPages(appointmentsPage.getTotalPages())
+                .totalElements((int) appointmentsPage.getTotalElements())
+                .build();
+    }
+
+    private Pageable createPageable(AppointmentFilterDTO filterDTO) {
+        Sort sort = Sort.by(filterDTO.getSortBy());
+        sort = filterDTO.getSortDirection() == SortDirection.ASC ? sort.ascending() : sort.descending();
+        return PageRequest.of(filterDTO.getPage() - 1, 10, sort);
+    }
+
+    private void sendAttendanceNotification(CounselingAppointment appointment, CounselingAppointmentStatus status) {
+        Counselor counselor = appointment.getAppointmentRequest().getCounselor();
+        Student student = appointment.getAppointmentRequest().getStudent();
+
+        String appointmentDateTime = appointment.getStartDateTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
+
+        // Notify counselor
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(counselor.getId())
+                .message(String.format("You have marked the appointment on %s as %s.", appointmentDateTime, status))
+                .title("Appointment Attendance Updated")
+                .sender("Counseling System")
+                .readStatus(false)
+                .build());
+
+        // Notify student
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(student.getId())
+                .message(String.format("Your appointment scheduled on %s has been marked as %s.", appointmentDateTime, status))
+                .title("Appointment Attendance Notification")
+                .sender("Counselor: " + counselor.getFullName())
+                .readStatus(false)
+                .build());
+
+        logger.info("Attendance notification sent: CounselorId: {}, StudentId: {}, AppointmentId: {}, Status: {}",
+                counselor.getId(), student.getId(), appointment.getId(), status);
     }
 
     private BigDecimal calculateNewRating(Counselor counselor, BigDecimal newRating) {
@@ -302,14 +588,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
 
         // Thêm thông tin counselor vào DTO
         Student student = appointment.getAppointmentRequest().getStudent();
-        dtoBuilder.studentInfo(StudentAppointmentDTO.builder()
-                .fullName(student.getFullName())
-                .phoneNumber(student.getPhoneNumber())
-                .dateOfBirth(student.getDateOfBirth())
-                .avatarLink(student.getAvatarLink())
-                .studentCode(student.getStudentCode())
-                .profile(ProfileMapper.toProfileDTO(student))
-                .build());
+        dtoBuilder.studentInfo(StudentProfileMapper.toStudentProfileDTO(student));
 
         return dtoBuilder.build();
     }
@@ -336,14 +615,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
 
         // Thêm thông tin student vào DTO
         Counselor counselor = appointment.getAppointmentRequest().getCounselor();
-        dtoBuilder.counselorInfo(CounselorAppointmentDTO.builder()
-                .fullName(counselor.getFullName())
-                .phoneNumber(counselor.getPhoneNumber())
-                .dateOfBirth(counselor.getDateOfBirth())
-                .avatarLink(counselor.getAvatarLink())
-                .rating(counselor.getRating())
-                .profile(ProfileMapper.toProfileDTO(counselor))
-                .build());
+        dtoBuilder.counselorInfo(CounselorProfileMapper.toCounselorProfileDTO(counselor));
 
         return dtoBuilder.build();
     }

@@ -20,6 +20,8 @@ public class RabbitMQConfig {
     public static final String EMAIL_QUEUE = "emailQueue";
     public static final String NOTIFICATION_QUEUE = "notificationQueue";
     public static final String NOTIFICATION_MOBILE_QUEUE = "notification_mobile_queue";
+    public static final String REAL_TIME_COUNSELING_SLOT = "real_time_counseling_slot";
+    public static final String REAL_TIME_COUNSELING_APPOINTMENT = "real_time_counseling_appointment";
 
     @Bean
     public Queue emailQueue() {
@@ -34,6 +36,16 @@ public class RabbitMQConfig {
     @Bean
     public Queue notificationMobileQueue() {
         return new Queue(NOTIFICATION_MOBILE_QUEUE, false);
+    }
+
+    @Bean
+    public Queue realtimeSlotQueue() {
+        return new Queue(REAL_TIME_COUNSELING_SLOT, false);
+    }
+
+    @Bean
+    public Queue realtimeAppointmentQueue() {
+        return new Queue(REAL_TIME_COUNSELING_APPOINTMENT, false);
     }
 
     @Bean

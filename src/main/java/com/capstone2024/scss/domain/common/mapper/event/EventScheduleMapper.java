@@ -15,6 +15,7 @@ public class EventScheduleMapper {
                 .startDate(eventSchedule.getStartDate())
                 .endDate(eventSchedule.getEndDate())
                 .maxParticipants(eventSchedule.getMaxParticipants())
+                .address(eventSchedule.getAddress())
                 .currentParticipants(eventSchedule.getCurrentParticipants())
                 .build();
     }

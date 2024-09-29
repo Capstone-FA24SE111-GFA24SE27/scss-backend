@@ -66,6 +66,7 @@ public class NotificationServiceImpl implements NotificationService {
                         .title(notification.getTitle())
                         .readStatus(notification.isReadStatus())
                         .sender(notification.getSender())
+                        .createdDate(notification.getCreatedDate())
                         .build()
                 )
                 .collect(Collectors.toList());
@@ -125,6 +126,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .readStatus(notification.isReadStatus())
                 .title(notification.getTitle())
                 .sender(notification.getSender())
+                .createdDate(notification.getCreatedDate())
                 .build();
     }
 

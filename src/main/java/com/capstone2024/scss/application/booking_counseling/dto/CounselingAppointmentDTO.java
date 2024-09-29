@@ -1,5 +1,7 @@
 package com.capstone2024.scss.application.booking_counseling.dto;
 
+import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
+import com.capstone2024.scss.application.account.dto.StudentProfileDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselorAppointmentDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.StudentAppointmentDTO;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
@@ -19,7 +21,7 @@ public class CounselingAppointmentDTO {
     private MeetingType meetingType;
     private String meetUrl;
     private String address;
-    private CounselorAppointmentDTO counselorInfo;
-    private StudentAppointmentDTO studentInfo;
+    private CounselorProfileDTO counselorInfo;
+    private StudentProfileDTO studentInfo;
     private AppointmentFeedbackDTO appointmentFeedback;
 }

@@ -7,6 +7,8 @@ import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.services.ProfileService;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
 import com.capstone2024.scss.domain.common.mapper.account.ProfileMapper;
+import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselorProfileMapper;
+import com.capstone2024.scss.domain.common.mapper.appointment_counseling.StudentProfileMapper;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import com.capstone2024.scss.domain.student.entities.Student;
 import io.swagger.v3.oas.annotations.Operation;
@@ -65,26 +67,12 @@ public class ProfileController {
         switch (principal.getRole()) {
             case STUDENT -> {
                 Student student = (Student) principal.getProfile();
-                StudentProfileDTO studentProfileDTO = StudentProfileDTO.builder()
-                        .fullName(student.getFullName())
-                        .phoneNumber(student.getPhoneNumber())
-                        .dateOfBirth(student.getDateOfBirth())
-                        .studentCode(student.getStudentCode())
-                        .avatarLink(student.getAvatarLink())
-                        .profile(ProfileMapper.toProfileDTO(student))
-                        .build();
+                StudentProfileDTO studentProfileDTO = StudentProfileMapper.toStudentProfileDTO(student);
                 return ResponseUtil.getResponse(studentProfileDTO, HttpStatus.OK);
             }
             case COUNSELOR -> {
                 Counselor counselor = (Counselor) principal.getProfile();
-                CounselorProfileDTO counselorProfileDTO = CounselorProfileDTO.builder()
-                        .fullName(counselor.getFullName())
-                        .phoneNumber(counselor.getPhoneNumber())
-                        .dateOfBirth(counselor.getDateOfBirth())
-                        .rating(counselor.getRating())
-                        .avatarLink(counselor.getAvatarLink())
-                        .profile(ProfileMapper.toProfileDTO(counselor))
-                        .build();
+                CounselorProfileDTO counselorProfileDTO = CounselorProfileMapper.toCounselorProfileDTO(counselor);
                 return ResponseUtil.getResponse(counselorProfileDTO, HttpStatus.OK);
             }
             default -> {

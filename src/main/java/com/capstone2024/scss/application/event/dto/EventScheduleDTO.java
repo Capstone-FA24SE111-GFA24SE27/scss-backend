@@ -20,4 +20,6 @@ public class EventScheduleDTO {
     private LocalDateTime endDate;
     private int maxParticipants;
     private int currentParticipants;
+    private String address;
+    private boolean isRegistered = false;
 }

@@ -1,5 +1,7 @@
 package com.capstone2024.scss.domain.counseling_booking.services.impl;
 
+import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
+import com.capstone2024.scss.application.account.dto.StudentProfileDTO;
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
 import com.capstone2024.scss.application.advice.exeptions.ForbiddenException;
@@ -17,6 +19,9 @@ import com.capstone2024.scss.application.notification.dtos.NotificationDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.common.mapper.account.ProfileMapper;
+import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselorProfileMapper;
+import com.capstone2024.scss.domain.common.mapper.appointment_counseling.StudentProfileMapper;
+import com.capstone2024.scss.domain.common.utils.DateTimeUtil;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.CounselingAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OfflineAppointment;
@@ -25,13 +30,15 @@ import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appoi
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.notification.services.NotificationService;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentRequestService;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
+import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeCounselingSlotDTO;
 import com.capstone2024.scss.infrastructure.repositories.CounselingAppointmentRepository;
 import com.capstone2024.scss.infrastructure.repositories.CounselingAppointmentRequestRepository;
 import com.capstone2024.scss.infrastructure.repositories.CounselingSlotRepository;
-import com.capstone2024.scss.infrastructure.repositories.CounselorRepository;
+import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -59,13 +66,15 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
     private final CounselorRepository counselorRepository;
     private final CounselingAppointmentRepository counselingAppointmentRepository;
     private final RabbitTemplate rabbitTemplate;
+    private final NotificationService notificationService;
 
-    public CounselingAppointmentRequestServiceImpl(CounselingAppointmentRequestRepository requestRepository, CounselingSlotRepository slotRepository, CounselorRepository counselorRepository, CounselingAppointmentRepository counselingAppointmentRepository, RabbitTemplate rabbitTemplate) {
+    public CounselingAppointmentRequestServiceImpl(CounselingAppointmentRequestRepository requestRepository, CounselingSlotRepository slotRepository, CounselorRepository counselorRepository, CounselingAppointmentRepository counselingAppointmentRepository, RabbitTemplate rabbitTemplate, NotificationService notificationService) {
         this.requestRepository = requestRepository;
         this.slotRepository = slotRepository;
         this.counselorRepository = counselorRepository;
         this.counselingAppointmentRepository = counselingAppointmentRepository;
         this.rabbitTemplate = rabbitTemplate;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -115,6 +124,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                             }
 
                             return SlotDTO.builder()
+                                    .slotId(slot.getId())
                                     .slotCode(slot.getSlotCode())
                                     .startTime(slot.getStartTime())
                                     .endTime(slot.getEndTime())
@@ -164,18 +174,20 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                 .student(student)
                 .build();
 
-        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_QUEUE, NotificationDTO.builder()
-                .receiverId(counselorId)
-                .message("Student named -" + student.getFullName() + "-" + student.getStudentCode() + "- has sent you a counseling appointment request")
-                .title("Counseling appointment request from student")
-                .sender("SYSTEM")
+        rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_COUNSELING_SLOT, RealTimeCounselingSlotDTO.builder()
+                        .counselorId(counselor.getId())
+                        .slotId(slot.getId())
+                        .dateChange(date)
+                        .studentId(appointmentRequest.getStudent().getId())
+                        .newStatus(SlotStatus.UNAVAILABLE)
                 .build());
 
-        rabbitTemplate.convertAndSend(RabbitMQConfig.NOTIFICATION_MOBILE_QUEUE, NotificationDTO.builder()
+        notificationService.sendNotification(NotificationDTO.builder()
                 .receiverId(counselorId)
                 .message("Student named -" + student.getFullName() + "-" + student.getStudentCode() + "- has sent you a counseling appointment request")
                 .title("Counseling appointment request from student")
-                .sender("SYSTEM")
+                .sender("Student: " + student.getFullName() + "-" + student.getStudentCode())
+                .readStatus(false)
                 .build());
 
         // Save the appointment request
@@ -259,22 +271,14 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
             }
         }
 
-        CounselorAppointmentDTO counselorDTO = request.getCounselor() != null
-                ? CounselorAppointmentDTO.builder()
-                .fullName(request.getCounselor().getFullName())
-                .avatarLink(request.getCounselor().getAvatarLink())
-                .rating(BigDecimal.valueOf(request.getCounselingAppointments().size()))
-                .profile(ProfileMapper.toProfileDTO(request.getCounselor()))
-                .build()
+        CounselorProfileDTO counselorDTO = request.getCounselor() != null
+                ?
+                CounselorProfileMapper.toCounselorProfileDTO(request.getCounselor())
                 : null;
 
-        StudentAppointmentDTO studentDTO = request.getStudent() != null
-                ? StudentAppointmentDTO.builder()
-                .fullName(request.getStudent().getFullName())
-                .avatarLink(request.getStudent().getAvatarLink())
-                .studentCode(request.getStudent().getStudentCode())
-                .profile(ProfileMapper.toProfileDTO(request.getStudent()))
-                .build()
+        StudentProfileDTO studentDTO = request.getStudent() != null
+                ?
+                StudentProfileMapper.toStudentProfileDTO(request.getStudent())
                 : null;
 
         return CounselingAppointmentRequestDTO.builder()
@@ -317,5 +321,21 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
 
         // Lưu thông tin đã cập nhật
         counselingAppointmentRepository.save(appointment);
+
+        Student student = appointment.getAppointmentRequest().getStudent();
+        Counselor counselor = appointment.getAppointmentRequest().getCounselor();
+
+        // Use the utility method to format start and end times
+        String formattedStart = DateTimeUtil.formatDateTime(appointment.getStartDateTime());
+        String formattedEnd = DateTimeUtil.formatDateTime(appointment.getEndDateTime());
+
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(student.getId())
+                .message(String.format("Counseling appointment for student -%s- (%s) has been updated.\nAppointment Time: %s to %s",
+                        student.getFullName(), student.getStudentCode(), formattedStart, formattedEnd))
+                .title("Appointment Updated")
+                .sender("Counselor: " + counselor.getFullName())  // or use the counselor's name if more appropriate
+                .readStatus(false)
+                .build());
     }
 }

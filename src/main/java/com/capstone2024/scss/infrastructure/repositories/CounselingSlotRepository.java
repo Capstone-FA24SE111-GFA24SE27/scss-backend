@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,4 +15,5 @@ public interface CounselingSlotRepository extends JpaRepository<CounselingSlot, 
     List<CounselingSlot> findAllSlots();
 
     Optional<CounselingSlot> findBySlotCode(String slotCode);
+    Optional<CounselingSlot> findByStartTimeAndEndTime(LocalTime startTime, LocalTime endTime);
 }

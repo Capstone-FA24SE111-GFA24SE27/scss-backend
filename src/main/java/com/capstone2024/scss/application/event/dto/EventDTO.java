@@ -19,7 +19,6 @@ import java.util.List;
 public class EventDTO {
     private Long id;
     private String title;
-    private String address;
     private String content;
     private int view;
     private Boolean isNeedAccept;

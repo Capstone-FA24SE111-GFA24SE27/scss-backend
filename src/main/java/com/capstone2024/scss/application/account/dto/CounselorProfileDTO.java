@@ -10,10 +10,8 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CounselorProfileDTO {
-    private String fullName;
-    private String phoneNumber;
-    private Long dateOfBirth;
-    private String avatarLink;
+    private Long id;
+
     private ProfileDTO profile;
 
     private BigDecimal rating;

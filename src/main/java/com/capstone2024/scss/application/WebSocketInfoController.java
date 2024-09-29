@@ -23,7 +23,9 @@ public class WebSocketInfoController {
         return Map.of(
                 "url", websocketUrl,
                 "description", "WebSocket connection endpoint for real-time communication.",
-                "/user/{account_id}/private/notification", "topic for notification"
+                "/user/{account_id}/private/notification", "topic for notification",
+                "`/user/{dateChange}/{counselorId}/slot`", "topic for slot realtime",
+                "/user/${profileId}/appointment", "topic for appointment schedule realtime"
         );
     }
 }
