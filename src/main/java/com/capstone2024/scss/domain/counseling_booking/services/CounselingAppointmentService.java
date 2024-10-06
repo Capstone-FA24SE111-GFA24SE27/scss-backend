@@ -5,7 +5,9 @@ import com.capstone2024.scss.application.booking_counseling.dto.request.counceli
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OfflineAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OnlineAppointmentRequestDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
-import com.capstone2024.scss.application.counseling_appointment.dto.AppointmentFilterDTO;
+import com.capstone2024.scss.application.counseling_appointment.dto.AppointmentReportResponse;
+import com.capstone2024.scss.application.counseling_appointment.dto.request.appoinment_report.AppointmentReportRequest;
+import com.capstone2024.scss.application.counseling_appointment.dto.request.counseling_appointment.AppointmentFilterDTO;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import com.capstone2024.scss.domain.student.entities.Student;
@@ -31,4 +33,8 @@ public interface CounselingAppointmentService {
     PaginationDTO<List<CounselingAppointmentDTO>> getAppointmentsWithFilterForCounselor(AppointmentFilterDTO filterDTO, Counselor counselor);
 
     PaginationDTO<List<CounselingAppointmentDTO>> getAppointmentsWithFilterForStudent(AppointmentFilterDTO filterDTO, Student student);
+
+    AppointmentReportResponse createAppointmentReport(AppointmentReportRequest request, Long appointmentId, Counselor counselor);
+
+    AppointmentReportResponse getAppointmentReportByAppointmentId(Long appointmentId, Counselor profile);
 }

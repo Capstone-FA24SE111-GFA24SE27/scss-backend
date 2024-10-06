@@ -25,4 +25,6 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
                     "AND a.status LIKE %:status%",
             nativeQuery = true)
     Page<Account> findAccountsBySearchAndStatus(@Param("search") String search, @Param("status") String status, Pageable pageable);
+
+    Optional<Account> findByEmail(String email);
 }

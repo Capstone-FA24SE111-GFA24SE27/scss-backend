@@ -1,4 +1,4 @@
-package com.capstone2024.scss.application.counseling_appointment.dto;
+package com.capstone2024.scss.application.counseling_appointment.dto.request.counseling_appointment;
 
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;

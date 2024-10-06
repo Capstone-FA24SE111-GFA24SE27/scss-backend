@@ -1,6 +1,7 @@
 package com.capstone2024.scss.application.account.controller;
 
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
+import com.capstone2024.scss.application.account.dto.request.AccountCreationRequest;
 import com.capstone2024.scss.application.account.dto.request.FilterRequestDTO;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
 import com.capstone2024.scss.application.authentication.dto.AccountDTO;
@@ -15,6 +16,7 @@ import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfi
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -24,6 +26,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -75,7 +78,7 @@ public class AccountController {
     public ResponseEntity<Object> getAccountsWithFilter(
             @RequestParam(name = "search", required = false) String search,
             @RequestParam(name = "status", required = false) Status status,
-            @RequestParam(name = "SortDirection", defaultValue = "ASC") SortDirection sortDirection,
+            @RequestParam(name = "SortDirection", defaultValue = "DESC") SortDirection sortDirection,
             @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
             @RequestParam(name = "page", defaultValue = "1") Integer page) {
 
@@ -173,5 +176,15 @@ public class AccountController {
     public ResponseEntity<Object> unblockAccount(@PathVariable Long accountId, @AuthenticationPrincipal @NotNull Account principal) {
         logger.info("Unblocking account - AccountId: {}, Principal: {}", accountId, principal.getUsername());
         return ResponseUtil.getResponse(accountService.unblockAccount(accountId, principal), HttpStatus.OK);
+    }
+
+    @PostMapping("/create")
+    public ResponseEntity<?> createAccount(@Valid @RequestBody AccountCreationRequest request, BindingResult errors) {
+        if (errors.hasErrors()) {
+            logger.warn("Login request failed due to validation errors: {}", errors.getAllErrors());
+            throw new BadRequestException("Invalid login request", errors, HttpStatus.BAD_REQUEST);
+        }
+        Account account = accountService.createAccount(request);
+        return new ResponseEntity<>(account, HttpStatus.CREATED);
     }
 }

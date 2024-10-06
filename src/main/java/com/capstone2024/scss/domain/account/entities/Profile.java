@@ -1,6 +1,7 @@
 package com.capstone2024.scss.domain.account.entities;
 
 import com.capstone2024.scss.domain.common.entity.BaseEntity;
+import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,6 +25,9 @@ public class Profile extends BaseEntity {
 
     @Column(name = "full_name", nullable = false)
     private String fullName;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
 
     @Column(name = "avatar_link", nullable = true)
     private String avatarLink;

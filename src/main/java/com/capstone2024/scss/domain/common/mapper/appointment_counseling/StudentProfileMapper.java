@@ -12,8 +12,9 @@ public class StudentProfileMapper {
 
         return StudentProfileDTO.builder()
                 .id(student.getId())
-                .profile(ProfileMapper.toProfileDTO(student)) // Sử dụng ProfileMapper để map ProfileDTO
-                .studentCode(student.getStudentCode())        // Map studentCode từ Student entity
+                .profile(ProfileMapper.toProfileDTO(student))
+                .studentCode(student.getStudentCode())
+                .email(student.getAccount().getEmail())
                 .build();
     }
 }

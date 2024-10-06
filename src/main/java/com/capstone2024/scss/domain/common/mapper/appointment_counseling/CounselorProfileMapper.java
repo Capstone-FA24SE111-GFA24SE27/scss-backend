@@ -12,8 +12,10 @@ public class CounselorProfileMapper {
 
         return CounselorProfileDTO.builder()
                 .id(counselor.getId())
-                .profile(ProfileMapper.toProfileDTO(counselor)) // Sử dụng ProfileMapper để map ProfileDTO
-                .rating(counselor.getRating()) // Map rating từ Counselor entity
+                .profile(ProfileMapper.toProfileDTO(counselor))
+                .rating(counselor.getRating())
+                .email(counselor.getAccount().getEmail())
+                .expertise(ExpertiseMapper.toExpertiseDTO(counselor.getExpertise()))
                 .build();
     }
 }

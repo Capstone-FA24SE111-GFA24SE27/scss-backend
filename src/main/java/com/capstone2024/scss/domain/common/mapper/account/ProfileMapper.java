@@ -16,6 +16,7 @@ public class ProfileMapper {
                 .phoneNumber(profile.getPhoneNumber())
                 .dateOfBirth(profile.getDateOfBirth())
                 .avatarLink(profile.getAvatarLink())
+                .gender(profile.getGender())
                 .build();
     }
 }

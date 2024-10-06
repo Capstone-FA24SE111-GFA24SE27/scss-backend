@@ -32,6 +32,10 @@ public class AppointmentReport extends BaseEntity {
     @JoinColumn(name = "consultation_conclusion_id", referencedColumnName = "id")
     private ConsultationConclusion consultationConclusion;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "intervention_id", nullable = false)
+    private Intervention intervention;
+
     @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;

@@ -47,4 +47,7 @@ public interface CounselingAppointmentRequestRepository extends JpaRepository<Co
             @Param("meetingType") MeetingType meetingType,
             Pageable pageable
     );
+
+    @Query("SELECT r FROM CounselingAppointmentRequest r WHERE  r.requireDate = :date")
+    List<CounselingAppointmentRequest> findByRequireDate(@Param("date") LocalDate date);
 }

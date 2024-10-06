@@ -1,6 +1,7 @@
 package com.capstone2024.scss.domain.common.mapper.appointment_counseling;
 
 import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppointmentDTO;
+import com.capstone2024.scss.application.counseling_appointment.dto.CounselingAppointmentForReportResponse;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.AppointmentFeedback;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.CounselingAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OfflineAppointment;
@@ -15,7 +16,8 @@ public class CounselingAppointmentMapper {
                 .startDateTime(appointment.getStartDateTime())
                 .endDateTime(appointment.getEndDateTime())
                 .status(appointment.getStatus())
-                .meetingType(appointment.getAppointmentRequest().getMeetingType());
+                .meetingType(appointment.getAppointmentRequest().getMeetingType())
+                .isHavingReport(appointment.getReport() != null ? true : false);
 
         // Xử lý theo kiểu họp mặt
         if (appointment instanceof OnlineAppointment) {
@@ -35,6 +37,24 @@ public class CounselingAppointmentMapper {
         Student student = appointment.getAppointmentRequest().getStudent();
         dtoBuilder.counselorInfo(CounselorProfileMapper.toCounselorProfileDTO(counselor));
         dtoBuilder.studentInfo(StudentProfileMapper.toStudentProfileDTO(student));
+
+        return dtoBuilder.build();
+    }
+
+    public static CounselingAppointmentForReportResponse toCounselingAppointmentForReportDTO(CounselingAppointment appointment) {
+        CounselingAppointmentForReportResponse.CounselingAppointmentForReportResponseBuilder dtoBuilder = CounselingAppointmentForReportResponse.builder()
+                .id(appointment.getId())
+                .startDateTime(appointment.getStartDateTime())
+                .endDateTime(appointment.getEndDateTime())
+                .status(appointment.getStatus())
+                .meetingType(appointment.getAppointmentRequest().getMeetingType());
+
+        // Xử lý theo kiểu họp mặt
+        if (appointment instanceof OnlineAppointment) {
+            dtoBuilder.meetUrl(((OnlineAppointment) appointment).getMeetUrl());
+        } else if (appointment instanceof OfflineAppointment) {
+            dtoBuilder.address(((OfflineAppointment) appointment).getAddress());
+        }
 
         return dtoBuilder.build();
     }

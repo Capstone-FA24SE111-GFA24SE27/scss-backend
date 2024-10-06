@@ -1,13 +1,21 @@
 package com.capstone2024.scss.application.counselor.controller;
 
+import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
+import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
+import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;
+import com.capstone2024.scss.application.booking_counseling.dto.request.AppointmentRequestFilterDTO;
+import com.capstone2024.scss.application.counselor.dto.CounselingSlotDTO;
 import com.capstone2024.scss.application.counselor.dto.CounselorDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.SlotDTO;
 import com.capstone2024.scss.application.counselor.dto.request.CounselorFilterRequestDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
 import com.capstone2024.scss.domain.account.entities.Account;
+import com.capstone2024.scss.domain.common.mapper.appointment_counseling.ExpertiseDTO;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentRequestService;
+import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import com.capstone2024.scss.domain.counselor.services.CounselorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,6 +26,8 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -71,7 +81,7 @@ public class CounselorController {
             @RequestParam(name = "ratingFrom", required = false) BigDecimal ratingFrom,
             @RequestParam(name = "ratingTo", required = false) BigDecimal ratingTo,
             @RequestParam(name = "SortDirection", defaultValue = "ASC") SortDirection sortDirection,
-            @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
+            @RequestParam(name = "sortBy", defaultValue = "profile_id") String sortBy,
             @RequestParam(name = "page", defaultValue = "1") Integer page
     ) {
         logger.debug("Entering getCounselorsWithFilter method with parameters - Search: {}, SortDirection: {}, SortBy: {}, Page: {}", search, sortDirection, sortBy, page);
@@ -81,16 +91,19 @@ public class CounselorController {
             throw new IllegalArgumentException("Page must be positive (page > 0)");
         }
 
+        Sort sort = Sort.by(sortBy);
+        sort = sortDirection == SortDirection.ASC ? sort.ascending() : sort.descending();
+
         CounselorFilterRequestDTO filterRequest = CounselorFilterRequestDTO.builder()
                 .search(search != null && !search.trim().isEmpty() ? search.trim() : null)
                 .ratingFrom(ratingFrom)
                 .ratingTo(ratingTo)
                 .soreDirection(sortDirection)
                 .sortBy(sortBy)
-                .pagination(PageRequest.of(page - 1, 10))
+                .pagination(PageRequest.of(page - 1, 10, sort))
                 .build();
 
-        PaginationDTO<List<CounselorDTO>> responseDTO = counselorService.getCounselorsWithFilter(filterRequest);
+        PaginationDTO<List<CounselorProfileDTO>> responseDTO = counselorService.getCounselorsWithFilter(filterRequest);
 
         logger.debug("Successfully fetched counselors with filter - Total elements: {}", responseDTO.getTotalElements());
 
@@ -108,7 +121,7 @@ public class CounselorController {
     )
     public ResponseEntity<Object> getOneCounselor(@PathVariable("counselorId") Long counselorId) {
 
-        CounselorDTO responseDTO = counselorService.getOneCounselor(counselorId);
+        CounselorProfileDTO responseDTO = counselorService.getOneCounselor(counselorId);
 
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }
@@ -125,4 +138,31 @@ public class CounselorController {
         logger.info("Returning daily slots for counselorId: {}, from: {}, to: {}", counselorId, from, to);
         return ResponseUtil.getResponse(slots, HttpStatus.OK);
     }
+
+    @GetMapping("/expertise")
+    public ResponseEntity<Object> getAllExpertises() {
+        List<ExpertiseDTO> expertiseList = counselorService.getAllExpertises();
+        return ResponseUtil.getResponse(expertiseList, HttpStatus.OK);
+    }
+
+    @GetMapping("/random/match")
+    public ResponseEntity<Object> findBestCounselor(
+            @RequestParam(name = "slotId", required = true) Long slotId,
+            @RequestParam(name = "date", required = true) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(name = "gender", required = false) Gender gender,
+            @RequestParam(name = "expertiseId", required = false) Long expertiseId) {
+
+        CounselorProfileDTO counselor = counselorService.findBestAvailableCounselor(slotId, date, gender, expertiseId);
+        return ResponseUtil.getResponse(counselor, HttpStatus.OK);
+    }
+
+    @GetMapping("/counseling-slot")
+    public ResponseEntity<Object> getAllCounselingSlots(
+            @RequestParam(name = "date", required = true) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @NotNull @AuthenticationPrincipal Account principle
+    ) {
+        List<SlotDTO> slots = counselorService.getAllCounselingSlots(date, principle.getProfile().getId());
+        return ResponseUtil.getResponse(slots, HttpStatus.OK);
+    }
+
 }

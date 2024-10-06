@@ -113,6 +113,10 @@ public class SecurityConfig {
                                 .hasAnyRole(Role.COUNSELOR.name()))
 
                 .authorizeHttpRequests(config ->
+                        config.requestMatchers("/api/manager/counselors/**")
+                                .hasAnyRole(Role.MANAGER.name()))
+
+                .authorizeHttpRequests(config ->
                         config.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/api-docs/**")
                                 .permitAll())
 

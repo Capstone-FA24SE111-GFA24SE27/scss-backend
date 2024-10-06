@@ -40,7 +40,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
     private static final String ACCESS_TOKEN_TYPE = "Bearer";
-    private static final String COOKIE_REFRESH_TOKEN_KEY = "refreshToken";
+    public static final String COOKIE_REFRESH_TOKEN_KEY = "refreshToken";
 
     @Value("${jwt.refresh_token.lifetime}")
     private Long refreshTokenLifetime;

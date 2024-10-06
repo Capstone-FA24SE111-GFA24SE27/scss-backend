@@ -5,11 +5,13 @@ import com.capstone2024.scss.application.authentication.dto.JwtTokenDTO;
 import com.capstone2024.scss.application.authentication.dto.request.LoginRequestDTO;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
 import com.capstone2024.scss.domain.account.services.AuthenticationService;
+import com.capstone2024.scss.domain.account.services.impl.AuthenticationServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -152,5 +154,19 @@ public class AuthenticationController {
         JwtTokenDTO responseDTO = authenticationService.refreshAccessToken(response, request);
         logger.info("Access token successfully refreshed.");
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletResponse response) {
+        // Xóa refresh token bằng cách đặt thời gian sống của cookie thành 0
+        Cookie refreshTokenCookie = new Cookie(AuthenticationServiceImpl.COOKIE_REFRESH_TOKEN_KEY, null);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(0); // Cookie hết hạn ngay lập tức
+
+        // Thêm cookie đã hết hạn vào response
+        response.addCookie(refreshTokenCookie);
+
+        return ResponseEntity.ok().build();
     }
 }

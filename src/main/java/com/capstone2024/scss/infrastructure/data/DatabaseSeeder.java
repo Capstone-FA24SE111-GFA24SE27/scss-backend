@@ -7,6 +7,7 @@ import com.capstone2024.scss.domain.account.entities.Profile;
 import com.capstone2024.scss.domain.account.enums.LoginMethod;
 import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.account.enums.Status;
+import com.capstone2024.scss.domain.common.utils.RandomUtil;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OfflineAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OnlineAppointment;
@@ -14,7 +15,11 @@ import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appoi
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
+import com.capstone2024.scss.domain.counselor.entities.AvailableDateRange;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.counselor.entities.Expertise;
+import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
+import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import com.capstone2024.scss.domain.event.entities.*;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.notification.entities.Notification;
@@ -22,8 +27,11 @@ import com.capstone2024.scss.infrastructure.repositories.*;
 import com.capstone2024.scss.infrastructure.repositories.account.AccountRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.LoginTypeRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.ProfileRepository;
+import com.capstone2024.scss.infrastructure.repositories.counselor.AvailableDateRangeRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
+import com.capstone2024.scss.infrastructure.repositories.counselor.ExpertiseRepository;
 import com.capstone2024.scss.infrastructure.repositories.event.*;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -39,6 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class DatabaseSeeder implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseSeeder.class);
@@ -59,37 +68,22 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final TrainingPointRepository trainingPointRepository;
     private final RecapVideoRepository recapVideoRepository;
     private final ContentImageRepository contentImageRepository;
+    private final ExpertiseRepository expertiseRepository;
     private final PasswordEncoder passwordEncoder;
-
-    public DatabaseSeeder(AccountRepository accountRepository, LoginTypeRepository loginTypeRepository, NotificationRepository notificationRepository, CounselorRepository counselorRepository, StudentRepository studentRepository, CounselingAppointmentRequestRepository counselingAppointmentRequestRepository, CounselingAppointmentRepository counselingAppointmentRepository, CounselingSlotRepository counselingSlotRepository, ProfileRepository profileRepository, CategoryRepository categoryRepository, SemesterRepository semesterRepository, EventRepository eventRepository, EventScheduleRepository eventScheduleRepository, TrainingPointRepository trainingPointRepository, RecapVideoRepository recapVideoRepository, ContentImageRepository contentImageRepository, PasswordEncoder passwordEncoder) {
-        this.accountRepository = accountRepository;
-        this.loginTypeRepository = loginTypeRepository;
-        this.notificationRepository = notificationRepository;
-        this.counselorRepository = counselorRepository;
-        this.studentRepository = studentRepository;
-        this.counselingAppointmentRequestRepository = counselingAppointmentRequestRepository;
-        this.counselingAppointmentRepository = counselingAppointmentRepository;
-        this.counselingSlotRepository = counselingSlotRepository;
-        this.profileRepository = profileRepository;
-        this.categoryRepository = categoryRepository;
-        this.semesterRepository = semesterRepository;
-        this.eventRepository = eventRepository;
-        this.eventScheduleRepository = eventScheduleRepository;
-        this.trainingPointRepository = trainingPointRepository;
-        this.recapVideoRepository = recapVideoRepository;
-        this.contentImageRepository = contentImageRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
+    private final AvailableDateRangeRepository availableDateRangeRepository;
 
     @Override
     public void run(String... args) throws Exception {
         createAdminAccount();
         createStudentAccount();
         createStudentAccount2();
-        createCounselorAccount();
-
-        createCategories();
-        createSemesters();
+        createManagerAccount();
+//        createCounselorAccount();
+        generateSlots();
+        createCounselorAccounts();
+//
+//        createCategories();
+//        createSemesters();
     }
 
     private void createCategories() {
@@ -304,6 +298,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .avatarLink("https://www.strasys.uk/wp-content/uploads/2022/02/Depositphotos_484354208_S.jpg")
                     .dateOfBirth(LocalDate.of(1980, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli())
                     .studentCode("SE111111")
+                    .gender(Gender.MALE)
                     .build();
 
             profileRepository.save(studentProfile);
@@ -357,6 +352,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .avatarLink("https://www.strasys.uk/wp-content/uploads/2022/02/Depositphotos_484354208_S.jpg")
                     .dateOfBirth(LocalDate.of(1980, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli())
                     .studentCode("SE111112")
+                    .gender(Gender.FEMALE)
                     .build();
 
             profileRepository.save(studentProfile);
@@ -367,51 +363,204 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
     }
 
-    private void createCounselorAccount() {
-        String counselorEmail = "counselor@example.com";
-        logger.info("Checking if counselor account with email '{}' exists.", counselorEmail);
+    private void createManagerAccount() {
+        String managerEmail = "manager@example.com";
+        logger.info("Checking if manager account with email '{}' exists.", managerEmail);
 
-        if (accountRepository.findAccountByEmail(counselorEmail).isEmpty()) {
-            logger.info("counselor account does not exist. Creating new counselor account.");
+        if (accountRepository.findAccountByEmail(managerEmail).isEmpty()) {
+            logger.info("Manager account does not exist. Creating new manager account.");
 
-            Account counselor = Account.builder()
-                    .email(counselorEmail)
-                    .role(Role.COUNSELOR)
+            Account manager = Account.builder()
+                    .email(managerEmail)
+                    .role(Role.MANAGER)
                     .status(Status.ACTIVE)
                     .build();
 
-            accountRepository.save(counselor);
+            accountRepository.save(manager);
 
-            LoginType counselorLoginType = LoginType.builder()
-                    .password(passwordEncoder.encode("counselor112233"))
+            LoginType managerLoginType = LoginType.builder()
+                    .password(passwordEncoder.encode("manager112233"))
                     .method(LoginMethod.DEFAULT)
-                    .account(counselor)
+                    .account(manager)
                     .build();
 
-            loginTypeRepository.save(counselorLoginType);
+            loginTypeRepository.save(managerLoginType);
 
-            // Create and save Profile for the counselor account
-            Counselor counselorProfile = Counselor.builder()
-                    .account(counselor)
-                    .fullName("Counselor")
-                    .phoneNumber("1234567890")
-                    .avatarLink("https://www.strasys.uk/wp-content/uploads/2022/02/Depositphotos_484354208_S.jpg")
-                    .dateOfBirth(LocalDate.of(1980, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                    .rating(BigDecimal.valueOf(4.6))
+            Profile managerProfile = Profile.builder()
+                    .account(manager)
+                    .fullName("Manager Name")
+                    .phoneNumber("0987654321")
+                    .avatarLink("https://example.com/avatar.jpg")
+                    .dateOfBirth(LocalDate.of(1985, 5, 15)
+                            .atStartOfDay(ZoneId.systemDefault())
+                            .toInstant()
+                            .toEpochMilli())
+                    .gender(Gender.MALE)
                     .build();
 
-            profileRepository.save(counselorProfile);
+            profileRepository.save(managerProfile);
 
-            generateSlots();
-            
-            createCounselingAppointmentRequest(counselorProfile);
-            createCounselingAppointmentRequest2(counselorProfile);
-
-            logger.info("counselor account created with email '{}'.", counselorEmail);
+            logger.info("Manager account created with email '{}'.", managerEmail);
         } else {
-            logger.warn("counselor account with email '{}' already exists.", counselorEmail);
+            logger.warn("Manager account with email '{}' already exists.", managerEmail);
         }
     }
+
+    private void createCounselorAccounts() {
+
+        List<CounselingSlot> counselingSlots = counselingSlotRepository.findAll();
+
+        // List of counselor full names in Vietnamese
+        List<String> maleNames = List.of("Nguyễn Văn A", "Trần Văn B", "Lê Văn C", "Phạm Văn D", "Đỗ Văn E", "Hoàng Văn F");
+        List<String> femaleNames = List.of("Nguyễn Thị G", "Trần Thị H", "Lê Thị I", "Phạm Thị J", "Đỗ Thị K", "Hoàng Thị L");
+
+        // List of expertise names
+        List<String> expertiseNames = List.of("Tâm lý học", "Tư vấn gia đình", "Tư vấn nghề nghiệp", "Tư vấn sức khỏe", "Tư vấn tài chính", "Tư vấn giáo dục");
+
+        // List of genders
+        List<Gender> genders = List.of(Gender.MALE, Gender.FEMALE);
+
+        // Creating expertise entities if they don't exist
+        List<Expertise> expertiseList = expertiseNames.stream()
+                .map(name -> expertiseRepository.findByName(name)
+                        .orElseGet(() -> expertiseRepository.save(Expertise.builder().name(name).build())))
+                .toList();
+
+        int index = 0;
+
+        for (Expertise expertise : expertiseList) {
+            // Create two counselors for each expertise (one male, one female)
+            for (Gender gender : genders) {
+
+                int[] startAndEnd = RandomUtil.getRandomStartEnd(0, counselingSlots.size(), 4);
+
+                List<CounselingSlot> counselorSlots = getCounselorSlot(startAndEnd, counselingSlots);
+
+                String counselorEmail = "counselor" + (index + 1) + "@example.com";
+
+                logger.info("Checking if counselor account with email '{}' exists.", counselorEmail);
+
+                if (accountRepository.findAccountByEmail(counselorEmail).isEmpty()) {
+                    logger.info("Counselor account does not exist. Creating new counselor account for expertise '{}'.", expertise.getName());
+
+                    Account counselor = Account.builder()
+                            .email(counselorEmail)
+                            .role(Role.COUNSELOR)
+                            .status(Status.ACTIVE)
+                            .build();
+
+                    accountRepository.save(counselor);
+
+                    LoginType counselorLoginType = LoginType.builder()
+                            .password(passwordEncoder.encode("counselor112233"))
+                            .method(LoginMethod.DEFAULT)
+                            .account(counselor)
+                            .build();
+
+                    loginTypeRepository.save(counselorLoginType);
+
+                    // Create and save Profile for the counselor account
+                    Counselor counselorProfile = Counselor.builder()
+                            .account(counselor)
+                            .fullName(gender == Gender.MALE ? maleNames.get(index / 2) : femaleNames.get(index / 2))
+                            .phoneNumber("123456789" + index)
+                            .avatarLink(gender == Gender.MALE
+                                    ? "https://png.pngtree.com/png-vector/20230903/ourmid/pngtree-man-avatar-isolated-png-image_9935819.png"
+                                    : "https://static.vecteezy.com/system/resources/thumbnails/004/899/680/small/beautiful-blonde-woman-with-makeup-avatar-for-a-beauty-salon-illustration-in-the-cartoon-style-vector.jpg")
+                            .dateOfBirth(LocalDate.of(1980 + index % 10, 1, 1)
+                                    .atStartOfDay(ZoneId.systemDefault())
+                                    .toInstant()
+                                    .toEpochMilli())
+                            .rating(BigDecimal.valueOf(4.0)) // Sample ratings between 4.0 and 4.6
+                            .gender(gender)
+                            .expertise(expertise)
+                            .status(CounselorStatus.AVAILABLE)
+                            .counselingSlots(counselorSlots)
+                            .build();
+
+                    AvailableDateRange availableDateRange = createAvailableDateRangeFromTodayToTwoMonths(counselorProfile);
+
+                    counselorProfile.setAvailableDateRange(availableDateRange);
+
+                    profileRepository.save(counselorProfile);
+
+                    logger.info("Counselor account created with email '{}'.", counselorEmail);
+                } else {
+                    logger.warn("Counselor account with email '{}' already exists.", counselorEmail);
+                }
+
+                index++;
+            }
+        }
+
+
+    }
+
+    public AvailableDateRange createAvailableDateRangeFromTodayToTwoMonths(Counselor counselor) {
+        LocalDate startDate = LocalDate.now();
+
+        LocalDate endDate = startDate.plusMonths(2);
+
+        return AvailableDateRange.builder()
+                .startDate(startDate)
+                .endDate(endDate)
+                .counselor(counselor)
+                .build();
+    }
+
+    private List<CounselingSlot> getCounselorSlot(int[] startAndEnd, List<CounselingSlot> counselingSlots) {
+        List<CounselingSlot> counselorSlots = new ArrayList<>();
+        for(int i = startAndEnd[0]; i < startAndEnd[1]; i++) {
+            counselorSlots.add(counselingSlots.get(i));
+        }
+        return counselorSlots;
+    }
+
+//    private void createCounselorAccount() {
+//        String counselorEmail = "counselor@example.com";
+//        logger.info("Checking if counselor account with email '{}' exists.", counselorEmail);
+//
+//        if (accountRepository.findAccountByEmail(counselorEmail).isEmpty()) {
+//            logger.info("counselor account does not exist. Creating new counselor account.");
+//
+//            Account counselor = Account.builder()
+//                    .email(counselorEmail)
+//                    .role(Role.COUNSELOR)
+//                    .status(Status.ACTIVE)
+//                    .build();
+//
+//            accountRepository.save(counselor);
+//
+//            LoginType counselorLoginType = LoginType.builder()
+//                    .password(passwordEncoder.encode("counselor112233"))
+//                    .method(LoginMethod.DEFAULT)
+//                    .account(counselor)
+//                    .build();
+//
+//            loginTypeRepository.save(counselorLoginType);
+//
+//            // Create and save Profile for the counselor account
+//            Counselor counselorProfile = Counselor.builder()
+//                    .account(counselor)
+//                    .fullName("Counselor")
+//                    .phoneNumber("1234567890")
+//                    .avatarLink("https://www.strasys.uk/wp-content/uploads/2022/02/Depositphotos_484354208_S.jpg")
+//                    .dateOfBirth(LocalDate.of(1980, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli())
+//                    .rating(BigDecimal.valueOf(4.6))
+//                    .build();
+//
+//            profileRepository.save(counselorProfile);
+//
+//            generateSlots();
+//
+//            createCounselingAppointmentRequest(counselorProfile);
+//            createCounselingAppointmentRequest2(counselorProfile);
+//
+//            logger.info("counselor account created with email '{}'.", counselorEmail);
+//        } else {
+//            logger.warn("counselor account with email '{}' already exists.", counselorEmail);
+//        }
+//    }
 
     private void createCounselingAppointmentRequest(Counselor counselor) {
 

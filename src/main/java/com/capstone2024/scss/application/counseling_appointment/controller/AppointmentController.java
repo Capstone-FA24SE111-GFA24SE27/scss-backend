@@ -1,10 +1,14 @@
 package com.capstone2024.scss.application.counseling_appointment.controller;
 
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
+import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
+import com.capstone2024.scss.application.booking_counseling.controller.BookingCounselingController;
 import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppointmentDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
-import com.capstone2024.scss.application.counseling_appointment.dto.AppointmentFilterDTO;
+import com.capstone2024.scss.application.counseling_appointment.dto.AppointmentReportResponse;
+import com.capstone2024.scss.application.counseling_appointment.dto.request.appoinment_report.AppointmentReportRequest;
+import com.capstone2024.scss.application.counseling_appointment.dto.request.counseling_appointment.AppointmentFilterDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
@@ -13,16 +17,17 @@ import com.capstone2024.scss.domain.student.entities.Student;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -32,6 +37,7 @@ import java.util.List;
 @RequestMapping("/api/appointments")
 public class AppointmentController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AppointmentController.class);
     private final CounselingAppointmentService appointmentService;
 
     @GetMapping("/counselor")
@@ -115,5 +121,27 @@ public class AppointmentController {
         PaginationDTO<List<CounselingAppointmentDTO>> responseDTO = appointmentService.getAppointmentsWithFilterForStudent(filterDTO, (Student) principle.getProfile());
 
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @PostMapping("/report/{appointmentId}")
+    public ResponseEntity<Object> createAppointmentReport(
+            @Valid @RequestBody AppointmentReportRequest request,
+            BindingResult errors,
+            @NotNull @AuthenticationPrincipal Account principle,
+            @PathVariable Long appointmentId) {
+        if (errors.hasErrors()) {
+            logger.warn("Validation errors: {}", errors.getAllErrors());
+            throw new BadRequestException("Invalid appointment request", errors, HttpStatus.BAD_REQUEST);
+        }
+
+        AppointmentReportResponse response = appointmentService.createAppointmentReport(request, appointmentId, (Counselor) principle.getProfile());
+        return ResponseUtil.getResponse(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/report/{appointmentId}")
+    public ResponseEntity<Object> getReportByAppointmentId(@PathVariable Long appointmentId,
+                                                                              @NotNull @AuthenticationPrincipal Account principle) {
+        AppointmentReportResponse response = appointmentService.getAppointmentReportByAppointmentId(appointmentId, (Counselor) principle.getProfile());
+        return ResponseUtil.getResponse(response, HttpStatus.OK);
     }
 }

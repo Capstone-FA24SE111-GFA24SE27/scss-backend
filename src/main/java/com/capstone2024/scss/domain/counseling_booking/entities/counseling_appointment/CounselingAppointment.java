@@ -1,6 +1,7 @@
 package com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment;
 
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_report.entities.AppointmentReport;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -39,5 +40,8 @@ public class CounselingAppointment {
 
     @OneToOne(mappedBy = "appointment", cascade = CascadeType.ALL, optional = true)
     private AppointmentFeedback feedback;
+
+    @OneToOne(mappedBy = "counselingAppointment", cascade = CascadeType.ALL, optional = true)
+    private AppointmentReport report;
 }
 

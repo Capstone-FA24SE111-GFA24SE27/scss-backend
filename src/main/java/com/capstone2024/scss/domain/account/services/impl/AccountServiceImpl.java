@@ -1,23 +1,33 @@
 package com.capstone2024.scss.domain.account.services.impl;
 
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
+import com.capstone2024.scss.application.account.dto.request.AccountCreationRequest;
 import com.capstone2024.scss.application.account.dto.request.FilterRequestDTO;
+import com.capstone2024.scss.application.account.dto.request.LoginTypeRequest;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.authentication.dto.AccountDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.account.dto.ProfileDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
+import com.capstone2024.scss.domain.account.entities.LoginType;
+import com.capstone2024.scss.domain.account.entities.Profile;
+import com.capstone2024.scss.domain.account.enums.LoginMethod;
 import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.account.enums.Status;
 import com.capstone2024.scss.domain.account.services.AccountService;
+import com.capstone2024.scss.domain.common.mapper.account.AccountMapper;
 import com.capstone2024.scss.infrastructure.repositories.account.AccountRepository;
+import com.capstone2024.scss.infrastructure.repositories.account.LoginTypeRepository;
+import com.capstone2024.scss.infrastructure.repositories.account.ProfileRepository;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,13 +37,13 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AccountServiceImpl implements AccountService {
     private static final Logger logger = LoggerFactory.getLogger(AccountServiceImpl.class);
     private final AccountRepository accountRepository;
-
-    public AccountServiceImpl(AccountRepository accountRepository) {
-        this.accountRepository = accountRepository;
-    }
+    private final PasswordEncoder passwordEncoder;
+    private final LoginTypeRepository loginTypeRepository;
+    private final ProfileRepository profileRepository;
 
     @Override
     public PaginationDTO<List<AccountDTO>> getAccountsWithFilter(FilterRequestDTO filterRequest) {
@@ -67,16 +77,7 @@ public class AccountServiceImpl implements AccountService {
 
         List<AccountDTO> accountDTOs = accountsPage.getContent().stream()
                 .filter(account -> !account.getRole().name().equals(Role.ADMINISTRATOR.name()))  // Lọc bỏ những tài khoản có role là ADMIN
-                .map(account -> AccountDTO.builder()
-                        .id(account.getId())
-                        .email(account.getEmail())
-                        .status(account.getStatus())
-                        .role(account.getRole())
-                        .profile(ProfileDTO.builder()
-                                .fullName(account.getProfile().getFullName())
-                                .build())
-                        .build()
-                )
+                .map(AccountMapper::toAccountDTO)
                 .collect(Collectors.toList());
 
         PaginationDTO<List<AccountDTO>> paginationDTO = PaginationDTO.<List<AccountDTO>>builder()
@@ -154,14 +155,49 @@ public class AccountServiceImpl implements AccountService {
             throw new BadRequestException("Cannot retrieve other administrator");
         }
 
-        return AccountDTO.builder()
-                .id(account.getId())
-                .email(account.getEmail())
-                .status(account.getStatus())
-                .role(account.getRole())
-                .profile(ProfileDTO.builder()
-                        .fullName(account.getProfile().getFullName())
-                        .build())
+        return AccountMapper.toAccountDTO(account);
+    }
+
+    @Override
+    public Account createAccount(AccountCreationRequest request) {
+        // Kiểm tra xem email đã tồn tại chưa
+        if (accountRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("Email đã được sử dụng");
+        }
+
+        // Tạo đối tượng Account
+        Account account = Account.builder()
+                .email(request.getEmail())
+                .role(request.getRole() != null ? request.getRole() : Role.STUDENT) // Mặc định là STUDENT
+                .status(Status.ACTIVE)
                 .build();
+
+        account = accountRepository.save(account);
+
+        // Tạo LoginType với phương thức DEFAULT hoặc theo yêu cầu
+        LoginTypeRequest loginDTO = request.getLogin();
+        LoginType loginType = LoginType.builder()
+                .method(loginDTO.getMethod() != null ? loginDTO.getMethod() : LoginMethod.DEFAULT)
+                .password(passwordEncoder.encode(loginDTO.getPassword()))
+                .account(account)
+                .build();
+
+        loginTypeRepository.save(loginType);
+
+        // Tạo Profile
+        ProfileDTO profileDTO = request.getProfile();
+        Profile profile = Profile.builder()
+                .account(account)
+                .fullName(profileDTO.getFullName())
+                .gender(profileDTO.getGender())
+                .avatarLink(profileDTO.getAvatarLink())
+                .phoneNumber(profileDTO.getPhoneNumber())
+                .gender(profileDTO.getGender())
+                .dateOfBirth(profileDTO.getDateOfBirth())
+                .build();
+
+        profileRepository.save(profile);
+
+        return account;
     }
 }

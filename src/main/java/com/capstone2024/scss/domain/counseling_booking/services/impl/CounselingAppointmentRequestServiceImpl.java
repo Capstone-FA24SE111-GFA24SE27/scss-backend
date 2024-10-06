@@ -84,7 +84,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
         Counselor counselor = counselorRepository.findById(counselorId)
                 .orElseThrow(() -> new NotFoundException("Counselor not found"));
         List<CounselingAppointmentRequest> requests = requestRepository.findByCounselorIdAndRequireDateBetween(counselorId, from, to);
-        List<CounselingSlot> slots = slotRepository.findAllSlots();
+        List<CounselingSlot> slots = counselor.getCounselingSlots();
         LocalDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDateTime();
 
         Map<LocalDate, List<SlotDTO>> dailySlots = new LinkedHashMap<>();
@@ -94,6 +94,8 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
             // Kiểm tra nếu ngày hiện tại là thứ Bảy hoặc Chủ Nhật
             if (currentDate.getDayOfWeek() == DayOfWeek.SATURDAY || currentDate.getDayOfWeek() == DayOfWeek.SUNDAY) {
                 dailySlots.put(currentDate, Collections.emptyList()); // Trả về mảng rỗng
+            } else if(currentDate.isBefore(counselor.getAvailableDateRange().getStartDate()) || currentDate.isAfter(counselor.getAvailableDateRange().getEndDate())) {
+                dailySlots.put(currentDate, Collections.emptyList());
             } else {
                 final LocalDate dateToCheck = currentDate;
                 List<SlotDTO> slotDTOs = slots.stream()

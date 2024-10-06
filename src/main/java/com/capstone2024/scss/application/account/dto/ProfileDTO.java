@@ -1,5 +1,6 @@
 package com.capstone2024.scss.application.account.dto;
 
+import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import lombok.*;
 
 @Getter
@@ -13,4 +14,5 @@ public class ProfileDTO {
     private String phoneNumber;
     private Long dateOfBirth;
     private String avatarLink;
+    private Gender gender;
 }

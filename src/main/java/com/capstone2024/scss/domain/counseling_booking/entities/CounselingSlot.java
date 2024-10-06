@@ -2,6 +2,7 @@ package com.capstone2024.scss.domain.counseling_booking.entities;
 
 
 import com.capstone2024.scss.domain.common.entity.BaseEntity;
+import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,6 +10,7 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -26,4 +28,7 @@ public class CounselingSlot extends BaseEntity {
 
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
+
+    @ManyToMany(mappedBy = "counselingSlots")
+    private List<Counselor> counselors;
 }

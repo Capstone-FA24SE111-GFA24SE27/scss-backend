@@ -13,4 +13,6 @@ public class StudentProfileDTO {
     private ProfileDTO profile;
 
     private String studentCode;
+
+    private String email;
 }
