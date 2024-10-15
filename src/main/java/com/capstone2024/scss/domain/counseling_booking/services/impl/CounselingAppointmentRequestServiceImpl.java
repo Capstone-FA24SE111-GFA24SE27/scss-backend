@@ -9,8 +9,6 @@ import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.booking_counseling.dto.SlotDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.AppointmentDetailsDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;
-import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselorAppointmentDTO;
-import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.StudentAppointmentDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.enums.SlotStatus;
 import com.capstone2024.scss.application.booking_counseling.dto.request.AppointmentRequestFilterDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.UpdateAppointmentRequestDTO;
@@ -18,9 +16,9 @@ import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.notification.dtos.NotificationDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.enums.Role;
-import com.capstone2024.scss.domain.common.mapper.account.ProfileMapper;
-import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselorProfileMapper;
-import com.capstone2024.scss.domain.common.mapper.appointment_counseling.StudentProfileMapper;
+import com.capstone2024.scss.domain.common.mapper.account.CounselorProfileMapper;
+import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselingRequestMapper;
+import com.capstone2024.scss.domain.common.mapper.student.StudentMapper;
 import com.capstone2024.scss.domain.common.utils.DateTimeUtil;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.CounselingAppointment;
@@ -29,15 +27,17 @@ import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appoi
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
+import com.capstone2024.scss.domain.counselor.entities.AcademicCounselor;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.counselor.entities.NonAcademicCounselor;
 import com.capstone2024.scss.domain.notification.services.NotificationService;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentRequestService;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeCounselingSlotDTO;
-import com.capstone2024.scss.infrastructure.repositories.CounselingAppointmentRepository;
-import com.capstone2024.scss.infrastructure.repositories.CounselingAppointmentRequestRepository;
-import com.capstone2024.scss.infrastructure.repositories.CounselingSlotRepository;
+import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingAppointmentRepository;
+import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingAppointmentRequestRepository;
+import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingSlotRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.*;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -171,6 +170,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                 .endTime(slot.getEndTime())
                 .status(CounselingAppointmentRequestStatus.WAITING)
                 .meetingType(isOnline ? MeetingType.ONLINE : MeetingType.OFFLINE)
+                .requestType(CounselingAppointmentRequest.RequestType.NORMAL)
                 .reason(reason)
                 .counselor(counselor)
                 .student(student)
@@ -232,7 +232,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                         pageable
                 );
             }
-            case Role.COUNSELOR -> {
+            case Role.NON_ACADEMIC_COUNSELOR, Role.ACADEMIC_COUNSELOR -> {
                 Counselor counselor = (Counselor) principle.getProfile();
                 yield requestRepository.findByCounselorIdAndFilters(
                         counselor.getId(),
@@ -246,7 +246,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
         };
 
         List<CounselingAppointmentRequestDTO> appointmentDTOs = page.getContent().stream()
-                .map(this::convertToDTO)
+                .map(CounselingRequestMapper::convertToDTO)
                 .collect(Collectors.toList());
 
         return PaginationDTO.<List<CounselingAppointmentRequestDTO>>builder()
@@ -273,14 +273,14 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
             }
         }
 
-        CounselorProfileDTO counselorDTO = request.getCounselor() != null
-                ?
-                CounselorProfileMapper.toCounselorProfileDTO(request.getCounselor())
-                : null;
+        CounselorProfileDTO counselorDTO = (request.getCounselor() != null) ? (
+                (request.getCounselor() instanceof NonAcademicCounselor) ?
+                    CounselorProfileMapper.toNonAcademicCounselorProfileDTO((NonAcademicCounselor) request.getCounselor()) : CounselorProfileMapper.toAcademicCounselorProfileDTO((AcademicCounselor) request.getCounselor())
+        ) : null;
 
         StudentProfileDTO studentDTO = request.getStudent() != null
                 ?
-                StudentProfileMapper.toStudentProfileDTO(request.getStudent())
+                StudentMapper.toStudentProfileDTO(request.getStudent())
                 : null;
 
         return CounselingAppointmentRequestDTO.builder()

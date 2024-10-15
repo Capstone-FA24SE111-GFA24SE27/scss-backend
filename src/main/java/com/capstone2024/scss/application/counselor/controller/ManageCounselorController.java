@@ -37,7 +37,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/manager/counselors")
+@RequestMapping("/api/manage/counselors")
 @Tag(name = "manage counselors", description = "API for manage counselors.")
 @RequiredArgsConstructor
 public class ManageCounselorController {

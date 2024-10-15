@@ -2,7 +2,6 @@ package com.capstone2024.scss.application.counseling_appointment.controller;
 
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
-import com.capstone2024.scss.application.booking_counseling.controller.BookingCounselingController;
 import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppointmentDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
@@ -119,6 +118,15 @@ public class AppointmentController {
                 .build();
 
         PaginationDTO<List<CounselingAppointmentDTO>> responseDTO = appointmentService.getAppointmentsWithFilterForStudent(filterDTO, (Student) principle.getProfile());
+
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/{appointmentId}")
+    public ResponseEntity<Object> getOneAppointments(
+            @PathVariable Long appointmentId
+    ) {
+        CounselingAppointmentDTO responseDTO = appointmentService.getOneAppointment(appointmentId);
 
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }

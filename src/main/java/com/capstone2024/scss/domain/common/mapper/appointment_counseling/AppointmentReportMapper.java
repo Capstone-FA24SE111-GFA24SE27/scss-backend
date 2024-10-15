@@ -1,6 +1,8 @@
 package com.capstone2024.scss.domain.common.mapper.appointment_counseling;
 
 import com.capstone2024.scss.application.counseling_appointment.dto.*;
+import com.capstone2024.scss.domain.common.mapper.account.CounselorProfileMapper;
+import com.capstone2024.scss.domain.common.mapper.student.StudentMapper;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_report.entities.AppointmentReport;
 
 public class AppointmentReportMapper {
@@ -12,7 +14,7 @@ public class AppointmentReportMapper {
 
         return AppointmentReportResponse.builder()
                 .id(report.getId())
-                .student(StudentProfileMapper.toStudentProfileDTO(report.getStudent()))
+                .student(StudentMapper.toStudentProfileDTO(report.getStudent()))
                 .counselor(CounselorProfileMapper.toCounselorProfileDTO(report.getCounselor()))
                 .appointment(CounselingAppointmentMapper.toCounselingAppointmentForReportDTO(report.getCounselingAppointment()))
                 .consultationGoal(ConsultationGoalResponse.builder()

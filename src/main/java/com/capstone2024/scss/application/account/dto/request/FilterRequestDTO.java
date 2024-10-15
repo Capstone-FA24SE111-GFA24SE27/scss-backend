@@ -1,6 +1,7 @@
 package com.capstone2024.scss.application.account.dto.request;
 
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
+import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.account.enums.Status;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,5 +14,6 @@ public class FilterRequestDTO {
     private Status status;
     private SortDirection soreDirection;
     private String sortBy;
+    private Role role;
     private Pageable pagination;
 }

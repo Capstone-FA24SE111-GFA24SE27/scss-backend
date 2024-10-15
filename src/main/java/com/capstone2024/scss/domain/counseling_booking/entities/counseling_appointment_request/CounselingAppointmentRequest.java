@@ -5,6 +5,7 @@ import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appoi
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.demand.entities.CounselingDemand;
 import com.capstone2024.scss.domain.student.entities.Student;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -43,6 +44,10 @@ public class CounselingAppointmentRequest extends BaseEntity {
     @Column(name = "meeting_type")
     private MeetingType meetingType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "request_type")
+    private RequestType requestType = RequestType.NORMAL;
+
     @Column(name = "reason")
     private String reason;
 
@@ -56,4 +61,12 @@ public class CounselingAppointmentRequest extends BaseEntity {
 
     @OneToMany(mappedBy = "appointmentRequest", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CounselingAppointment> counselingAppointments;
+
+    @ManyToOne
+    @JoinColumn(name = "counseling_demand_id", nullable = true)
+    private CounselingDemand counselingDemand;
+
+    public enum RequestType {
+        NORMAL, DEMAND
+    }
 }

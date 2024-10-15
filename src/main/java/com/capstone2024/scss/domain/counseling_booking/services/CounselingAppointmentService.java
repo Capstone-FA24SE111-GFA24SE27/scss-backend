@@ -37,4 +37,6 @@ public interface CounselingAppointmentService {
     AppointmentReportResponse createAppointmentReport(AppointmentReportRequest request, Long appointmentId, Counselor counselor);
 
     AppointmentReportResponse getAppointmentReportByAppointmentId(Long appointmentId, Counselor profile);
+
+    CounselingAppointmentDTO getOneAppointment(Long appointmentId);
 }

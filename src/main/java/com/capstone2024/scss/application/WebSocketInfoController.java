@@ -25,7 +25,8 @@ public class WebSocketInfoController {
                 "description", "WebSocket connection endpoint for real-time communication.",
                 "/user/{account_id}/private/notification", "topic for notification",
                 "`/user/{dateChange}/{counselorId}/slot`", "topic for slot realtime",
-                "/user/${profileId}/appointment", "topic for appointment schedule realtime"
+                "/user/${profileId}/appointment", "topic for appointment schedule realtime",
+                "/user/${chatSessionId}/chat", "topic for chatting Q&A"
         );
     }
 }

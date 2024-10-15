@@ -64,8 +64,9 @@ public class AccountServiceImpl implements AccountService {
                 sort);
 
         Page<Account> accountsPage = accountRepository.findAccountsBySearchAndStatus(
-                filterRequest.getSearch() != null ? filterRequest.getSearch().trim() : "",
-                filterRequest.getStatus() != null ? filterRequest.getStatus().name() : "",
+                filterRequest.getSearch(),
+                filterRequest.getStatus(),
+                filterRequest.getRole(),
                 pageable
         );
 
@@ -75,16 +76,66 @@ public class AccountServiceImpl implements AccountService {
             logger.info("Found {} accounts with total pages: {}", accountsPage.getTotalElements(), accountsPage.getTotalPages());
         }
 
-        List<AccountDTO> accountDTOs = accountsPage.getContent().stream()
-                .filter(account -> !account.getRole().name().equals(Role.ADMINISTRATOR.name()))  // Lọc bỏ những tài khoản có role là ADMIN
-                .map(AccountMapper::toAccountDTO)
-                .collect(Collectors.toList());
+        PaginationDTO<List<AccountDTO>> paginationDTO = null;
 
-        PaginationDTO<List<AccountDTO>> paginationDTO = PaginationDTO.<List<AccountDTO>>builder()
-                .data(accountDTOs)
-                .totalPages(accountsPage.getTotalPages())
-                .totalElements((int) accountsPage.getTotalElements())
-                .build();
+        switch (filterRequest.getRole()) {
+            case STUDENT -> {
+                List<AccountDTO> accountDTOs = accountsPage.getContent().stream()
+                        .map(AccountMapper::toStudentAccountDTO)
+                        .collect(Collectors.toList());
+
+                paginationDTO = PaginationDTO.<List<AccountDTO>>builder()
+                        .data(accountDTOs)
+                        .totalPages(accountsPage.getTotalPages())
+                        .totalElements((int) accountsPage.getTotalElements())
+                        .build();
+            }
+            case MANAGER, SUPPORT_STAFF -> {
+                List<AccountDTO> accountDTOs = accountsPage.getContent().stream()
+                        .map(AccountMapper::toAccountDTO)
+                        .collect(Collectors.toList());
+
+                paginationDTO = PaginationDTO.<List<AccountDTO>>builder()
+                        .data(accountDTOs)
+                        .totalPages(accountsPage.getTotalPages())
+                        .totalElements((int) accountsPage.getTotalElements())
+                        .build();
+            }
+            case ACADEMIC_COUNSELOR -> {
+                List<AccountDTO> accountDTOs = accountsPage.getContent().stream()
+                        .map(AccountMapper::toAcademicCounselorAccountDTO)
+                        .collect(Collectors.toList());
+
+                paginationDTO = PaginationDTO.<List<AccountDTO>>builder()
+                        .data(accountDTOs)
+                        .totalPages(accountsPage.getTotalPages())
+                        .totalElements((int) accountsPage.getTotalElements())
+                        .build();
+            }
+            case NON_ACADEMIC_COUNSELOR -> {
+                List<AccountDTO> accountDTOs = accountsPage.getContent().stream()
+                        .map(AccountMapper::toNonAcademicCounselorAccountDTO)
+                        .collect(Collectors.toList());
+
+                paginationDTO = PaginationDTO.<List<AccountDTO>>builder()
+                        .data(accountDTOs)
+                        .totalPages(accountsPage.getTotalPages())
+                        .totalElements((int) accountsPage.getTotalElements())
+                        .build();
+            }
+            default -> {
+                List<AccountDTO> accountDTOs = accountsPage.getContent().stream()
+                        .filter(account -> !account.getRole().name().equals(Role.ADMINISTRATOR.name()))
+                        .map(AccountMapper::toAccountDTO)
+                        .collect(Collectors.toList());
+
+                paginationDTO = PaginationDTO.<List<AccountDTO>>builder()
+                        .data(accountDTOs)
+                        .totalPages(accountsPage.getTotalPages())
+                        .totalElements((int) accountsPage.getTotalElements())
+                        .build();
+            }
+        }
 
         logger.info("Completed getAccountsWithFilter with paginationDTO: {}", paginationDTO);
 

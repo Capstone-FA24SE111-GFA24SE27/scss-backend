@@ -33,7 +33,7 @@ import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppoin
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeAppointmentDTO;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeCounselingSlotDTO;
-import com.capstone2024.scss.infrastructure.repositories.*;
+import com.capstone2024.scss.infrastructure.repositories.booking_counseling.*;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -584,6 +584,13 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
 
         // Map sang DTO để trả về
         return AppointmentReportMapper.toAppointmentReportResponse(report);
+    }
+
+    @Override
+    public CounselingAppointmentDTO getOneAppointment(Long appointmentId) {
+        CounselingAppointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new NotFoundException("Appointment not found"));
+        return CounselingAppointmentMapper.toCounselingAppointmentDTO(appointment);
     }
 
     private Pageable createPageable(AppointmentFilterDTO filterDTO) {

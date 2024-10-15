@@ -1,28 +1,31 @@
 package com.capstone2024.scss.domain.counselor.services.impl;
 
+import com.capstone2024.scss.application.account.dto.AcademicCounselorProfileDTO;
 import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
+import com.capstone2024.scss.application.account.dto.NonAcademicCounselorProfileDTO;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.booking_counseling.dto.SlotDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.enums.SlotStatus;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
-import com.capstone2024.scss.application.counselor.dto.CounselingSlotDTO;
-import com.capstone2024.scss.application.counselor.dto.CounselorDTO;
+import com.capstone2024.scss.application.counselor.dto.SpecializationDTO;
+import com.capstone2024.scss.application.counselor.dto.request.AcademicCounselorFilterRequestDTO;
 import com.capstone2024.scss.application.counselor.dto.request.CounselorFilterRequestDTO;
-import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselingSlotMapper;
-import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselorProfileMapper;
-import com.capstone2024.scss.domain.common.mapper.appointment_counseling.ExpertiseDTO;
-import com.capstone2024.scss.domain.common.mapper.appointment_counseling.ExpertiseMapper;
+import com.capstone2024.scss.application.counselor.dto.request.NonAcademicCounselorFilterRequestDTO;
+import com.capstone2024.scss.domain.common.mapper.account.CounselorProfileMapper;
+import com.capstone2024.scss.application.counselor.dto.ExpertiseDTO;
+import com.capstone2024.scss.domain.common.mapper.account.ExpertiseMapper;
+import com.capstone2024.scss.domain.common.mapper.account.SpecializationMapper;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
-import com.capstone2024.scss.domain.counselor.entities.Counselor;
-import com.capstone2024.scss.domain.counselor.entities.Expertise;
+import com.capstone2024.scss.domain.counselor.entities.*;
 import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import com.capstone2024.scss.domain.counselor.services.CounselorService;
-import com.capstone2024.scss.infrastructure.repositories.CounselingAppointmentRequestRepository;
-import com.capstone2024.scss.infrastructure.repositories.CounselingSlotRepository;
+import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingAppointmentRequestRepository;
+import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingSlotRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.ExpertiseRepository;
+import com.capstone2024.scss.infrastructure.repositories.counselor.SpecializationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,7 +33,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.*;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -44,6 +46,7 @@ public class CounselorServiceImpl implements CounselorService {
     private final CounselingSlotRepository counselingSlotRepository;
     private final CounselingSlotRepository slotRepository;
     private final CounselingAppointmentRequestRepository requestRepository;
+    private final SpecializationRepository specializationRepository;
 
     @Override
     public PaginationDTO<List<CounselorProfileDTO>> getCounselorsWithFilter(CounselorFilterRequestDTO filterRequest) {
@@ -89,7 +92,7 @@ public class CounselorServiceImpl implements CounselorService {
     }
 
     @Override
-    public CounselorProfileDTO findBestAvailableCounselor(Long slotId, LocalDate date, Gender gender, Long expertiseId) {
+    public CounselorProfileDTO findBestAvailableCounselorForNonAcademic(Long slotId, LocalDate date, Gender gender, Long expertiseId) {
         CounselingSlot slot = counselingSlotRepository.findById(slotId)
                 .orElseThrow(() -> new NotFoundException("Slot not found with ID: " + slotId));
 
@@ -107,7 +110,7 @@ public class CounselorServiceImpl implements CounselorService {
         PageRequest pageable = PageRequest.of(0, 1);
 
         // Thực hiện truy vấn
-        List<Counselor> counselors = counselorRepository.findAvailableCounselorsByGenderAndExpertiseOrdered(
+        List<NonAcademicCounselor> counselors = counselorRepository.findAvailableCounselorsByGenderAndExpertiseOrderedForNonAcademic(
                 gender, expertise, date, slot.getStartTime(), slot.getEndTime(), pageable);
 
         if (counselors.isEmpty()) {
@@ -119,7 +122,7 @@ public class CounselorServiceImpl implements CounselorService {
 //        re.put("recommend", counselorRepository.findAvailableCounselors(date));
 
 
-        return CounselorProfileMapper.toCounselorProfileDTO(counselors.getFirst());
+        return CounselorProfileMapper.toNonAcademicCounselorProfileDTO(counselors.getFirst());
     }
 
     @Override
@@ -171,5 +174,114 @@ public class CounselorServiceImpl implements CounselorService {
                     .collect(Collectors.toList());
             return slotDTOs;
         }
+    }
+
+    @Override
+    public PaginationDTO<List<NonAcademicCounselorProfileDTO>> getNonAcademicCounselorsWithFilter(NonAcademicCounselorFilterRequestDTO filterRequest) {
+        Page<NonAcademicCounselor> counselorsPage = counselorRepository.findNonAcademicCounselorsWithFilter(
+                filterRequest.getSearch(),
+                filterRequest.getRatingFrom(),
+                filterRequest.getRatingTo(),
+                filterRequest.getAvailableFrom(),
+                filterRequest.getAvailableTo(),
+                filterRequest.getExpertiseId(), // Pass expertise ID
+                filterRequest.getPagination());
+
+        List<NonAcademicCounselorProfileDTO> counselorDTOs = counselorsPage.getContent().stream()
+                .map(CounselorProfileMapper::toNonAcademicCounselorProfileDTO)
+                .collect(Collectors.toList());
+
+        return PaginationDTO.<List<NonAcademicCounselorProfileDTO>>builder()
+                .data(counselorDTOs)
+                .totalPages(counselorsPage.getTotalPages())
+                .totalElements((int) counselorsPage.getTotalElements())
+                .build();
+    }
+
+    @Override
+    public PaginationDTO<List<AcademicCounselorProfileDTO>> getAcademicCounselorsWithFilter(AcademicCounselorFilterRequestDTO filterRequest) {
+        Page<AcademicCounselor> counselorsPage = counselorRepository.findAcademicCounselorsWithFilter(
+                filterRequest.getSearch(),
+                filterRequest.getRatingFrom(),
+                filterRequest.getRatingTo(),
+                filterRequest.getAvailableFrom(),
+                filterRequest.getAvailableTo(),
+                filterRequest.getSpecializationId(), // Pass specialization ID
+                filterRequest.getPagination());
+
+        List<AcademicCounselorProfileDTO> counselorDTOs = counselorsPage.getContent().stream()
+                .map(CounselorProfileMapper::toAcademicCounselorProfileDTO)
+                .collect(Collectors.toList());
+
+        return PaginationDTO.<List<AcademicCounselorProfileDTO>>builder()
+                .data(counselorDTOs)
+                .totalPages(counselorsPage.getTotalPages())
+                .totalElements((int) counselorsPage.getTotalElements())
+                .build();
+    }
+
+    @Override
+    public List<SpecializationDTO> getAllSpecialization() {
+        List<Specialization> expertiseList = specializationRepository.findAll();
+        return expertiseList.stream()
+                .map(SpecializationMapper::toSpecializationDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public NonAcademicCounselorProfileDTO getNonAcademicCounselorById(Long id) {
+        Counselor counselor = counselorRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Non-Academic Counselor not found with id: " + id));
+
+        if(counselor instanceof NonAcademicCounselor nonAcademicCounselor) {
+            return CounselorProfileMapper.toNonAcademicCounselorProfileDTO(nonAcademicCounselor);
+        } else {
+            throw new NotFoundException("No non-academic counselor match this id: " + id);
+        }
+    }
+
+    @Override
+    public AcademicCounselorProfileDTO getAcademicCounselorById(Long id) {
+        Counselor counselor = counselorRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Academic Counselor not found with id: " + id));
+        if(counselor instanceof AcademicCounselor academicCounselor) {
+            return CounselorProfileMapper.toAcademicCounselorProfileDTO(academicCounselor);
+        } else {
+            throw new NotFoundException("No academic counselor match this id: " + id);
+        }
+    }
+
+    @Override
+    public CounselorProfileDTO findBestAvailableCounselorForAcademic(Long slotId, LocalDate date, Gender gender, Long specializationId) {
+        CounselingSlot slot = counselingSlotRepository.findById(slotId)
+                .orElseThrow(() -> new NotFoundException("Slot not found with ID: " + slotId));
+
+        Specialization specialization = null;
+        if(specializationId != null) {
+            specialization = specializationRepository.findById(specializationId)
+                    .orElseThrow(() -> new NotFoundException("specialization not found with ID: " + specializationId));
+        }
+
+        // Kết hợp date với startTime và endTime từ slot
+//        LocalDateTime startDateTime = LocalDateTime.of(date, slot.getStartTime());
+//        LocalDateTime endDateTime = LocalDateTime.of(date, slot.getEndTime());
+
+        // Tạo Pageable để giới hạn kết quả trả về chỉ 1 bản ghi
+        PageRequest pageable = PageRequest.of(0, 1);
+
+        // Thực hiện truy vấn
+        List<AcademicCounselor> counselors = counselorRepository.findAvailableCounselorsByGenderAndExpertiseOrderedForAcademic(
+                gender, specialization, date, slot.getStartTime(), slot.getEndTime(), pageable);
+
+        if (counselors.isEmpty()) {
+            throw new NotFoundException("Không tìm thấy counselor nào khả dụng vào thời gian này với yêu cầu giới tính và chuyên môn.");
+        }
+
+//        HashMap<String, Object> re = new HashMap<>();
+//        re.put("counselor", counselors.isEmpty() ? null : counselors.getFirst());
+//        re.put("recommend", counselorRepository.findAvailableCounselors(date));
+
+
+        return CounselorProfileMapper.toAcademicCounselorProfileDTO(counselors.getFirst());
     }
 }

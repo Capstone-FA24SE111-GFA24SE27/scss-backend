@@ -1,6 +1,5 @@
 package com.capstone2024.scss.infrastructure.data;
 
-import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.entities.LoginType;
 import com.capstone2024.scss.domain.account.entities.Profile;
@@ -9,34 +8,42 @@ import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.account.enums.Status;
 import com.capstone2024.scss.domain.common.utils.RandomUtil;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
+import com.capstone2024.scss.domain.counseling_booking.entities.Holiday;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OfflineAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OnlineAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
-import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
-import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
-import com.capstone2024.scss.domain.counselor.entities.AvailableDateRange;
-import com.capstone2024.scss.domain.counselor.entities.Counselor;
-import com.capstone2024.scss.domain.counselor.entities.Expertise;
+import com.capstone2024.scss.domain.counselor.entities.*;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
 import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
-import com.capstone2024.scss.domain.event.entities.*;
+import com.capstone2024.scss.domain.demand.entities.ProblemCategory;
+import com.capstone2024.scss.domain.demand.entities.ProblemTag;
+import com.capstone2024.scss.domain.q_and_a.entities.QuestionCard;
+import com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus;
+import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.notification.entities.Notification;
 import com.capstone2024.scss.infrastructure.repositories.*;
+import com.capstone2024.scss.infrastructure.repositories._and_a.QuestionCardRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.AccountRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.LoginTypeRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.ProfileRepository;
+import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingAppointmentRepository;
+import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingAppointmentRequestRepository;
+import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingSlotRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.AvailableDateRangeRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.ExpertiseRepository;
-import com.capstone2024.scss.infrastructure.repositories.event.*;
+import com.capstone2024.scss.infrastructure.repositories.counselor.SpecializationRepository;
+import com.capstone2024.scss.infrastructure.repositories.demand.ProblemCategoryRepository;
+import com.capstone2024.scss.infrastructure.repositories.demand.ProblemTagRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -61,162 +68,121 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final CounselingAppointmentRepository counselingAppointmentRepository;
     private final CounselingSlotRepository counselingSlotRepository;
     private final ProfileRepository profileRepository;
-    private final CategoryRepository categoryRepository;
-    private final SemesterRepository semesterRepository;
-    private final EventRepository eventRepository;
-    private final EventScheduleRepository eventScheduleRepository;
-    private final TrainingPointRepository trainingPointRepository;
-    private final RecapVideoRepository recapVideoRepository;
-    private final ContentImageRepository contentImageRepository;
     private final ExpertiseRepository expertiseRepository;
     private final PasswordEncoder passwordEncoder;
     private final AvailableDateRangeRepository availableDateRangeRepository;
+    private final HolidayRepository holidayRepository;
+    private final SpecializationRepository specializationRepository;
+    private final QuestionCardRepository questionCardRepository;
+    private final ProblemTagRepository problemTagRepository;
+    private final ProblemCategoryRepository problemCategoryRepository;
 
     @Override
     public void run(String... args) throws Exception {
         createAdminAccount();
-        createStudentAccount();
-        createStudentAccount2();
+//        createStudentAccounts();
         createManagerAccount();
+        createSupportStaffAccount();
 //        createCounselorAccount();
         generateSlots();
         createCounselorAccounts();
-//
-//        createCategories();
-//        createSemesters();
+        createStudentAccounts();
+        createVietnamHolidays();
+        seedProblemTags();
     }
 
-    private void createCategories() {
-        // Tạo 4 danh mục
-        for (int i = 1; i <= 4; i++) {
-            Category category = new Category("CODE" + i, "Category " + i);
-            categoryRepository.save(category);
-        }
-    }
+    @Transactional
+    public void seedProblemTags() {
+        // Tạo danh sách các ProblemCategories
+        List<ProblemCategory> categories = new ArrayList<>();
 
-    private void createSemesters() {
-        // Tạo các học kỳ cho năm 2024 và 2025
-        List<Semester> semesters = new ArrayList<>();
-        String[] semesterNames = {"Summer", "Fall", "Spring"};
-        LocalDate startDate;
-        LocalDate endDate;
+        for (int i = 1; i <= 3; i++) {
+            ProblemCategory category = new ProblemCategory();
+            category.setName("Problem Category " + i);
 
-        for (int year = 2024; year <= 2025; year++) {
-            for (int i = 0; i < semesterNames.length; i++) {
-                switch (semesterNames[i]) {
-                    case "Summer":
-                        startDate = LocalDate.of(year, 1, 1);
-                        endDate = LocalDate.of(year, 4, 30);
-                        break;
-                    case "Fall":
-                        startDate = LocalDate.of(year, 5, 1);
-                        endDate = LocalDate.of(year, 8, 31);
-                        break;
-                    case "Spring":
-                        startDate = LocalDate.of(year, 9, 1);
-                        endDate = LocalDate.of(year, 12, 31);
-                        break;
-                    default:
-                        continue; // Nếu không phải là học kỳ hợp lệ thì bỏ qua
-                }
-                Semester semester = Semester.builder()
-                        .semesterCode(semesterNames[i] + year)
-                        .name(semesterNames[i] + " " + year)
-                        .startDate(startDate)
-                        .endDate(endDate)
-                        .build();
-                semesters.add(semester);
-            }
-        }
+            // Tạo danh sách ProblemTags cho mỗi category
+            List<ProblemTag> problemTags = new ArrayList<>();
+            for (int j = 1; j <= 3; j++) {
+                ProblemTag tag = new ProblemTag();
+                tag.setName("Problem Tag " + i + "-" + j);
+                tag.setPoint(j);
+                tag.setCategory(category);
 
-        semesterRepository.saveAll(semesters);
-
-        // Tạo sự kiện và TrainingPoint cho từng học kỳ
-        for (Semester semester : semesters) {
-            createEventsForSemester(semester);
-            createTrainingPointsForSemester(semester);
-        }
-    }
-
-    private void createTrainingPointsForSemester(Semester semester) {
-        // Tạo TrainingPoint cho mỗi sinh viên
-        List<Student> students = studentRepository.findAll();
-        for (Student student : students) {
-            TrainingPoint trainingPoint = TrainingPoint.builder()
-                    .student(student)
-                    .point(65) // Hoặc bất kỳ điểm nào bạn muốn khởi tạo
-                    .semester(semester)
-                    .build();
-
-            // Lưu TrainingPoint vào database
-            trainingPointRepository.save(trainingPoint);
-        }
-    }
-
-    private void createEventsForSemester(Semester semester) {
-        // Lấy danh sách các danh mục
-        List<Category> categories = categoryRepository.findAll();
-
-        for (int i = 1; i <= 2; i++) { // Tạo 5 sự kiện cho mỗi học kỳ
-            String eventContent = "This is the detailed content for Event " + i + " in " + semester.getName();
-            Event event = Event.builder()
-                    .title("Event " + i + " - " + semester.getName())
-                    .content(eventContent)
-                    .displayImage("https://www.mecc.nl/wp-content/uploads/2021/12/Header_zakelijk_event_IC_1440x600.jpg")
-                    .view(0)
-                    .isNeedAccept(false)
-                    .category(categories.get(i % categories.size()))
-                    .semester(semester)
-                    .build();
-
-            eventRepository.save(event);
-
-            // Tạo lịch cho các sự kiện trong phạm vi thời gian của học kỳ
-            LocalDateTime startDateTime = semester.getStartDate().atTime(10, 0) // Bắt đầu vào 10:00 của ngày bắt đầu học kỳ
-                    .plusDays(i * 9); // Thay đổi ngày bắt đầu cho từng sự kiện
-            LocalDateTime endDateTime = startDateTime.plusHours(2); // Kéo dài 2 tiếng
-
-            // Đảm bảo thời gian kết thúc không vượt quá ngày kết thúc của học kỳ
-            if (endDateTime.isAfter(semester.getEndDate().atTime(23, 59))) {
-                endDateTime = semester.getEndDate().atTime(23, 59);
+                // Thêm ProblemTag vào danh sách
+                problemTags.add(tag);
             }
 
-            EventSchedule schedule = EventSchedule.builder()
-                    .event(event)
-                    .startDate(startDateTime)
-                    .endDate(endDateTime)
-                    .maxParticipants(10)
-                    .currentParticipants(0)
-                    .address("Address for Event " + i)
-                    .build();
-
-            eventScheduleRepository.save(schedule);
-
-            // Tạo RecapVideo
-            RecapVideo recapVideo = RecapVideo.builder()
-                    .event(event)
-                    .videoUrl("https://res.cloudinary.com/dd8y8sska/video/upload/v1727066591/video/hulrayq22xw75ofaoxrg.mp4")
-                    .build();
-            recapVideoRepository.save(recapVideo);
-
-            // Tạo ContentImage
-            ContentImage contentImage = ContentImage.builder()
-                    .event(event)
-                    .imageUrl("https://res.cloudinary.com/dd8y8sska/image/upload/v1724948516/cld-sample-5.jpg")
-                    .build();
-            contentImageRepository.save(contentImage);
-            ContentImage contentImage2 = ContentImage.builder()
-                    .event(event)
-                    .imageUrl("https://res.cloudinary.com/dd8y8sska/image/upload/v1724948516/cld-sample-5.jpg")
-                    .build();
-            contentImageRepository.save(contentImage2);
+            category.setProblemTags(problemTags);  // Thiết lập danh sách ProblemTags cho category
+            categories.add(category);  // Thêm category vào danh sách
         }
+
+        // Lưu các ProblemCategory vào cơ sở dữ liệu
+        problemCategoryRepository.saveAll(categories);
     }
 
+    private void createVietnamHolidays() {
+        List<Holiday> holidays = new ArrayList<>();
 
+        // Tết Dương Lịch (1/1)
+        holidays.add(Holiday.builder()
+                .startDate(LocalDate.of(LocalDate.now().getYear(), 1, 1))
+                .endDate(LocalDate.of(LocalDate.now().getYear(), 1, 1))
+//                .type(HolidayType.SINGLE_DAY)
+                .description("Tết Dương Lịch")
+                .name("Tết Dương Lịch")
+                .build());
+
+        // Tết Nguyên Đán (7 ngày từ 29 tháng chạp đến mùng 5 tháng giêng)
+        holidays.add(Holiday.builder()
+                .startDate(LocalDate.of(LocalDate.now().getYear(), 2, 10)) // Ví dụ: ngày 29 tháng chạp
+                .endDate(LocalDate.of(LocalDate.now().getYear(), 2, 16))   // Ví dụ: mùng 5 tháng giêng
+//                .type(HolidayType.MULTIPLE_DAYS)
+                .description("Tết Nguyên Đán")
+                .name("Ngày Giải Phóng Miền Nam")
+                .build());
+
+        // Giỗ Tổ Hùng Vương (10/3 âm lịch)
+        holidays.add(Holiday.builder()
+                .startDate(LocalDate.of(LocalDate.now().getYear(), 4, 19)) // Giả định ngày 10/3 âm lịch rơi vào 19/4
+                .endDate(LocalDate.of(LocalDate.now().getYear(), 4, 19))
+//                .type(HolidayType.SINGLE_DAY)
+                .description("Giỗ Tổ Hùng Vương")
+                .name("Ngày Giải Phóng Miền Nam")
+                .build());
+
+        // Ngày Giải Phóng Miền Nam (30/4)
+        holidays.add(Holiday.builder()
+                .startDate(LocalDate.of(LocalDate.now().getYear(), 4, 30))
+                .endDate(LocalDate.of(LocalDate.now().getYear(), 4, 30))
+//                .type(HolidayType.SINGLE_DAY)
+                .description("Ngày Giải Phóng Miền Nam")
+                .name("Ngày Giải Phóng Miền Nam")
+                .build());
+
+        // Ngày Quốc Tế Lao Động (1/5)
+        holidays.add(Holiday.builder()
+                .startDate(LocalDate.of(LocalDate.now().getYear(), 5, 1))
+                .endDate(LocalDate.of(LocalDate.now().getYear(), 5, 1))
+//                .type(HolidayType.SINGLE_DAY)
+                .description("Ngày Quốc Tế Lao Động")
+                .name("Ngày Quốc Tế Lao Động")
+                .build());
+
+        // Quốc Khánh (2/9)
+        holidays.add(Holiday.builder()
+                .startDate(LocalDate.of(LocalDate.now().getYear(), 9, 2))
+                .endDate(LocalDate.of(LocalDate.now().getYear(), 9, 2)) // Có thể thêm 1 ngày nghỉ kèm tùy năm
+//                .type(HolidayType.SINGLE_DAY)
+                .description("Ngày Quốc Khánh")
+                .name("Ngày Quốc Khánh")
+                .build());
+
+        // Lưu danh sách các ngày nghỉ lễ vào cơ sở dữ liệu
+        holidayRepository.saveAll(holidays);
+    }
 
     private void createAdminAccount() {
-        String adminEmail = "admin@example.com";
+        String adminEmail = "a";
         logger.info("Checking if admin account with email '{}' exists.", adminEmail);
 
         if (accountRepository.findAccountByEmail(adminEmail).isEmpty()) {
@@ -231,7 +197,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             accountRepository.save(admin);
 
             LoginType adminLoginType = LoginType.builder()
-                    .password(passwordEncoder.encode("admin112233"))
+                    .password(passwordEncoder.encode("a"))
                     .method(LoginMethod.DEFAULT)
                     .account(admin)
                     .build();
@@ -267,66 +233,25 @@ public class DatabaseSeeder implements CommandLineRunner {
         notificationRepository.save(notification);
     }
 
-    private void createStudentAccount() {
-        String studentEmail = "student@example.com";
-        logger.info("Checking if student account with email '{}' exists.", studentEmail);
+    private void createStudentAccounts() {
+        List<Specialization> specializations = specializationRepository.findAll();
+        List<String> maleNames = List.of("John", "Michael", "David", "James", "Robert", "William", "Charles", "Joseph", "Daniel", "Matthew");
+        List<String> femaleNames = List.of("Emily", "Olivia", "Sophia", "Isabella", "Emma", "Ava", "Mia", "Amelia", "Charlotte", "Harper");
 
-        if (accountRepository.findAccountByEmail(studentEmail).isEmpty()) {
-            logger.info("student account does not exist. Creating new student account.");
+        for (int i = 0; i < 10; i++) {
+            createSingleStudentAccount(i, maleNames.get(i), "sm" + (i + 1), Gender.MALE, "SE11" + String.format("%04d", i + 1), specializations.getFirst());
+        }
 
-            Account student = Account.builder()
-                    .email(studentEmail)
-                    .role(Role.STUDENT)
-                    .status(Status.ACTIVE)
-                    .build();
-
-            accountRepository.save(student);
-
-            LoginType studentLoginType = LoginType.builder()
-                    .password(passwordEncoder.encode("student112233"))
-                    .method(LoginMethod.DEFAULT)
-                    .account(student)
-                    .build();
-
-            loginTypeRepository.save(studentLoginType);
-
-            // Create and save Profile for the student account
-            Student studentProfile = Student.builder()
-                    .account(student)
-                    .fullName("Student")
-                    .phoneNumber("1234567890")
-                    .avatarLink("https://www.strasys.uk/wp-content/uploads/2022/02/Depositphotos_484354208_S.jpg")
-                    .dateOfBirth(LocalDate.of(1980, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                    .studentCode("SE111111")
-                    .gender(Gender.MALE)
-                    .build();
-
-            profileRepository.save(studentProfile);
-
-            createNotificationForStudent(student);
-
-            logger.info("student account created with email '{}'.", studentEmail);
-        } else {
-            logger.warn("student account with email '{}' already exists.", studentEmail);
+        for (int i = 0; i < 10; i++) {
+            createSingleStudentAccount(i, femaleNames.get(i), "sf" + (i + 1), Gender.FEMALE, "SE11" + String.format("%04d", i + 11), specializations.getFirst());
         }
     }
 
-    private void createNotificationForStudent(Account student) {
-        Notification notification = Notification.builder()
-                .receiver(student)
-                .title("new noti")
-                .message("content")
-                .sender("SYSTEM")
-                .build();
-        notificationRepository.save(notification);
-    }
-
-    private void createStudentAccount2() {
-        String studentEmail = "student2@example.com";
+    private void createSingleStudentAccount(int index, String fullName, String studentEmail, Gender gender, String studentCode, Specialization specialization) {
         logger.info("Checking if student account with email '{}' exists.", studentEmail);
 
         if (accountRepository.findAccountByEmail(studentEmail).isEmpty()) {
-            logger.info("student account does not exist. Creating new student account.");
+            logger.info("Student account does not exist. Creating new student account.");
 
             Account student = Account.builder()
                     .email(studentEmail)
@@ -337,7 +262,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             accountRepository.save(student);
 
             LoginType studentLoginType = LoginType.builder()
-                    .password(passwordEncoder.encode("student112233"))
+                    .password(passwordEncoder.encode("s"))
                     .method(LoginMethod.DEFAULT)
                     .account(student)
                     .build();
@@ -347,24 +272,45 @@ public class DatabaseSeeder implements CommandLineRunner {
             // Create and save Profile for the student account
             Student studentProfile = Student.builder()
                     .account(student)
-                    .fullName("Student2")
-                    .phoneNumber("1234567890")
-                    .avatarLink("https://www.strasys.uk/wp-content/uploads/2022/02/Depositphotos_484354208_S.jpg")
-                    .dateOfBirth(LocalDate.of(1980, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli())
-                    .studentCode("SE111112")
-                    .gender(Gender.FEMALE)
+                    .fullName(fullName)
+                    .phoneNumber("1234567890") // You can change this to generate different phone numbers if needed
+                    .avatarLink(gender == Gender.MALE ? "https://png.pngtree.com/png-vector/20240204/ourlarge/pngtree-avatar-job-student-flat-portrait-of-man-png-image_11606889.png" : "https://thumbs.dreamstime.com/z/girl-avatar-face-student-schoolgirl-isolated-white-background-cartoon-style-vector-illustration-233213085.jpg")
+                    .dateOfBirth(LocalDate.of(2000, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()) // Sample DOB
+                    .studentCode(studentCode)
+                    .gender(gender)
+                    .specialization(specialization)
                     .build();
 
             profileRepository.save(studentProfile);
 
-            logger.info("student account created with email '{}'.", studentEmail);
+            if(index < 5) {
+                QuestionCard questionCard = QuestionCard.builder()
+                        .content("Nội dung câu hỏi cho " + fullName)
+                        .questionType(QuestionType.ACADEMIC) // Giả sử QuestionType có giá trị GENERAL
+                        .student(studentProfile)
+                        .status(QuestionCardStatus.VERIFIED)
+                        .build();
+
+                questionCardRepository.save(questionCard);
+            } else {
+                QuestionCard questionCard = QuestionCard.builder()
+                        .content("Nội dung câu hỏi cho " + fullName)
+                        .questionType(QuestionType.NON_ACADEMIC) // Giả sử QuestionType có giá trị GENERAL
+                        .student(studentProfile)
+                        .status(QuestionCardStatus.VERIFIED)
+                        .build();
+
+                questionCardRepository.save(questionCard);
+            }
+
+            logger.info("Student account created with email '{}'.", studentEmail);
         } else {
-            logger.warn("student account with email '{}' already exists.", studentEmail);
+            logger.warn("Student account with email '{}' already exists.", studentEmail);
         }
     }
 
     private void createManagerAccount() {
-        String managerEmail = "manager@example.com";
+        String managerEmail = "m";
         logger.info("Checking if manager account with email '{}' exists.", managerEmail);
 
         if (accountRepository.findAccountByEmail(managerEmail).isEmpty()) {
@@ -379,7 +325,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             accountRepository.save(manager);
 
             LoginType managerLoginType = LoginType.builder()
-                    .password(passwordEncoder.encode("manager112233"))
+                    .password(passwordEncoder.encode("m"))
                     .method(LoginMethod.DEFAULT)
                     .account(manager)
                     .build();
@@ -388,9 +334,9 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             Profile managerProfile = Profile.builder()
                     .account(manager)
-                    .fullName("Manager Name")
+                    .fullName("Manager")
                     .phoneNumber("0987654321")
-                    .avatarLink("https://example.com/avatar.jpg")
+                    .avatarLink("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT_L2rcFrALpfz1YvxwvK2PYh__MYyv8XzpZw&s")
                     .dateOfBirth(LocalDate.of(1985, 5, 15)
                             .atStartOfDay(ZoneId.systemDefault())
                             .toInstant()
@@ -406,19 +352,80 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
     }
 
+    private void createSupportStaffAccount() {
+        String supportStaffEmail = "ss";
+        logger.info("Checking if support staff account with email '{}' exists.", supportStaffEmail);
+
+        if (accountRepository.findAccountByEmail(supportStaffEmail).isEmpty()) {
+            logger.info("Support staff account does not exist. Creating new support staff account.");
+
+            Account supportStaff = Account.builder()
+                    .email(supportStaffEmail)
+                    .role(Role.SUPPORT_STAFF)  // Assuming you have a SUPPORT_STAFF role
+                    .status(Status.ACTIVE)
+                    .build();
+
+            accountRepository.save(supportStaff);
+
+            LoginType supportLoginType = LoginType.builder()
+                    .password(passwordEncoder.encode("ss"))
+                    .method(LoginMethod.DEFAULT)
+                    .account(supportStaff)
+                    .build();
+
+            loginTypeRepository.save(supportLoginType);
+
+            Profile supportProfile = Profile.builder()
+                    .account(supportStaff)
+                    .fullName("Support staff")
+                    .phoneNumber("0987654321")
+                    .avatarLink("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTbcgVPXa2ROdMbYfGCTKjcL6KE9p-So1BaxQ&s")
+                    .dateOfBirth(LocalDate.of(1990, 1, 1)
+                            .atStartOfDay(ZoneId.systemDefault())
+                            .toInstant()
+                            .toEpochMilli())
+                    .gender(Gender.FEMALE)  // Assuming the support staff is female
+                    .build();
+
+            profileRepository.save(supportProfile);
+
+            logger.info("Support staff account created with email '{}'.", supportStaffEmail);
+        } else {
+            logger.warn("Support staff account with email '{}' already exists.", supportStaffEmail);
+        }
+    }
+
+    @Transactional
     private void createCounselorAccounts() {
 
         List<CounselingSlot> counselingSlots = counselingSlotRepository.findAll();
 
-        // List of counselor full names in Vietnamese
-        List<String> maleNames = List.of("Nguyễn Văn A", "Trần Văn B", "Lê Văn C", "Phạm Văn D", "Đỗ Văn E", "Hoàng Văn F");
-        List<String> femaleNames = List.of("Nguyễn Thị G", "Trần Thị H", "Lê Thị I", "Phạm Thị J", "Đỗ Thị K", "Hoàng Thị L");
+        // List of counselor full names in Vietnamese with unique numbers
+        List<String> maleNames = List.of("Nguyễn Văn A1", "Nguyễn Văn A2", "Nguyễn Văn A3", "Nguyễn Văn A4",
+                "Trần Văn B1", "Trần Văn B2", "Trần Văn B3", "Trần Văn B4",
+                "Lê Văn C1", "Lê Văn C2", "Lê Văn C3", "Lê Văn C4",
+                "Phạm Văn D1", "Phạm Văn D2", "Phạm Văn D3", "Phạm Văn D4",
+                "Đỗ Văn E1", "Đỗ Văn E2", "Đỗ Văn E3", "Đỗ Văn E4",
+                "Hoàng Văn F1", "Hoàng Văn F2", "Hoàng Văn F3", "Hoàng Văn F4");
+
+        List<String> femaleNames = List.of("Nguyễn Thị G1", "Nguyễn Thị G2", "Nguyễn Thị G3", "Nguyễn Thị G4",
+                "Trần Thị H1", "Trần Thị H2", "Trần Thị H3", "Trần Thị H4",
+                "Lê Thị I1", "Lê Thị I2", "Lê Thị I3", "Lê Thị I4",
+                "Phạm Thị J1", "Phạm Thị J2", "Phạm Thị J3", "Phạm Thị J4",
+                "Đỗ Thị K1", "Đỗ Thị K2", "Đỗ Thị K3", "Đỗ Thị K4",
+                "Hoàng Thị L1", "Hoàng Thị L2", "Hoàng Thị L3", "Hoàng Thị L4");
+
+        // List of specialization names
+        List<String> specializationNames = List.of("Khoa học tâm lý", "Giáo dục", "Kinh tế");
 
         // List of expertise names
-        List<String> expertiseNames = List.of("Tâm lý học", "Tư vấn gia đình", "Tư vấn nghề nghiệp", "Tư vấn sức khỏe", "Tư vấn tài chính", "Tư vấn giáo dục");
+        List<String> expertiseNames = List.of("Tâm lý học", "Tư vấn gia đình", "Tư vấn nghề nghiệp");
 
-        // List of genders
-        List<Gender> genders = List.of(Gender.MALE, Gender.FEMALE);
+        // Creating specialization entities if they don't exist
+        List<Specialization> specializationList = specializationNames.stream()
+                .map(name -> specializationRepository.findByName(name)
+                        .orElseGet(() -> specializationRepository.save(Specialization.builder().name(name).build())))
+                .toList();
 
         // Creating expertise entities if they don't exist
         List<Expertise> expertiseList = expertiseNames.stream()
@@ -426,74 +433,156 @@ public class DatabaseSeeder implements CommandLineRunner {
                         .orElseGet(() -> expertiseRepository.save(Expertise.builder().name(name).build())))
                 .toList();
 
-        int index = 0;
+        int maleIndex = 0;
+        int femaleIndex = 0;
 
-        for (Expertise expertise : expertiseList) {
-            // Create two counselors for each expertise (one male, one female)
-            for (Gender gender : genders) {
-
-                int[] startAndEnd = RandomUtil.getRandomStartEnd(0, counselingSlots.size(), 4);
-
-                List<CounselingSlot> counselorSlots = getCounselorSlot(startAndEnd, counselingSlots);
-
-                String counselorEmail = "counselor" + (index + 1) + "@example.com";
-
-                logger.info("Checking if counselor account with email '{}' exists.", counselorEmail);
-
-                if (accountRepository.findAccountByEmail(counselorEmail).isEmpty()) {
-                    logger.info("Counselor account does not exist. Creating new counselor account for expertise '{}'.", expertise.getName());
-
-                    Account counselor = Account.builder()
-                            .email(counselorEmail)
-                            .role(Role.COUNSELOR)
-                            .status(Status.ACTIVE)
-                            .build();
-
-                    accountRepository.save(counselor);
-
-                    LoginType counselorLoginType = LoginType.builder()
-                            .password(passwordEncoder.encode("counselor112233"))
-                            .method(LoginMethod.DEFAULT)
-                            .account(counselor)
-                            .build();
-
-                    loginTypeRepository.save(counselorLoginType);
-
-                    // Create and save Profile for the counselor account
-                    Counselor counselorProfile = Counselor.builder()
-                            .account(counselor)
-                            .fullName(gender == Gender.MALE ? maleNames.get(index / 2) : femaleNames.get(index / 2))
-                            .phoneNumber("123456789" + index)
-                            .avatarLink(gender == Gender.MALE
-                                    ? "https://png.pngtree.com/png-vector/20230903/ourmid/pngtree-man-avatar-isolated-png-image_9935819.png"
-                                    : "https://static.vecteezy.com/system/resources/thumbnails/004/899/680/small/beautiful-blonde-woman-with-makeup-avatar-for-a-beauty-salon-illustration-in-the-cartoon-style-vector.jpg")
-                            .dateOfBirth(LocalDate.of(1980 + index % 10, 1, 1)
-                                    .atStartOfDay(ZoneId.systemDefault())
-                                    .toInstant()
-                                    .toEpochMilli())
-                            .rating(BigDecimal.valueOf(4.0)) // Sample ratings between 4.0 and 4.6
-                            .gender(gender)
-                            .expertise(expertise)
-                            .status(CounselorStatus.AVAILABLE)
-                            .counselingSlots(counselorSlots)
-                            .build();
-
-                    AvailableDateRange availableDateRange = createAvailableDateRangeFromTodayToTwoMonths(counselorProfile);
-
-                    counselorProfile.setAvailableDateRange(availableDateRange);
-
-                    profileRepository.save(counselorProfile);
-
-                    logger.info("Counselor account created with email '{}'.", counselorEmail);
-                } else {
-                    logger.warn("Counselor account with email '{}' already exists.", counselorEmail);
+        // Create Academic Counselors
+        for (Specialization specialization : specializationList) {
+            for (int i = 0; i < 4; i++) {
+                if (femaleIndex <= 11) {
+                    createAcademicCounselor(femaleIndex, Gender.FEMALE, femaleNames.get(femaleIndex), specialization, counselingSlots);
+                    femaleIndex++;
                 }
-
-                index++;
             }
         }
 
+        // Create Academic Counselors
+        for (Specialization specialization : specializationList) {
+            for (int i = 0; i < 4; i++) {
+                if (maleIndex <= 11) {
+                    createAcademicCounselor(maleIndex, Gender.MALE, maleNames.get(maleIndex), specialization, counselingSlots);
+                    maleIndex++;
+                }
+            }
+        }
 
+        maleIndex = 0;
+        femaleIndex = 0;
+
+        // Create Non-Academic Counselors
+        for (Expertise expertise : expertiseList) {
+            for (int i = 0; i < 4; i++) { // 4 counselors per expertise
+                if (femaleIndex <= 11) {
+                    createNonAcademicCounselor(femaleIndex, Gender.FEMALE, femaleNames.get(femaleIndex), expertise, counselingSlots);
+                    femaleIndex++;
+                }
+            }
+        }
+
+        for (Expertise expertise : expertiseList) {
+            for (int i = 0; i < 4; i++) { // 4 counselors per expertise
+                if (maleIndex <= 11) {
+                    createNonAcademicCounselor(maleIndex, Gender.MALE, maleNames.get(maleIndex), expertise, counselingSlots);
+                    maleIndex++;
+                }
+            }
+        }
+    }
+
+    private void createAcademicCounselor(int index, Gender gender, String fullName, Specialization specialization, List<CounselingSlot> counselingSlots) {
+        int[] startAndEnd = RandomUtil.getRandomStartEnd(0, counselingSlots.size(), 4);
+        List<CounselingSlot> counselorSlots = getCounselorSlot(startAndEnd, counselingSlots);
+
+        String counselorEmail = "ac" + ((gender == Gender.FEMALE) ? "f" : "m") + (index + 1);
+
+        logger.info("Checking if academic counselor account with email '{}' exists.", counselorEmail);
+
+        if (accountRepository.findAccountByEmail(counselorEmail).isEmpty()) {
+            logger.info("Academic counselor account does not exist. Creating new account for specialization '{}'.", specialization.getName());
+
+            Account counselor = Account.builder()
+                    .email(counselorEmail)
+                    .role(Role.ACADEMIC_COUNSELOR)
+                    .status(Status.ACTIVE)
+                    .build();
+
+            accountRepository.save(counselor);
+
+            LoginType counselorLoginType = LoginType.builder()
+                    .password(passwordEncoder.encode("c"))
+                    .method(LoginMethod.DEFAULT)
+                    .account(counselor)
+                    .build();
+
+            loginTypeRepository.save(counselorLoginType);
+
+            AcademicCounselor counselorProfile = AcademicCounselor.builder()
+                    .account(counselor)
+                    .fullName(fullName + " " + (index + 1))
+                    .phoneNumber("123456789" + index)
+                    .avatarLink(gender == Gender.MALE
+                            ? "https://png.pngtree.com/png-vector/20230903/ourmid/pngtree-man-avatar-isolated-png-image_9935819.png"
+                            : "https://static.vecteezy.com/system/resources/thumbnails/004/899/680/small/beautiful-blonde-woman-with-makeup-avatar-for-a-beauty-salon-illustration-in-the-cartoon-style-vector.jpg") // Set a default avatar
+                    .dateOfBirth(LocalDate.of(1980 + index % 10, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                    .rating(BigDecimal.valueOf(4.0))
+                    .gender(gender) // Adjust as needed
+                    .specialization(specialization)
+                    .status(CounselorStatus.AVAILABLE)
+                    .counselingSlots(counselorSlots)
+                    .academicDegree("Thạc sĩ") // Adjust degree as needed
+                    .build();
+
+            AvailableDateRange availableDateRange = createAvailableDateRangeFromTodayToTwoMonths(counselorProfile);
+            counselorProfile.setAvailableDateRange(availableDateRange);
+
+            profileRepository.save(counselorProfile);
+            logger.info("Academic counselor account created with email '{}'.", counselorEmail);
+        } else {
+            logger.warn("Academic counselor account with email '{}' already exists.", counselorEmail);
+        }
+    }
+
+    private void createNonAcademicCounselor(int index, Gender gender, String fullName, Expertise expertise, List<CounselingSlot> counselingSlots) {
+        int[] startAndEnd = RandomUtil.getRandomStartEnd(0, counselingSlots.size(), 4);
+        List<CounselingSlot> counselorSlots = getCounselorSlot(startAndEnd, counselingSlots);
+
+        String counselorEmail = "nac" + ((gender == Gender.FEMALE) ? "f" : "m") + (index + 1);
+
+        logger.info("Checking if non-academic counselor account with email '{}' exists.", counselorEmail);
+
+        if (accountRepository.findAccountByEmail(counselorEmail).isEmpty()) {
+            logger.info("Non-academic counselor account does not exist. Creating new account for expertise '{}'.", expertise.getName());
+
+            Account counselor = Account.builder()
+                    .email(counselorEmail)
+                    .role(Role.NON_ACADEMIC_COUNSELOR)
+                    .status(Status.ACTIVE)
+                    .build();
+
+            accountRepository.save(counselor);
+
+            LoginType counselorLoginType = LoginType.builder()
+                    .password(passwordEncoder.encode("c"))
+                    .method(LoginMethod.DEFAULT)
+                    .account(counselor)
+                    .build();
+
+            loginTypeRepository.save(counselorLoginType);
+
+            NonAcademicCounselor counselorProfile = NonAcademicCounselor.builder()
+                    .account(counselor)
+                    .fullName(fullName + " " + (index + 1))
+                    .phoneNumber("123456789" + index)
+                    .avatarLink(gender == Gender.MALE
+                            ? "https://png.pngtree.com/png-vector/20230903/ourmid/pngtree-man-avatar-isolated-png-image_9935819.png"
+                            : "https://static.vecteezy.com/system/resources/thumbnails/004/899/680/small/beautiful-blonde-woman-with-makeup-avatar-for-a-beauty-salon-illustration-in-the-cartoon-style-vector.jpg") // Set a default avatar
+                    .dateOfBirth(LocalDate.of(1980 + index % 10, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                    .rating(BigDecimal.valueOf(4.0))
+                    .gender(gender) // Adjust as needed
+                    .expertise(expertise)
+                    .industryExperience(5) // Set an example for industry experience
+                    .status(CounselorStatus.AVAILABLE)
+                    .counselingSlots(counselorSlots)
+                    .build();
+
+            AvailableDateRange availableDateRange = createAvailableDateRangeFromTodayToTwoMonths(counselorProfile);
+            counselorProfile.setAvailableDateRange(availableDateRange);
+
+            profileRepository.save(counselorProfile);
+            logger.info("Non-academic counselor account created with email '{}'.", counselorEmail);
+        } else {
+            logger.warn("Non-academic counselor account with email '{}' already exists.", counselorEmail);
+        }
     }
 
     public AvailableDateRange createAvailableDateRangeFromTodayToTwoMonths(Counselor counselor) {
@@ -514,92 +603,6 @@ public class DatabaseSeeder implements CommandLineRunner {
             counselorSlots.add(counselingSlots.get(i));
         }
         return counselorSlots;
-    }
-
-//    private void createCounselorAccount() {
-//        String counselorEmail = "counselor@example.com";
-//        logger.info("Checking if counselor account with email '{}' exists.", counselorEmail);
-//
-//        if (accountRepository.findAccountByEmail(counselorEmail).isEmpty()) {
-//            logger.info("counselor account does not exist. Creating new counselor account.");
-//
-//            Account counselor = Account.builder()
-//                    .email(counselorEmail)
-//                    .role(Role.COUNSELOR)
-//                    .status(Status.ACTIVE)
-//                    .build();
-//
-//            accountRepository.save(counselor);
-//
-//            LoginType counselorLoginType = LoginType.builder()
-//                    .password(passwordEncoder.encode("counselor112233"))
-//                    .method(LoginMethod.DEFAULT)
-//                    .account(counselor)
-//                    .build();
-//
-//            loginTypeRepository.save(counselorLoginType);
-//
-//            // Create and save Profile for the counselor account
-//            Counselor counselorProfile = Counselor.builder()
-//                    .account(counselor)
-//                    .fullName("Counselor")
-//                    .phoneNumber("1234567890")
-//                    .avatarLink("https://www.strasys.uk/wp-content/uploads/2022/02/Depositphotos_484354208_S.jpg")
-//                    .dateOfBirth(LocalDate.of(1980, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli())
-//                    .rating(BigDecimal.valueOf(4.6))
-//                    .build();
-//
-//            profileRepository.save(counselorProfile);
-//
-//            generateSlots();
-//
-//            createCounselingAppointmentRequest(counselorProfile);
-//            createCounselingAppointmentRequest2(counselorProfile);
-//
-//            logger.info("counselor account created with email '{}'.", counselorEmail);
-//        } else {
-//            logger.warn("counselor account with email '{}' already exists.", counselorEmail);
-//        }
-//    }
-
-    private void createCounselingAppointmentRequest(Counselor counselor) {
-
-        Student student = studentRepository.findById(2L).orElseThrow(() -> new NotFoundException("Student Not Found"));
-
-        CounselingAppointmentRequest appointmentRequest = CounselingAppointmentRequest.builder()
-                .requireDate(LocalDate.of(2024, 9, 13)) // Ngày 16/11/2024
-                .startTime(LocalTime.of(8, 0)) // 08:30
-                .endTime(LocalTime.of(9, 0)) // Ví dụ giờ kết thúc
-                .status(CounselingAppointmentRequestStatus.APPROVED)
-                .meetingType(MeetingType.ONLINE)
-                .reason("Counseling session")
-                .counselor(counselor)
-                .student(student)
-                .build();
-
-        counselingAppointmentRequestRepository.save(appointmentRequest);
-
-        createOnlineCounselingAppointment(appointmentRequest);
-    }
-
-    private void createCounselingAppointmentRequest2(Counselor counselor) {
-
-        Student student = studentRepository.findById(2L).orElseThrow(() -> new NotFoundException("Student Not Found"));
-
-        CounselingAppointmentRequest appointmentRequest = CounselingAppointmentRequest.builder()
-                .requireDate(LocalDate.of(2024, 9, 20)) // Ngày 16/11/2024
-                .startTime(LocalTime.of(9, 15)) // 08:30
-                .endTime(LocalTime.of(10, 15)) // Ví dụ giờ kết thúc
-                .status(CounselingAppointmentRequestStatus.APPROVED)
-                .meetingType(MeetingType.OFFLINE)
-                .reason("Counseling session")
-                .counselor(counselor)
-                .student(student)
-                .build();
-
-        counselingAppointmentRequestRepository.save(appointmentRequest);
-
-        createOfflineCounselingAppointment(appointmentRequest);
     }
 
     private void createOnlineCounselingAppointment(CounselingAppointmentRequest appointmentRequest) {
@@ -674,5 +677,172 @@ public class DatabaseSeeder implements CommandLineRunner {
             endTime = startTime.plusHours(1).plusMinutes(0); // Thêm thời gian cho slot tiếp theo
         }
     }
+
+    //    private void createCounselingAppointmentRequest(Counselor counselor) {
+//
+//        Student student = studentRepository.findById(2L).orElseThrow(() -> new NotFoundException("Student Not Found"));
+//
+//        CounselingAppointmentRequest appointmentRequest = CounselingAppointmentRequest.builder()
+//                .requireDate(LocalDate.of(2024, 9, 13)) // Ngày 16/11/2024
+//                .startTime(LocalTime.of(8, 0)) // 08:30
+//                .endTime(LocalTime.of(9, 0)) // Ví dụ giờ kết thúc
+//                .status(CounselingAppointmentRequestStatus.APPROVED)
+//                .meetingType(MeetingType.ONLINE)
+//                .reason("Counseling session")
+//                .counselor(counselor)
+//                .student(student)
+//                .build();
+//
+//        counselingAppointmentRequestRepository.save(appointmentRequest);
+//
+//        createOnlineCounselingAppointment(appointmentRequest);
+//    }
+//
+//    private void createCounselingAppointmentRequest2(Counselor counselor) {
+//
+//        Student student = studentRepository.findById(2L).orElseThrow(() -> new NotFoundException("Student Not Found"));
+//
+//        CounselingAppointmentRequest appointmentRequest = CounselingAppointmentRequest.builder()
+//                .requireDate(LocalDate.of(2024, 9, 20)) // Ngày 16/11/2024
+//                .startTime(LocalTime.of(9, 15)) // 08:30
+//                .endTime(LocalTime.of(10, 15)) // Ví dụ giờ kết thúc
+//                .status(CounselingAppointmentRequestStatus.APPROVED)
+//                .meetingType(MeetingType.OFFLINE)
+//                .reason("Counseling session")
+//                .counselor(counselor)
+//                .student(student)
+//                .build();
+//
+//        counselingAppointmentRequestRepository.save(appointmentRequest);
+//
+//        createOfflineCounselingAppointment(appointmentRequest);
+//    }
+
+//    private void createCategories() {
+//        // Tạo 4 danh mục
+//        for (int i = 1; i <= 4; i++) {
+//            Category category = new Category("CODE" + i, "Category " + i);
+//            categoryRepository.save(category);
+//        }
+//    }
+//
+//    private void createSemesters() {
+//        // Tạo các học kỳ cho năm 2024 và 2025
+//        List<Semester> semesters = new ArrayList<>();
+//        String[] semesterNames = {"Summer", "Fall", "Spring"};
+//        LocalDate startDate;
+//        LocalDate endDate;
+//
+//        for (int year = 2024; year <= 2025; year++) {
+//            for (int i = 0; i < semesterNames.length; i++) {
+//                switch (semesterNames[i]) {
+//                    case "Summer":
+//                        startDate = LocalDate.of(year, 1, 1);
+//                        endDate = LocalDate.of(year, 4, 30);
+//                        break;
+//                    case "Fall":
+//                        startDate = LocalDate.of(year, 5, 1);
+//                        endDate = LocalDate.of(year, 8, 31);
+//                        break;
+//                    case "Spring":
+//                        startDate = LocalDate.of(year, 9, 1);
+//                        endDate = LocalDate.of(year, 12, 31);
+//                        break;
+//                    default:
+//                        continue; // Nếu không phải là học kỳ hợp lệ thì bỏ qua
+//                }
+//                Semester semester = Semester.builder()
+//                        .semesterCode(semesterNames[i] + year)
+//                        .name(semesterNames[i] + " " + year)
+//                        .startDate(startDate)
+//                        .endDate(endDate)
+//                        .build();
+//                semesters.add(semester);
+//            }
+//        }
+//
+//        semesterRepository.saveAll(semesters);
+//
+//        // Tạo sự kiện và TrainingPoint cho từng học kỳ
+//        for (Semester semester : semesters) {
+//            createEventsForSemester(semester);
+//            createTrainingPointsForSemester(semester);
+//        }
+//    }
+//
+//    private void createTrainingPointsForSemester(Semester semester) {
+//        // Tạo TrainingPoint cho mỗi sinh viên
+//        List<Student> students = studentRepository.findAll();
+//        for (Student student : students) {
+//            TrainingPoint trainingPoint = TrainingPoint.builder()
+//                    .student(student)
+//                    .point(65) // Hoặc bất kỳ điểm nào bạn muốn khởi tạo
+//                    .semester(semester)
+//                    .build();
+//
+//            // Lưu TrainingPoint vào database
+//            trainingPointRepository.save(trainingPoint);
+//        }
+//    }
+//
+//    private void createEventsForSemester(Semester semester) {
+//        // Lấy danh sách các danh mục
+//        List<Category> categories = categoryRepository.findAll();
+//
+//        for (int i = 1; i <= 2; i++) { // Tạo 5 sự kiện cho mỗi học kỳ
+//            String eventContent = "This is the detailed content for Event " + i + " in " + semester.getName();
+//            Event event = Event.builder()
+//                    .title("Event " + i + " - " + semester.getName())
+//                    .content(eventContent)
+//                    .displayImage("https://www.mecc.nl/wp-content/uploads/2021/12/Header_zakelijk_event_IC_1440x600.jpg")
+//                    .view(0)
+//                    .isNeedAccept(false)
+//                    .category(categories.get(i % categories.size()))
+//                    .semester(semester)
+//                    .build();
+//
+//            eventRepository.save(event);
+//
+//            // Tạo lịch cho các sự kiện trong phạm vi thời gian của học kỳ
+//            LocalDateTime startDateTime = semester.getStartDate().atTime(10, 0) // Bắt đầu vào 10:00 của ngày bắt đầu học kỳ
+//                    .plusDays(i * 9); // Thay đổi ngày bắt đầu cho từng sự kiện
+//            LocalDateTime endDateTime = startDateTime.plusHours(2); // Kéo dài 2 tiếng
+//
+//            // Đảm bảo thời gian kết thúc không vượt quá ngày kết thúc của học kỳ
+//            if (endDateTime.isAfter(semester.getEndDate().atTime(23, 59))) {
+//                endDateTime = semester.getEndDate().atTime(23, 59);
+//            }
+//
+//            EventSchedule schedule = EventSchedule.builder()
+//                    .event(event)
+//                    .startDate(startDateTime)
+//                    .endDate(endDateTime)
+//                    .maxParticipants(10)
+//                    .currentParticipants(0)
+//                    .address("Address for Event " + i)
+//                    .build();
+//
+//            eventScheduleRepository.save(schedule);
+//
+//            // Tạo RecapVideo
+//            RecapVideo recapVideo = RecapVideo.builder()
+//                    .event(event)
+//                    .videoUrl("https://res.cloudinary.com/dd8y8sska/video/upload/v1727066591/video/hulrayq22xw75ofaoxrg.mp4")
+//                    .build();
+//            recapVideoRepository.save(recapVideo);
+//
+//            // Tạo ContentImage
+//            ContentImage contentImage = ContentImage.builder()
+//                    .event(event)
+//                    .imageUrl("https://res.cloudinary.com/dd8y8sska/image/upload/v1724948516/cld-sample-5.jpg")
+//                    .build();
+//            contentImageRepository.save(contentImage);
+//            ContentImage contentImage2 = ContentImage.builder()
+//                    .event(event)
+//                    .imageUrl("https://res.cloudinary.com/dd8y8sska/image/upload/v1724948516/cld-sample-5.jpg")
+//                    .build();
+//            contentImageRepository.save(contentImage2);
+//        }
+//    }
 
 }

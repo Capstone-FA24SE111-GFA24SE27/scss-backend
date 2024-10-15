@@ -2,11 +2,15 @@ package com.capstone2024.scss.domain.common.mapper.appointment_counseling;
 
 import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppointmentDTO;
 import com.capstone2024.scss.application.counseling_appointment.dto.CounselingAppointmentForReportResponse;
+import com.capstone2024.scss.domain.common.mapper.account.CounselorProfileMapper;
+import com.capstone2024.scss.domain.common.mapper.student.StudentMapper;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.AppointmentFeedback;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.CounselingAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OfflineAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OnlineAppointment;
+import com.capstone2024.scss.domain.counselor.entities.AcademicCounselor;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.counselor.entities.NonAcademicCounselor;
 import com.capstone2024.scss.domain.student.entities.Student;
 
 public class CounselingAppointmentMapper {
@@ -35,8 +39,8 @@ public class CounselingAppointmentMapper {
         // Thêm thông tin của counselor và student
         Counselor counselor = appointment.getAppointmentRequest().getCounselor();
         Student student = appointment.getAppointmentRequest().getStudent();
-        dtoBuilder.counselorInfo(CounselorProfileMapper.toCounselorProfileDTO(counselor));
-        dtoBuilder.studentInfo(StudentProfileMapper.toStudentProfileDTO(student));
+        dtoBuilder.counselorInfo((counselor instanceof NonAcademicCounselor) ? CounselorProfileMapper.toNonAcademicCounselorProfileDTO((NonAcademicCounselor) counselor) : CounselorProfileMapper.toAcademicCounselorProfileDTO((AcademicCounselor) counselor));
+        dtoBuilder.studentInfo(StudentMapper.toStudentProfileDTO(student));
 
         return dtoBuilder.build();
     }

@@ -2,6 +2,7 @@ package com.capstone2024.scss.application.booking_counseling.dto.counseling_appo
 
 import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
 import com.capstone2024.scss.application.account.dto.StudentProfileDTO;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +19,7 @@ public class CounselingAppointmentRequestDTO {
     private LocalTime endTime;
     private String status;
     private MeetingType meetingType;
+    private CounselingAppointmentRequest.RequestType requestType;
     private String reason;
     private AppointmentDetailsDTO appointmentDetails;
 

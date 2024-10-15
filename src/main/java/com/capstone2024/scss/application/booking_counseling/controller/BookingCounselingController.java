@@ -16,14 +16,13 @@ import com.capstone2024.scss.application.common.utils.ResponseUtil;
 import com.capstone2024.scss.application.booking_counseling.dto.request.CreateCounselingAppointmentRequestDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.enums.Role;
+import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselingRequestMapper;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
-import com.capstone2024.scss.domain.event.entities.enums.AttendanceStatus;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentRequestService;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -89,17 +88,7 @@ public class BookingCounselingController {
                     (Student) principal.getProfile()
             );
 
-            CounselingAppointmentRequestResponseDTO responseDTO = CounselingAppointmentRequestResponseDTO.builder()
-                    .id(appointmentRequest.getId())
-                    .createdDate(appointmentRequest.getCreatedDate())
-                    .requireDate(appointmentRequest.getRequireDate())
-                    .startTime(appointmentRequest.getStartTime())
-                    .endTime(appointmentRequest.getEndTime())
-                    .status(appointmentRequest.getStatus().name())
-                    .meetingType(appointmentRequest.getMeetingType().name())
-                    .reason(appointmentRequest.getReason())
-                    .counselorId(appointmentRequest.getCounselor().getId())
-                    .build();
+            CounselingAppointmentRequestDTO responseDTO = CounselingRequestMapper.convertToDTO(appointmentRequest);
 
             logger.info("Successfully created appointment request with ID: {}", appointmentRequest.getId());
 
@@ -215,7 +204,7 @@ public class BookingCounselingController {
         }
 
         List<CounselingAppointmentDTO> appointments;
-        if (principal.getRole() == Role.COUNSELOR) {
+        if (principal.getRole() == Role.NON_ACADEMIC_COUNSELOR || principal.getRole() == Role.ACADEMIC_COUNSELOR) {
             appointments = appointmentService.getAppointmentsForCounselor(fromDate, toDate, principal.getProfile().getId());
             logger.info("Returning appointments for counselor: {}", principal.getUsername());
         } else if (principal.getRole() == Role.STUDENT) {

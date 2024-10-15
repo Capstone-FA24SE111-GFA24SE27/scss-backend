@@ -106,11 +106,11 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(config ->
                         config.requestMatchers(HttpMethod.PUT,"/api/booking-counseling/approve/**")
-                                .hasAnyRole(Role.COUNSELOR.name()))
+                                .hasAnyRole(Role.NON_ACADEMIC_COUNSELOR.name(), Role.ACADEMIC_COUNSELOR.name()))
 
                 .authorizeHttpRequests(config ->
                         config.requestMatchers(HttpMethod.PUT,"/api/booking-counseling/deny/**")
-                                .hasAnyRole(Role.COUNSELOR.name()))
+                                .hasAnyRole(Role.NON_ACADEMIC_COUNSELOR.name(), Role.ACADEMIC_COUNSELOR.name()))
 
                 .authorizeHttpRequests(config ->
                         config.requestMatchers("/api/manager/counselors/**")

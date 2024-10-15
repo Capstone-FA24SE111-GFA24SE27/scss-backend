@@ -22,6 +22,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@Inheritance(strategy = InheritanceType.JOINED)
 @Table(name = "counselor")
 @PrimaryKeyJoinColumn(name = "profile_id")
 public class Counselor extends Profile {
@@ -32,9 +33,9 @@ public class Counselor extends Profile {
     @OneToMany(mappedBy = "counselor")
     private List<AppointmentFeedback> feedbackList;
 
-    @ManyToOne
-    @JoinColumn(name = "expertise_id", nullable = false)
-    private Expertise expertise;
+//    @ManyToOne
+//    @JoinColumn(name = "expertise_id", nullable = false)
+//    private Expertise expertise;
 
     @ManyToMany
     @JoinTable(

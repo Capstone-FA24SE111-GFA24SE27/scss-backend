@@ -1,14 +1,15 @@
 package com.capstone2024.scss.application.account.dto;
 
-import com.capstone2024.scss.domain.common.mapper.appointment_counseling.ExpertiseDTO;
+import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
 import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CounselorProfileDTO {
@@ -22,5 +23,5 @@ public class CounselorProfileDTO {
 
     private Gender gender;
 
-    private ExpertiseDTO expertise;
+    private CounselorStatus status;
 }

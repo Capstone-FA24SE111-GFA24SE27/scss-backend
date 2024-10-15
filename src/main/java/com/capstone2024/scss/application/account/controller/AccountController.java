@@ -9,6 +9,7 @@ import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
 import com.capstone2024.scss.application.notification.dtos.NotificationDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
+import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.account.enums.Status;
 import com.capstone2024.scss.domain.account.services.AccountService;
 import com.capstone2024.scss.domain.notification.services.NotificationService;
@@ -76,10 +77,11 @@ public class AccountController {
             }
     )
     public ResponseEntity<Object> getAccountsWithFilter(
-            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "search", defaultValue = "", required = false) String search,
             @RequestParam(name = "status", required = false) Status status,
             @RequestParam(name = "SortDirection", defaultValue = "DESC") SortDirection sortDirection,
             @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
+            @RequestParam(name = "role", required = true) Role role,
             @RequestParam(name = "page", defaultValue = "1") Integer page) {
 
         logger.debug("Entering getAccountsWithFilter method with parameters - Search: {}, Status: {}, SortDirection: {}, SortBy: {}, Page: {}", search, status, sortDirection, sortBy, page);
@@ -94,18 +96,19 @@ public class AccountController {
                 .status(status)
                 .soreDirection(sortDirection)
                 .sortBy(sortBy)
+                .role(role)
                 .pagination(PageRequest.of(page - 1, 10))
                 .build());
 
         logger.debug("Successfully fetched accounts with filter - Total elements: {}", responseDTO.getTotalElements());
 
-        notificationService.sendNotification(NotificationDTO.builder()
-                .receiverId(2L)
-                .message("This is a test message")
-                .title("Test")
-                .sender("TEST")
-                .readStatus(false)
-                .build());
+//        notificationService.sendNotification(NotificationDTO.builder()
+//                .receiverId(2L)
+//                .message("This is a test message")
+//                .title("Test")
+//                .sender("TEST")
+//                .readStatus(false)
+//                .build());
 
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }

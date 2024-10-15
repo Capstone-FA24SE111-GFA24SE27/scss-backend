@@ -1,6 +1,7 @@
 package com.capstone2024.scss.domain.student.entities;
 
 import com.capstone2024.scss.domain.account.entities.Profile;
+import com.capstone2024.scss.domain.counselor.entities.Specialization;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,4 +21,8 @@ public class Student extends Profile {
 
     @Column(name = "student_code", nullable = false, unique = true)
     private String studentCode;
+
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "specialization_id", nullable = true)
+    private Specialization specialization;
 }

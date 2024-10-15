@@ -35,7 +35,7 @@ public class Account extends BaseEntity implements UserDetails {
     private Profile profile;
 
     @Convert(converter = RoleConverter.class)
-    @Column(name = "role", nullable = false, length = 20)
+    @Column(name = "role", nullable = false, length = 50)
     private Role role;
 
     @Convert(converter = StatusConverter.class)

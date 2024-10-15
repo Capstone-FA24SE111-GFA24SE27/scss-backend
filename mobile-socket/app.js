@@ -70,6 +70,7 @@ async function startRabbitMQ() {
 
         channel.consume("real_time_counseling_slot", (msg) => {
             if (msg.content) {
+
                 let realTimeSlotMsg = JSON.parse(msg.content.toString());
                 realTimeSlotMsg = {...realTimeSlotMsg, dateChange: formatDate(realTimeSlotMsg.dateChange)}
                 console.log('Received message from RabbitMQ:', realTimeSlotMsg);
@@ -91,6 +92,21 @@ async function startRabbitMQ() {
                 console.log(`/user/${realTimeSlotMsg.counselorId}/appointment`)
                 io.emit(`/user/${realTimeSlotMsg.studentId}/appointment`, "Update");
                 io.emit(`/user/${realTimeSlotMsg.counselorId}/appointment`, "Update");
+
+                // Acknowledge the message
+                channel.ack(msg);
+            }
+        });
+
+        channel.consume("REAL_TIME_CHAT_SESSION", (msg) => {
+            if (msg.content) {
+                console.log('////// CHAT SESSION //////');
+                let realTimeChatMsg = JSON.parse(msg.content.toString());
+                console.log('Received message from RabbitMQ:', realTimeChatMsg);
+
+                console.log(`/user/${realTimeChatMsg.chatSessionId}/chat`)
+
+                io.emit(`/user/${realTimeChatMsg.chatSessionId}/chat`, realTimeChatMsg);
 
                 // Acknowledge the message
                 channel.ack(msg);

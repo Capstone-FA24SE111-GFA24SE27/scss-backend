@@ -24,25 +24,22 @@ public class Holiday extends BaseEntity {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false)
-    private HolidayType type;
+//    @Enumerated(EnumType.STRING)
+//    @Column(name = "type", nullable = false)
+//    private HolidayType type;
 
     @Column(name = "description")
     private String description;
 
-    /**
-     * Validates that:
-     * - For SINGLE_DAY, startDate equals endDate.
-     * - For MULTIPLE_DAYS, startDate is before endDate.
-     */
-    @AssertTrue(message = "Invalid date range for the specified holiday type.")
-    public boolean isValidDateRange() {
-        if (type == HolidayType.SINGLE_DAY) {
-            return startDate.equals(endDate);
-        } else if (type == HolidayType.MULTIPLE_DAYS) {
-            return !startDate.isAfter(endDate);
-        }
-        return false; // In case a new type is added without updating this method
-    }
+    @Column(name = "name")
+    private String name;
+//    @AssertTrue(message = "Invalid date range for the specified holiday type.")
+//    public boolean isValidDateRange() {
+//        if (type == HolidayType.SINGLE_DAY) {
+//            return startDate.equals(endDate);
+//        } else if (type == HolidayType.MULTIPLE_DAYS) {
+//            return !startDate.isAfter(endDate);
+//        }
+//        return false; // In case a new type is added without updating this method
+//    }
 }

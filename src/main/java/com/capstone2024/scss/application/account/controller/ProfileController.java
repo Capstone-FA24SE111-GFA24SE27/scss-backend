@@ -1,15 +1,14 @@
 package com.capstone2024.scss.application.account.controller;
 
-import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
-import com.capstone2024.scss.application.account.dto.ProfileDTO;
-import com.capstone2024.scss.application.account.dto.StudentProfileDTO;
+import com.capstone2024.scss.application.account.dto.*;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.services.ProfileService;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
-import com.capstone2024.scss.domain.common.mapper.account.ProfileMapper;
-import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselorProfileMapper;
-import com.capstone2024.scss.domain.common.mapper.appointment_counseling.StudentProfileMapper;
+import com.capstone2024.scss.domain.common.mapper.account.CounselorProfileMapper;
+import com.capstone2024.scss.domain.common.mapper.student.StudentMapper;
+import com.capstone2024.scss.domain.counselor.entities.AcademicCounselor;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.counselor.entities.NonAcademicCounselor;
 import com.capstone2024.scss.domain.student.entities.Student;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -67,12 +66,17 @@ public class ProfileController {
         switch (principal.getRole()) {
             case STUDENT -> {
                 Student student = (Student) principal.getProfile();
-                StudentProfileDTO studentProfileDTO = StudentProfileMapper.toStudentProfileDTO(student);
+                StudentProfileDTO studentProfileDTO = StudentMapper.toStudentProfileDTO(student);
                 return ResponseUtil.getResponse(studentProfileDTO, HttpStatus.OK);
             }
-            case COUNSELOR -> {
+            case NON_ACADEMIC_COUNSELOR -> {
                 Counselor counselor = (Counselor) principal.getProfile();
-                CounselorProfileDTO counselorProfileDTO = CounselorProfileMapper.toCounselorProfileDTO(counselor);
+                NonAcademicCounselorProfileDTO counselorProfileDTO = CounselorProfileMapper.toNonAcademicCounselorProfileDTO((NonAcademicCounselor) counselor);
+                return ResponseUtil.getResponse(counselorProfileDTO, HttpStatus.OK);
+            }
+            case ACADEMIC_COUNSELOR -> {
+                Counselor counselor = (Counselor) principal.getProfile();
+                AcademicCounselorProfileDTO counselorProfileDTO = CounselorProfileMapper.toAcademicCounselorProfileDTO((AcademicCounselor) counselor);
                 return ResponseUtil.getResponse(counselorProfileDTO, HttpStatus.OK);
             }
             default -> {

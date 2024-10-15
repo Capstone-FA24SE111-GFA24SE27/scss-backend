@@ -1,19 +1,18 @@
 package com.capstone2024.scss.application.counselor.controller;
 
+import com.capstone2024.scss.application.account.dto.AcademicCounselorProfileDTO;
 import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
+import com.capstone2024.scss.application.account.dto.NonAcademicCounselorProfileDTO;
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
-import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
-import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;
-import com.capstone2024.scss.application.booking_counseling.dto.request.AppointmentRequestFilterDTO;
-import com.capstone2024.scss.application.counselor.dto.CounselingSlotDTO;
-import com.capstone2024.scss.application.counselor.dto.CounselorDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.SlotDTO;
+import com.capstone2024.scss.application.counselor.dto.SpecializationDTO;
+import com.capstone2024.scss.application.counselor.dto.request.AcademicCounselorFilterRequestDTO;
 import com.capstone2024.scss.application.counselor.dto.request.CounselorFilterRequestDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
+import com.capstone2024.scss.application.counselor.dto.request.NonAcademicCounselorFilterRequestDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
-import com.capstone2024.scss.domain.common.mapper.appointment_counseling.ExpertiseDTO;
-import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
+import com.capstone2024.scss.application.counselor.dto.ExpertiseDTO;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentRequestService;
 import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import com.capstone2024.scss.domain.counselor.services.CounselorService;
@@ -145,14 +144,25 @@ public class CounselorController {
         return ResponseUtil.getResponse(expertiseList, HttpStatus.OK);
     }
 
-    @GetMapping("/random/match")
-    public ResponseEntity<Object> findBestCounselor(
+    @GetMapping("/non-academic/random/match")
+    public ResponseEntity<Object> findBestCounselorNonAcademic(
             @RequestParam(name = "slotId", required = true) Long slotId,
             @RequestParam(name = "date", required = true) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(name = "gender", required = false) Gender gender,
             @RequestParam(name = "expertiseId", required = false) Long expertiseId) {
 
-        CounselorProfileDTO counselor = counselorService.findBestAvailableCounselor(slotId, date, gender, expertiseId);
+        CounselorProfileDTO counselor = counselorService.findBestAvailableCounselorForNonAcademic(slotId, date, gender, expertiseId);
+        return ResponseUtil.getResponse(counselor, HttpStatus.OK);
+    }
+
+    @GetMapping("/academic/random/match")
+    public ResponseEntity<Object> findBestCounselorAcademic(
+            @RequestParam(name = "slotId", required = true) Long slotId,
+            @RequestParam(name = "date", required = true) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(name = "gender", required = false) Gender gender,
+            @RequestParam(name = "specializationId", required = false) Long specializationId) {
+
+        CounselorProfileDTO counselor = counselorService.findBestAvailableCounselorForAcademic(slotId, date, gender, specializationId);
         return ResponseUtil.getResponse(counselor, HttpStatus.OK);
     }
 
@@ -163,6 +173,91 @@ public class CounselorController {
     ) {
         List<SlotDTO> slots = counselorService.getAllCounselingSlots(date, principle.getProfile().getId());
         return ResponseUtil.getResponse(slots, HttpStatus.OK);
+    }
+
+    @GetMapping("/non-academic")
+    public ResponseEntity<Object> getNonAcaCounselors(
+            @RequestParam(name = "search", required = false, defaultValue = "") String search,
+            @RequestParam(name = "ratingFrom", required = false) BigDecimal ratingFrom,
+            @RequestParam(name = "ratingTo", required = false) BigDecimal ratingTo,
+            @RequestParam(name = "availableFrom", required = false) LocalDate availableFrom,
+            @RequestParam(name = "availableTo", required = false) LocalDate availableTo,
+            @RequestParam(name = "expertiseId", required = false) Long expertiseId, // Add expertise ID
+            @RequestParam(name = "SortDirection", defaultValue = "ASC") SortDirection sortDirection,
+            @RequestParam(name = "sortBy", defaultValue = "fullName") String sortBy,
+            @RequestParam(name = "page", defaultValue = "1") Integer page) {
+
+        if (page < 1) {
+            logger.error("Invalid page number: {}", page);
+            throw new IllegalArgumentException("Page must be positive (page > 0)");
+        }
+
+        NonAcademicCounselorFilterRequestDTO filterRequest = NonAcademicCounselorFilterRequestDTO.builder()
+                .search(search.isEmpty() ? null : search.trim())
+                .ratingFrom(ratingFrom)
+                .ratingTo(ratingTo)
+                .availableFrom(availableFrom)
+                .availableTo(availableTo)
+                .expertiseId(expertiseId) // Set expertise ID
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
+                .build();
+
+        PaginationDTO<List<NonAcademicCounselorProfileDTO>> responseDTO = counselorService.getNonAcademicCounselorsWithFilter(filterRequest);
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/academic")
+    public ResponseEntity<Object> getAcaCounselors(
+            @RequestParam(name = "search", required = false, defaultValue = "") String search,
+            @RequestParam(name = "ratingFrom", required = false) BigDecimal ratingFrom,
+            @RequestParam(name = "ratingTo", required = false) BigDecimal ratingTo,
+            @RequestParam(name = "availableFrom", required = false) LocalDate availableFrom,
+            @RequestParam(name = "availableTo", required = false) LocalDate availableTo,
+            @RequestParam(name = "specializationId", required = false) Long specializationId, // Add specialization ID
+            @RequestParam(name = "SortDirection", defaultValue = "ASC") SortDirection sortDirection,
+            @RequestParam(name = "sortBy", defaultValue = "fullName") String sortBy,
+            @RequestParam(name = "page", defaultValue = "1") Integer page) {
+
+        if (page < 1) {
+            logger.error("Invalid page number: {}", page);
+            throw new IllegalArgumentException("Page must be positive (page > 0)");
+        }
+
+
+        AcademicCounselorFilterRequestDTO filterRequest = AcademicCounselorFilterRequestDTO.builder()
+                .search(search.isEmpty() ? null : search.trim())
+                .ratingFrom(ratingFrom)
+                .ratingTo(ratingTo)
+                .availableFrom(availableFrom)
+                .availableTo(availableTo)
+                .specializationId(specializationId) // Set specialization ID
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
+                .build();
+
+        PaginationDTO<List<AcademicCounselorProfileDTO>> responseDTO = counselorService.getAcademicCounselorsWithFilter(filterRequest);
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/specialization")
+    public ResponseEntity<Object> getAllSpecialization() {
+        List<SpecializationDTO> specializations = counselorService.getAllSpecialization();
+        return ResponseUtil.getResponse(specializations, HttpStatus.OK);
+    }
+
+    @GetMapping("/non-academic/{id}")
+    public ResponseEntity<NonAcademicCounselorProfileDTO> getOneNonAcademicCounselor(@PathVariable Long id) {
+        NonAcademicCounselorProfileDTO counselorDTO = counselorService.getNonAcademicCounselorById(id);
+        return new ResponseEntity<>(counselorDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/academic/{id}")
+    public ResponseEntity<AcademicCounselorProfileDTO> getOneAcademicCounselor(@PathVariable Long id) {
+        AcademicCounselorProfileDTO counselorDTO = counselorService.getAcademicCounselorById(id);
+        return new ResponseEntity<>(counselorDTO, HttpStatus.OK);
     }
 
 }
