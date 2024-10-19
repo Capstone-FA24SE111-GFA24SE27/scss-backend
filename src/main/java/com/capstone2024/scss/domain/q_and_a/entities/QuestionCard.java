@@ -52,4 +52,7 @@ public class QuestionCard extends BaseEntity {
 
     @OneToOne(mappedBy = "questionCard", cascade = CascadeType.ALL, orphanRemoval = true)
     private ChatSession chatSession;
+
+    @OneToOne(mappedBy = "questionCard", cascade = CascadeType.ALL, orphanRemoval = true)
+    private QuestionFlag questionFlag;
 }

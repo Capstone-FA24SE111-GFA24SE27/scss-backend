@@ -14,6 +14,7 @@ public class CounselingSlotMapper {
                 .slotCode(slot.getSlotCode())
                 .startTime(slot.getStartTime())
                 .endTime(slot.getEndTime())
+                .name(slot.getName())
                 .build();
     }
 }

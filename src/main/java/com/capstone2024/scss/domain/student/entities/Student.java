@@ -2,12 +2,20 @@ package com.capstone2024.scss.domain.student.entities;
 
 import com.capstone2024.scss.domain.account.entities.Profile;
 import com.capstone2024.scss.domain.counselor.entities.Specialization;
+import com.capstone2024.scss.domain.q_and_a.entities.QuestionBan;
+import com.capstone2024.scss.domain.q_and_a.entities.QuestionFlag;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.experimental.SuperBuilder;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 
 @Getter
 @Setter
@@ -25,4 +33,24 @@ public class Student extends Profile {
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "specialization_id", nullable = true)
     private Specialization specialization;
+
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<QuestionFlag> flags = new ArrayList<>();
+
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<QuestionBan> bans = new ArrayList<>();
+
+    public boolean checkQuestionBan() {
+        // Lấy lệnh "ban" gần đây nhất (nếu có)
+        Optional<QuestionBan> lastBan = this.bans.stream()
+                .max(Comparator.comparing(QuestionBan::getBanEndDate)); // Lấy ban có banEndDate lớn nhất
+
+        // Kiểm tra nếu tồn tại ban và ngày hiện tại nhỏ hơn banEndDate
+        if (lastBan.isPresent()) {
+            LocalDateTime currentDate = LocalDateTime.now();
+            return currentDate.isBefore(lastBan.get().getBanEndDate());
+        }
+
+        return false;
+    }
 }

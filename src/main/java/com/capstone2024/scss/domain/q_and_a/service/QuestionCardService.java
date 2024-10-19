@@ -1,10 +1,7 @@
 package com.capstone2024.scss.domain.q_and_a.service;
 
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
-import com.capstone2024.scss.application.q_and_a.dto.AnswerQuestionCardRequestDTO;
-import com.capstone2024.scss.application.q_and_a.dto.CreateQuestionCardRequestDTO;
-import com.capstone2024.scss.application.q_and_a.dto.QuestionCardFilterRequestDTO;
-import com.capstone2024.scss.application.q_and_a.dto.QuestionCardResponseDTO;
+import com.capstone2024.scss.application.q_and_a.dto.*;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
@@ -42,4 +39,12 @@ public interface QuestionCardService {
     QuestionCardResponseDTO getOneQuestionCardsForReview(Long questionCardId);
 
     void closeQuestionCardForCounselor(Long questionCardId, Long counselorId);
+
+    void deleteQuestionCard(Long questionCardId, Long id);
+
+    QuestionCardResponseDTO updateQuestionCard(CreateQuestionCardRequestDTO dto, Long studentId, Long questionCardId);
+
+    void flagQuestionCard(Long questionCardId, FlagQuestionCardRequestDTO dto);
+
+    BanInformationResponseDTO getBanInformation(Long studentId);
 }

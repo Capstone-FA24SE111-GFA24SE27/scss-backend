@@ -18,23 +18,13 @@ import java.util.List;
 @Repository
 public interface CounselorRepository extends JpaRepository<Counselor, Long> {
 
-    @Query(value = "SELECT c.*, p.* FROM counselor c " +
-            "JOIN profile p ON c.profile_id = p.id " +
-            "JOIN account a ON p.account_id = a.id " +
+    @Query(value = "SELECT c FROM Counselor c " +
+            "JOIN c.account a " +
             "WHERE (:keyword IS NULL OR " +
-            "LOWER(p.full_name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(c.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(a.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(p.phone_number) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-            "AND (:ratingFrom IS NULL OR :ratingTo IS NULL OR c.rating BETWEEN :ratingFrom AND :ratingTo)",
-            countQuery = "SELECT COUNT(c.profile_id) FROM counselor c " +
-                    "JOIN profile p ON c.profile_id = p.id " +
-                    "JOIN account a ON p.account_id = a.id " +
-                    "WHERE (:keyword IS NULL OR " +
-                    "LOWER(p.full_name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-                    "LOWER(a.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-                    "LOWER(p.phone_number) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-                    "AND (:ratingFrom IS NULL OR :ratingTo IS NULL OR c.rating BETWEEN :ratingFrom AND :ratingTo)",
-            nativeQuery = true)
+            "LOWER(c.phoneNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND (:ratingFrom IS NULL OR :ratingTo IS NULL OR (c.rating BETWEEN :ratingFrom AND :ratingTo))")
     Page<Counselor> findByKeywordAndRatingRange(@Param("keyword") String keyword,
                                                 @Param("ratingFrom") BigDecimal ratingFrom,
                                                 @Param("ratingTo") BigDecimal ratingTo,

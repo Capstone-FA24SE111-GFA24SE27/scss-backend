@@ -4,7 +4,11 @@ import com.capstone2024.scss.application.account.dto.AcademicCounselorProfileDTO
 import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
 import com.capstone2024.scss.application.account.dto.NonAcademicCounselorProfileDTO;
 import com.capstone2024.scss.application.counselor.dto.ExpertiseDTO;
+import com.capstone2024.scss.application.counselor.dto.ManageCounselorDTO;
 import com.capstone2024.scss.application.counselor.dto.SpecializationDTO;
+import com.capstone2024.scss.domain.account.enums.Role;
+import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselingSlotMapper;
+import com.capstone2024.scss.domain.common.mapper.counselor.AvailableDateRangeMapper;
 import com.capstone2024.scss.domain.counselor.entities.*;
 
 public class CounselorProfileMapper {
@@ -13,12 +17,10 @@ public class CounselorProfileMapper {
             return null;
         }
 
-        return CounselorProfileDTO.builder()
-                .id(counselor.getId())
-                .profile(ProfileMapper.toProfileDTO(counselor))
-                .rating(counselor.getRating())
-                .email(counselor.getAccount().getEmail())
-                .build();
+        return counselor.getAccount().getRole().equals(Role.ACADEMIC_COUNSELOR) ?
+                CounselorProfileMapper.toAcademicCounselorProfileDTO((AcademicCounselor) counselor)
+                :
+                CounselorProfileMapper.toNonAcademicCounselorProfileDTO((NonAcademicCounselor) counselor);
     }
 
     // Method to convert Academic Counselor to DTO
@@ -54,6 +56,21 @@ public class CounselorProfileMapper {
                 .email(nonAcademicCounselor.getAccount().getEmail())
                 .gender(nonAcademicCounselor.getGender())
                 .status(nonAcademicCounselor.getStatus())
+                .build();
+    }
+
+    public static ManageCounselorDTO toManageCounselorDTO(Counselor counselor) {
+        if (counselor == null) {
+            return null;
+        }
+
+        return ManageCounselorDTO.builder()
+                .availableDateRange(AvailableDateRangeMapper.toAvailableDateRangeDTO(counselor.getAvailableDateRange()))
+                .counselingSlot(counselor.getCounselingSlots().stream().map(CounselingSlotMapper::toDTO).toList())
+                .profile(counselor.getAccount().getRole().equals(Role.ACADEMIC_COUNSELOR) ?
+                        CounselorProfileMapper.toAcademicCounselorProfileDTO((AcademicCounselor) counselor)
+                        :
+                        CounselorProfileMapper.toNonAcademicCounselorProfileDTO((NonAcademicCounselor) counselor))
                 .build();
     }
 

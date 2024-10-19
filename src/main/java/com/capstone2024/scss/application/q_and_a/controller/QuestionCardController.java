@@ -213,7 +213,35 @@ public class QuestionCardController {
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }
 
+    @DeleteMapping("/delete/{questionCardId}")
+    public ResponseEntity<Object> deleteQCard(
+            @PathVariable Long questionCardId,
+            @NotNull @AuthenticationPrincipal Account principle) {
 
+        questionCardService.deleteQuestionCard(questionCardId, principle.getProfile().getId());
+        return ResponseUtil.getResponse("Delete successfully", HttpStatus.OK);
+    }
+
+    @PutMapping("/edit/{questionCardId}")
+    public ResponseEntity<Object> updateQuestionCard(
+            @Valid @RequestBody CreateQuestionCardRequestDTO dto,
+            @AuthenticationPrincipal @NotNull Account principal,
+            @PathVariable Long questionCardId,
+            BindingResult errors) {
+
+        if (errors.hasErrors()) {
+            logger.warn("validation errors: {}", errors.getAllErrors());
+            throw new BadRequestException("Invalid login request", errors, HttpStatus.BAD_REQUEST);
+        }
+
+        logger.info("Received request to update QuestionCard for Account ID: {}", principal.getId());
+
+        QuestionCardResponseDTO updatedCard = questionCardService.updateQuestionCard(dto, principal.getProfile().getId(), questionCardId);
+
+        logger.info("Successfully updated QuestionCard with ID: {}", updatedCard.getId());
+
+        return ResponseUtil.getResponse(updatedCard, HttpStatus.OK);
+    }
 
     @GetMapping("/library/academic-counselor/filter")
     public ResponseEntity<Object> getQuestionCardsLibraryForACounselor(
@@ -313,7 +341,22 @@ public class QuestionCardController {
             @PathVariable QuestionCardStatus questionCardStatus) {
 
         questionCardService.reviewQuestionCard(questionCardId, questionCardStatus);
-        return ResponseUtil.getResponse("Question card is closed successfully" ,HttpStatus.OK);
+        return ResponseUtil.getResponse("Question card is review successfully" ,HttpStatus.OK);
+    }
+
+    @PostMapping("/review/flag/{questionCardId}")
+    public ResponseEntity<Object> flagQC(
+            @PathVariable Long questionCardId,
+            @Valid @RequestBody FlagQuestionCardRequestDTO dto,
+            BindingResult errors) {
+
+        if (errors.hasErrors()) {
+            logger.warn("validation errors: {}", errors.getAllErrors());
+            throw new BadRequestException("Invalid", errors, HttpStatus.BAD_REQUEST);
+        }
+
+        questionCardService.flagQuestionCard(questionCardId, dto);
+        return ResponseUtil.getResponse("Question card is flag successfully" ,HttpStatus.OK);
     }
 
     @GetMapping("/review/{questionCardId}")
@@ -322,5 +365,11 @@ public class QuestionCardController {
 
         QuestionCardResponseDTO responseDTO = questionCardService.getOneQuestionCardsForReview(questionCardId);
         return ResponseUtil.getResponse(responseDTO ,HttpStatus.OK);
+    }
+
+    @GetMapping("/student/ban-info")
+    public ResponseEntity<BanInformationResponseDTO> getBanInformation(@AuthenticationPrincipal @NotNull Account principal) {
+        BanInformationResponseDTO response = questionCardService.getBanInformation(principal.getProfile().getId());
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

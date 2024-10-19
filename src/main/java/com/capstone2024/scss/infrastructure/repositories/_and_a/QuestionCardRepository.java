@@ -57,6 +57,7 @@ public interface QuestionCardRepository extends JpaRepository<QuestionCard, Long
             "LEFT JOIN q.chatSession cs " +
             "WHERE (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
             "AND (:studentCode IS NULL OR q.student.studentCode = :studentCode) " +
+            "AND q.status = com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus.VERIFIED " +
             "AND (:questionType IS NULL OR q.questionType = :questionType) " +
             "AND (:isTaken IS NULL OR q.isTaken = :isTaken)" +
             "AND (:isClosed IS NULL OR q.isClosed = :isClosed)")

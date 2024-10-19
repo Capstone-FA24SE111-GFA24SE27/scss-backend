@@ -80,7 +80,7 @@ public class CounselorController {
             @RequestParam(name = "ratingFrom", required = false) BigDecimal ratingFrom,
             @RequestParam(name = "ratingTo", required = false) BigDecimal ratingTo,
             @RequestParam(name = "SortDirection", defaultValue = "ASC") SortDirection sortDirection,
-            @RequestParam(name = "sortBy", defaultValue = "profile_id") String sortBy,
+            @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
             @RequestParam(name = "page", defaultValue = "1") Integer page
     ) {
         logger.debug("Entering getCounselorsWithFilter method with parameters - Search: {}, SortDirection: {}, SortBy: {}, Page: {}", search, sortDirection, sortBy, page);

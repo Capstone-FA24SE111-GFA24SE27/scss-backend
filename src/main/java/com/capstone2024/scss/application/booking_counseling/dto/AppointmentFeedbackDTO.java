@@ -15,6 +15,6 @@ public class AppointmentFeedbackDTO {
     private Long id;
     private BigDecimal rating;
     private String comment;
-    private Long appointmentId; // Reference to CounselingAppointment
+    private CounselingAppointmentDTO appointment;
     private Long createdAt;
 }

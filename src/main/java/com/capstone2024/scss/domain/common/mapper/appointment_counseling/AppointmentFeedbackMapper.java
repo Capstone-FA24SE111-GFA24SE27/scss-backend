@@ -13,7 +13,7 @@ public class AppointmentFeedbackMapper {
                 .id(feedback.getId())
                 .rating(feedback.getRating())
                 .comment(feedback.getComment())
-                .appointmentId(feedback.getAppointment() != null ? feedback.getAppointment().getId() : null)
+                .appointment(CounselingAppointmentMapper.toCounselingAppointmentDTO(feedback.getAppointment()))
                 .createdAt(feedback.getCreatedDate())
                 .build();
     }

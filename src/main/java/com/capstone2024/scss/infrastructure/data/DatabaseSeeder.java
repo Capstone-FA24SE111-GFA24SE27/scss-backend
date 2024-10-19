@@ -288,7 +288,25 @@ public class DatabaseSeeder implements CommandLineRunner {
                         .content("Nội dung câu hỏi cho " + fullName)
                         .questionType(QuestionType.ACADEMIC) // Giả sử QuestionType có giá trị GENERAL
                         .student(studentProfile)
-                        .status(QuestionCardStatus.VERIFIED)
+                        .status(QuestionCardStatus.PENDING)
+                        .build();
+
+                questionCardRepository.save(questionCard);
+
+                questionCard = QuestionCard.builder()
+                        .content("Nội dung câu hỏi cho " + fullName)
+                        .questionType(QuestionType.ACADEMIC) // Giả sử QuestionType có giá trị GENERAL
+                        .student(studentProfile)
+                        .status(QuestionCardStatus.PENDING)
+                        .build();
+
+                questionCardRepository.save(questionCard);
+
+                questionCard = QuestionCard.builder()
+                        .content("Nội dung câu hỏi cho " + fullName)
+                        .questionType(QuestionType.ACADEMIC) // Giả sử QuestionType có giá trị GENERAL
+                        .student(studentProfile)
+                        .status(QuestionCardStatus.PENDING)
                         .build();
 
                 questionCardRepository.save(questionCard);
@@ -640,6 +658,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             CounselingSlot slot = CounselingSlot.builder()
                     .slotCode("Slot-" + i)
                     .startTime(startTime)
+                    .name("Slot " + i)
                     .endTime(endTime)
                     .build();
 
@@ -667,6 +686,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             CounselingSlot slot = CounselingSlot.builder()
                     .slotCode("Slot-" + i)
                     .startTime(startTime)
+                    .name("Slot " + i)
                     .endTime(endTime)
                     .build();
 

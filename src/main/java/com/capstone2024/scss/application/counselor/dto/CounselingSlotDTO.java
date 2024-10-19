@@ -14,4 +14,5 @@ public class CounselingSlotDTO {
     private String slotCode;
     private LocalTime startTime;
     private LocalTime endTime;
+    private String name;
 }

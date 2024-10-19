@@ -6,10 +6,7 @@ import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.booking_counseling.dto.enums.SlotStatus;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.notification.dtos.NotificationDTO;
-import com.capstone2024.scss.application.q_and_a.dto.AnswerQuestionCardRequestDTO;
-import com.capstone2024.scss.application.q_and_a.dto.CreateQuestionCardRequestDTO;
-import com.capstone2024.scss.application.q_and_a.dto.QuestionCardFilterRequestDTO;
-import com.capstone2024.scss.application.q_and_a.dto.QuestionCardResponseDTO;
+import com.capstone2024.scss.application.q_and_a.dto.*;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.common.mapper.q_and_a.ChatSessionMapper;
@@ -17,9 +14,7 @@ import com.capstone2024.scss.domain.common.mapper.q_and_a.QuestionCardMapper;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import com.capstone2024.scss.domain.counselor.entities.NonAcademicCounselor;
 import com.capstone2024.scss.domain.notification.services.NotificationService;
-import com.capstone2024.scss.domain.q_and_a.entities.ChatSession;
-import com.capstone2024.scss.domain.q_and_a.entities.Message;
-import com.capstone2024.scss.domain.q_and_a.entities.QuestionCard;
+import com.capstone2024.scss.domain.q_and_a.entities.*;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
 import com.capstone2024.scss.domain.q_and_a.service.QuestionCardService;
@@ -27,9 +22,7 @@ import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeCounselingSlotDTO;
 import com.capstone2024.scss.infrastructure.repositories.StudentRepository;
-import com.capstone2024.scss.infrastructure.repositories._and_a.ChatSessionRepository;
-import com.capstone2024.scss.infrastructure.repositories._and_a.MessageRepository;
-import com.capstone2024.scss.infrastructure.repositories._and_a.QuestionCardRepository;
+import com.capstone2024.scss.infrastructure.repositories._and_a.*;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -58,6 +51,8 @@ public class QuestionCardServiceImpl implements QuestionCardService {
     private final MessageRepository messageRepository;
     private final RabbitTemplate rabbitTemplate;
     private final NotificationService notificationService;
+    private final QuestionFlagRepository questionFlagRepository;
+    private final QuestionBanRepository questionBanRepository;
 
     @Override
     @Transactional
@@ -420,6 +415,121 @@ public class QuestionCardServiceImpl implements QuestionCardService {
             chatSessionRepository.save(chatSession);
         } else {
             throw new ForbiddenException("You are not allowed to close this QC");
+        }
+    }
+
+    @Override
+    public void deleteQuestionCard(Long questionCardId, Long id) {
+        QuestionCard questionCard = questionCardRepository.findById(questionCardId)
+                .orElseThrow(() -> new NotFoundException("Question card not found"));
+
+        if (!questionCard.isTaken() && questionCard.getStudent().getId().equals(id)) {
+            questionCardRepository.deleteById(questionCardId);
+        } else {
+            throw new ForbiddenException("You are not allow to delete this card");
+        }
+    }
+
+    @Override
+    public QuestionCardResponseDTO updateQuestionCard(CreateQuestionCardRequestDTO dto, Long studentId, Long questionCardId) {
+        logger.info("Starting updating of QuestionCard for Account ID: {}", studentId);
+
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> {
+                    logger.error("Student not found for Account ID: {}", studentId);
+                    return new NotFoundException("Student not found for the account");
+                });
+
+        QuestionCard questionCard = questionCardRepository.findById(questionCardId)
+                .orElseThrow(() -> new NotFoundException("Question card not found"));
+
+        if (!questionCard.isTaken() && questionCard.getStudent().getId().equals(studentId)) {
+            questionCard.setContent(dto.getContent());
+            questionCard.setQuestionType(dto.getQuestionType());
+
+            // Lưu thẻ câu hỏi vào cơ sở dữ liệu
+            QuestionCard savedCard = questionCardRepository.save(questionCard);
+            logger.info("QuestionCard updated with ID: {} for Student ID: {}", savedCard.getId(), student.getId());
+
+            // Chuyển đổi entity sang DTO
+            return QuestionCardMapper.toQuestionCardResponseDto(savedCard);
+        } else {
+            throw new ForbiddenException("You are not allow to delete this card");
+        }
+    }
+
+    @Override
+    public void flagQuestionCard(Long questionCardId, FlagQuestionCardRequestDTO dto) {
+        QuestionCard questionCard = questionCardRepository.findById(questionCardId)
+                .orElseThrow(() -> new NotFoundException("Question card not found"));
+
+        if(!questionCard.getStatus().equals(QuestionCardStatus.PENDING)) {
+            throw new ForbiddenException("This card is not PENDING");
+        }
+
+        questionCard.setStatus(QuestionCardStatus.FLAGGED);
+        questionCardRepository.save(questionCard);
+
+        QuestionFlag questionFlag = new QuestionFlag();
+        questionFlag.setQuestionCard(questionCard);
+        questionFlag.setReason(dto.getReason());
+        questionFlag.setStudent(questionCard.getStudent());
+
+        questionFlagRepository.save(questionFlag);
+
+        checkAndCreateBanIfNeeded(questionFlag.getStudent());
+    }
+
+    @Override
+    public BanInformationResponseDTO getBanInformation(Long studentId) {
+        // Tìm QuestionBan mới nhất cho sinh viên
+        QuestionBan questionBan = questionBanRepository.findByStudentId(studentId)
+                .orElse(null);
+
+        BanInformationResponseDTO response = new BanInformationResponseDTO();
+        if (questionBan != null) {
+            response.setBan(true);
+            response.setBanStartDate(questionBan.getBanStartDate());
+            response.setBanEndDate(questionBan.getBanEndDate());
+
+            // Lấy danh sách QuestionFlags liên quan đến QuestionBan này
+            List<QuestionFlag> flags = questionBan.getQuestionFlags();
+            List<BanInformationResponseDTO.QuestionFlagResponseDTO> flagResponses = flags.stream()
+                    .map(flag -> BanInformationResponseDTO.QuestionFlagResponseDTO.builder()
+                            .flagDate(flag.getFlagDate())
+                            .reason(flag.getReason())
+                            .questionCard(QuestionCardMapper.toQuestionCardResponseDto(flag.getQuestionCard()))
+                            .build())
+                    .collect(Collectors.toList());
+
+            response.setQuestionFlags(flagResponses);
+        } else {
+            response.setBan(false);
+        }
+
+        return response;
+    }
+
+    private void checkAndCreateBanIfNeeded(Student student) {
+        // Lấy danh sách các cờ chưa gán với QuestionBan
+        List<QuestionFlag> flags = questionFlagRepository.findByStudentAndQuestionBanIsNull(student);
+
+        // Nếu có 3 cờ trở lên, tạo QuestionBan mới
+        if (flags.size() >= 3) {
+            QuestionBan questionBan = new QuestionBan();
+            questionBan.setStudent(student);
+            questionBan.setReason("Flagged for violating rules"); // Hoặc một lý do phù hợp
+            questionBan.setBanStartDate(LocalDateTime.now());
+            questionBan.setBanEndDate(LocalDateTime.now().plusDays(7)); // Khóa trong 7 ngày
+
+            // Lưu QuestionBan vào cơ sở dữ liệu
+            questionBanRepository.save(questionBan);
+
+            // Gán QuestionBan vào các QuestionFlag
+            for (QuestionFlag flag : flags) {
+                flag.setQuestionBan(questionBan);
+                questionFlagRepository.save(flag);
+            }
         }
     }
 }

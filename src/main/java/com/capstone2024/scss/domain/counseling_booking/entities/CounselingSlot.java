@@ -23,6 +23,9 @@ public class CounselingSlot extends BaseEntity {
     @Column(name = "slot_code", nullable = false)
     private String slotCode;
 
+    @Column(name = "slot_name", nullable = false)
+    private String name;
+
     @Column(name = "start_time", nullable = false)
     private LocalTime startTime;
 
