@@ -1,21 +1,20 @@
 package com.capstone2024.scss.domain.counselor.entities;
 
+import com.capstone2024.scss.domain.common.entity.BaseEntity;
 import lombok.*;
 import jakarta.persistence.*;
+import lombok.experimental.SuperBuilder;
+
 import java.util.List;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @Entity
 @Table(name = "specialization")
-public class Specialization {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Specialization extends BaseEntity {
 
     @Column(name = "name", nullable = false, unique = true)
     private String name;

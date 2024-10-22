@@ -4,7 +4,6 @@ import com.capstone2024.scss.domain.counselor.entities.*;
 import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

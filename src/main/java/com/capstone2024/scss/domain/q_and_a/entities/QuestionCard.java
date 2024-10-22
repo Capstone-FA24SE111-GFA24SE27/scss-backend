@@ -50,6 +50,10 @@ public class QuestionCard extends BaseEntity {
     @JoinColumn(name = "counselor_id", nullable = true)
     private Counselor counselor;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "topic_id", nullable = false) // Thêm trường topic_id
+    private Topic topic;
+
     @OneToOne(mappedBy = "questionCard", cascade = CascadeType.ALL, orphanRemoval = true)
     private ChatSession chatSession;
 

@@ -4,7 +4,6 @@ import com.capstone2024.scss.application.account.dto.enums.SortDirection;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
 import com.capstone2024.scss.application.advice.exeptions.ForbiddenException;
 import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppointmentDTO;
-import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppointmentRequestResponseDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.AppointmentRequestFilterDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.UpdateAppointmentRequestDTO;
@@ -74,8 +73,6 @@ public class BookingCounselingController {
             logger.warn("Attempted appointment request by non-student: {}", principal.getUsername());
             throw new BadRequestException("You are not authorized to create an appointment.");
         }
-
-        try {
             logger.info("Processing appointment request for slotCode: {}, date: {}, counselorId: {}",
                     requestDTO.getSlotCode(), requestDTO.getDate(), counselorId);
 
@@ -93,11 +90,6 @@ public class BookingCounselingController {
             logger.info("Successfully created appointment request with ID: {}", appointmentRequest.getId());
 
             return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
-
-        } catch (RuntimeException e) {
-            logger.error("Error creating appointment request: {}", e.getMessage());
-            throw new BadRequestException("An error occurred while processing the request");
-        }
     }
 
     @GetMapping("/appointment-request")

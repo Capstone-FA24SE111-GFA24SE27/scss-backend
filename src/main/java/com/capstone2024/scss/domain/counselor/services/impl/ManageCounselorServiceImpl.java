@@ -1,8 +1,5 @@
 package com.capstone2024.scss.domain.counselor.services.impl;
 
-import com.capstone2024.scss.application.account.dto.AcademicCounselorProfileDTO;
-import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
-import com.capstone2024.scss.application.account.dto.NonAcademicCounselorProfileDTO;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.booking_counseling.dto.AppointmentFeedbackDTO;
@@ -15,6 +12,9 @@ import com.capstone2024.scss.application.counseling_appointment.dto.request.coun
 import com.capstone2024.scss.application.counselor.dto.CounselingSlotDTO;
 import com.capstone2024.scss.application.counselor.dto.ManageCounselorDTO;
 import com.capstone2024.scss.application.counselor.dto.request.*;
+import com.capstone2024.scss.domain.counselor.entities.NonAcademicCounselor;
+import com.capstone2024.scss.domain.counselor.services.CounselorService;
+import com.capstone2024.scss.domain.counselor.services.ManageCounselorService;
 import com.capstone2024.scss.domain.common.mapper.account.CounselorProfileMapper;
 import com.capstone2024.scss.domain.common.mapper.appointment_counseling.AppointmentFeedbackMapper;
 import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselingSlotMapper;
@@ -25,10 +25,7 @@ import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppoin
 import com.capstone2024.scss.domain.counselor.entities.AcademicCounselor;
 import com.capstone2024.scss.domain.counselor.entities.AvailableDateRange;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
-import com.capstone2024.scss.domain.counselor.entities.NonAcademicCounselor;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
-import com.capstone2024.scss.domain.counselor.services.CounselorService;
-import com.capstone2024.scss.domain.counselor.services.ManageCounselorService;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.AppointmentFeedbackRepository;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingSlotRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.AvailableDateRangeRepository;
@@ -201,7 +198,7 @@ public class ManageCounselorServiceImpl implements ManageCounselorService {
 
         List<AppointmentFeedbackDTO> feedbackDTOs = feedbackPage.getContent()
                 .stream()
-                .map(AppointmentFeedbackMapper::toDTO)
+                .map(AppointmentFeedbackMapper::toNormalDTO)
                 .collect(Collectors.toList());
 
         return PaginationDTO.<List<AppointmentFeedbackDTO>>builder()

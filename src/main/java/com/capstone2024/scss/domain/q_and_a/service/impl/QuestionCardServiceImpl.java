@@ -3,7 +3,6 @@ package com.capstone2024.scss.domain.q_and_a.service.impl;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
 import com.capstone2024.scss.application.advice.exeptions.ForbiddenException;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
-import com.capstone2024.scss.application.booking_counseling.dto.enums.SlotStatus;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.notification.dtos.NotificationDTO;
 import com.capstone2024.scss.application.q_and_a.dto.*;
@@ -20,7 +19,6 @@ import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
 import com.capstone2024.scss.domain.q_and_a.service.QuestionCardService;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
-import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeCounselingSlotDTO;
 import com.capstone2024.scss.infrastructure.repositories.StudentRepository;
 import com.capstone2024.scss.infrastructure.repositories._and_a.*;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
@@ -53,6 +51,7 @@ public class QuestionCardServiceImpl implements QuestionCardService {
     private final NotificationService notificationService;
     private final QuestionFlagRepository questionFlagRepository;
     private final QuestionBanRepository questionBanRepository;
+    private final TopicRepository topicRepository;
 
     @Override
     @Transactional
@@ -65,6 +64,12 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                     return new NotFoundException("Student not found for the account");
                 });
 
+        Topic topic = topicRepository.findById(dto.getTopicId())
+                .orElseThrow(() -> {
+                    logger.error("Topic not found for ID: {}", dto.getTopicId());
+                    return new NotFoundException("Topic not found");
+                });
+
         // Tạo thẻ câu hỏi mới
         QuestionCard questionCard = QuestionCard.builder()
                 .content(dto.getContent())
@@ -73,6 +78,7 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                 .status(QuestionCardStatus.PENDING) // Trạng thái mặc định
                 .isTaken(false)
                 .isClosed(false)
+                .topic(topic)
                 .build();
 
         // Lưu thẻ câu hỏi vào cơ sở dữ liệu
@@ -101,6 +107,7 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                 filterRequest.getIsClosed(),
                 filterRequest.getIsChatSessionClosed(),
                 filterRequest.getType(),
+                filterRequest.getTopicId(),
                 filterRequest.getPagination()
         );
 
@@ -134,6 +141,7 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                     true,
                     filterRequest.getIsClosed(),
                     filterRequest.getIsChatSessionClosed(),
+                    filterRequest.getTopicId(),
                     filterRequest.getPagination()
             );
         } else  {
@@ -145,6 +153,7 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                     true,
                     filterRequest.getIsClosed(),
                     filterRequest.getIsChatSessionClosed(),
+                    filterRequest.getTopicId(),
                     filterRequest.getPagination()
             );
         }
@@ -209,6 +218,7 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                     questionType,
                     false,
                     false,
+                    filterRequest.getTopicId(),
                     filterRequest.getPagination());
 
         List<QuestionCardResponseDTO> questionCardDTOs = questionCardsPage.getContent().stream()

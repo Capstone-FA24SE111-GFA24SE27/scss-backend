@@ -7,9 +7,9 @@ import com.capstone2024.scss.application.counselor.dto.ExpertiseDTO;
 import com.capstone2024.scss.application.counselor.dto.ManageCounselorDTO;
 import com.capstone2024.scss.application.counselor.dto.SpecializationDTO;
 import com.capstone2024.scss.domain.account.enums.Role;
+import com.capstone2024.scss.domain.counselor.entities.*;
 import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselingSlotMapper;
 import com.capstone2024.scss.domain.common.mapper.counselor.AvailableDateRangeMapper;
-import com.capstone2024.scss.domain.counselor.entities.*;
 
 public class CounselorProfileMapper {
     public static CounselorProfileDTO toCounselorProfileDTO(Counselor counselor) {

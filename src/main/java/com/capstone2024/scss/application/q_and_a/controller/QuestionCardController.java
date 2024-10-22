@@ -107,6 +107,7 @@ public class QuestionCardController {
             @RequestParam(name = "sortBy", defaultValue = "createdDate") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
             @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "topicId", required = false) Long topicId,
             @NotNull @AuthenticationPrincipal Account principle) {
 
         if (page < 1) {
@@ -124,6 +125,7 @@ public class QuestionCardController {
                 .sortDirection(sortDirection)
                 .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .type(type)
+                .topicId(topicId)
                 .build();
 
         PaginationDTO<List<QuestionCardResponseDTO>> responseDTO = questionCardService.getQuestionCardsWithFilterForStudent(filterRequest, principle.getProfile().getId());
@@ -139,6 +141,7 @@ public class QuestionCardController {
             @RequestParam(name = "studentCode", required = false) String studentCode,
             @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
             @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "topicId", required = false) Long topicId,
             @NotNull @AuthenticationPrincipal Account principle) {
 
         if (page < 1) {
@@ -154,6 +157,7 @@ public class QuestionCardController {
                 .sortDirection(sortDirection)
                 .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .studentCode(studentCode)
+                .topicId(topicId)
                 .build();
 
         PaginationDTO<List<QuestionCardResponseDTO>> responseDTO = questionCardService.getQuestionCardsWithFilterForCounselor(filterRequest, principle.getProfile().getId());
@@ -175,6 +179,7 @@ public class QuestionCardController {
             @RequestParam(name = "sortBy", defaultValue = "createdDate") String sortBy,
             @RequestParam(name = "studentCode", required = false) String studentCode,
             @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
+            @RequestParam(name = "topicId", required = false) Long topicId,
             @RequestParam(name = "page", defaultValue = "1") Integer page) {
 
         if (page < 1) {
@@ -189,6 +194,7 @@ public class QuestionCardController {
                 .sortDirection(sortDirection)
                 .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .studentCode(studentCode)
+                .topicId(topicId)
                 .build();
 
         PaginationDTO<List<QuestionCardResponseDTO>> responseDTO = questionCardService.getQuestionCardsLibraryForCounselor(filterRequest, QuestionType.NON_ACADEMIC);
@@ -250,6 +256,7 @@ public class QuestionCardController {
             @RequestParam(name = "sortBy", defaultValue = "createdDate") String sortBy,
             @RequestParam(name = "studentCode", required = false) String studentCode,
             @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
+            @RequestParam(name = "topicId", required = false) Long topicId,
             @RequestParam(name = "page", defaultValue = "1") Integer page) {
 
         if (page < 1) {
@@ -264,6 +271,7 @@ public class QuestionCardController {
                 .sortDirection(sortDirection)
                 .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .studentCode(studentCode)
+                .topicId(topicId)
                 .build();
 
         PaginationDTO<List<QuestionCardResponseDTO>> responseDTO = questionCardService.getQuestionCardsLibraryForCounselor(filterRequest, QuestionType.ACADEMIC);

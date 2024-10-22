@@ -1,9 +1,7 @@
 package com.capstone2024.scss.domain.common.mapper.counselor;
 
 import com.capstone2024.scss.application.counselor.dto.AvailableDateRangeDTO;
-import com.capstone2024.scss.application.counselor.dto.ManageCounselorDTO;
 import com.capstone2024.scss.domain.counselor.entities.AvailableDateRange;
-import com.capstone2024.scss.domain.counselor.entities.Counselor;
 
 public class AvailableDateRangeMapper {
     public static AvailableDateRangeDTO toAvailableDateRangeDTO(AvailableDateRange availableDateRange) {

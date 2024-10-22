@@ -1,6 +1,5 @@
 package com.capstone2024.scss.domain.counselor.services;
 
-import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.AppointmentFeedbackDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppointmentDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;

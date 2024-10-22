@@ -6,6 +6,7 @@ import com.capstone2024.scss.domain.account.entities.Profile;
 import com.capstone2024.scss.domain.account.enums.LoginMethod;
 import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.account.enums.Status;
+import com.capstone2024.scss.domain.counselor.entities.*;
 import com.capstone2024.scss.domain.common.utils.RandomUtil;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.Holiday;
@@ -13,18 +14,23 @@ import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appoi
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OnlineAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
-import com.capstone2024.scss.domain.counselor.entities.*;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
 import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
+import com.capstone2024.scss.domain.demand.entities.CounselingDemand;
+import com.capstone2024.scss.domain.demand.entities.DemandProblemTag;
 import com.capstone2024.scss.domain.demand.entities.ProblemCategory;
 import com.capstone2024.scss.domain.demand.entities.ProblemTag;
 import com.capstone2024.scss.domain.q_and_a.entities.QuestionCard;
+import com.capstone2024.scss.domain.q_and_a.entities.Topic;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
+import com.capstone2024.scss.domain.q_and_a.enums.TopicType;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.notification.entities.Notification;
+import com.capstone2024.scss.domain.support_staff.entity.SupportStaff;
 import com.capstone2024.scss.infrastructure.repositories.*;
 import com.capstone2024.scss.infrastructure.repositories._and_a.QuestionCardRepository;
+import com.capstone2024.scss.infrastructure.repositories._and_a.TopicRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.AccountRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.LoginTypeRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.ProfileRepository;
@@ -35,8 +41,10 @@ import com.capstone2024.scss.infrastructure.repositories.counselor.AvailableDate
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.ExpertiseRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.SpecializationRepository;
+import com.capstone2024.scss.infrastructure.repositories.demand.CounselingDemandRepository;
 import com.capstone2024.scss.infrastructure.repositories.demand.ProblemCategoryRepository;
 import com.capstone2024.scss.infrastructure.repositories.demand.ProblemTagRepository;
+import com.capstone2024.scss.infrastructure.repositories.demand.SupportStaffRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,9 +84,14 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final QuestionCardRepository questionCardRepository;
     private final ProblemTagRepository problemTagRepository;
     private final ProblemCategoryRepository problemCategoryRepository;
+    private final CounselingDemandRepository counselingDemandRepository;
+    private final SupportStaffRepository supportStaffRepository;
+    private final TopicRepository topicRepository;
 
     @Override
     public void run(String... args) throws Exception {
+        seedTopics();
+        seedProblemTags();
         createAdminAccount();
 //        createStudentAccounts();
         createManagerAccount();
@@ -88,7 +101,6 @@ public class DatabaseSeeder implements CommandLineRunner {
         createCounselorAccounts();
         createStudentAccounts();
         createVietnamHolidays();
-        seedProblemTags();
     }
 
     @Transactional
@@ -233,21 +245,84 @@ public class DatabaseSeeder implements CommandLineRunner {
         notificationRepository.save(notification);
     }
 
+    private void seedTopics() {
+        // Tạo 3 chủ đề academic
+        for (int i = 1; i <= 3; i++) {
+            Topic academicTopic = Topic.builder()
+                    .name("Academic Topic " + i)
+                    .type(TopicType.ACADEMIC)
+                    .build();
+            topicRepository.save(academicTopic);
+        }
+
+        // Tạo 3 chủ đề non-academic
+        for (int i = 1; i <= 3; i++) {
+            Topic nonAcademicTopic = Topic.builder()
+                    .name("Non-Academic Topic " + i)
+                    .type(TopicType.NON_ACADEMIC)
+                    .build();
+            topicRepository.save(nonAcademicTopic);
+        }
+    }
+
     private void createStudentAccounts() {
         List<Specialization> specializations = specializationRepository.findAll();
         List<String> maleNames = List.of("John", "Michael", "David", "James", "Robert", "William", "Charles", "Joseph", "Daniel", "Matthew");
         List<String> femaleNames = List.of("Emily", "Olivia", "Sophia", "Isabella", "Emma", "Ava", "Mia", "Amelia", "Charlotte", "Harper");
 
+        List<Student> students = new ArrayList<>();
+
         for (int i = 0; i < 10; i++) {
-            createSingleStudentAccount(i, maleNames.get(i), "sm" + (i + 1), Gender.MALE, "SE11" + String.format("%04d", i + 1), specializations.getFirst());
+            students.add(createSingleStudentAccount(i, maleNames.get(i), "sm" + (i + 1), Gender.MALE, "SE11" + String.format("%04d", i + 1), specializations.getFirst()));
         }
 
         for (int i = 0; i < 10; i++) {
             createSingleStudentAccount(i, femaleNames.get(i), "sf" + (i + 1), Gender.FEMALE, "SE11" + String.format("%04d", i + 11), specializations.getFirst());
         }
+
+        seedDemandProblemTagsAndCounselingDemands(students.subList(0, 5));
     }
 
-    private void createSingleStudentAccount(int index, String fullName, String studentEmail, Gender gender, String studentCode, Specialization specialization) {
+    private void seedDemandProblemTagsAndCounselingDemands(List<Student> students) {
+        List<SupportStaff> supportStaffs = supportStaffRepository.findAll();
+        SupportStaff supportStaff = supportStaffs.getFirst();
+
+        List<CounselingDemand> demands = new ArrayList<>();
+
+        for (int i = 0; i < 5; i++) { // Tạo cho 5 học sinh đầu tiên
+            CounselingDemand demand = CounselingDemand.builder()
+                    .status(CounselingDemand.Status.WAITING)
+                    .totalPoint(0)
+                    .student(students.get(i))
+                    .supportStaff(supportStaff)
+                    .demandProblemTags(new ArrayList<>())
+                    .build();
+
+            List<DemandProblemTag> demandProblemTags = new ArrayList<>();
+
+            // Tạo 3 DemandProblemTag cho mỗi CounselingDemand
+            for (int j = 1; j <= 3; j++) {
+                DemandProblemTag demandProblemTag = DemandProblemTag.builder()
+                        .student(students.get(i))
+                        .source("Generated Source " + j)
+                        .tagName("Tag " + j)
+                        .number(j)
+                        .totalPoint(j * 10)
+                        .demand(demand)
+                        .build();
+                demandProblemTags.add(demandProblemTag);
+                demand.setTotalPoint(demand.getTotalPoint() + demandProblemTag.getTotalPoint());
+            }
+
+            demand.getDemandProblemTags().addAll(demandProblemTags);
+            demands.add(demand);
+        }
+
+        counselingDemandRepository.saveAll(demands);
+        logger.info("Seeded Counseling Demands and Demand Problem Tags.");
+    }
+
+    private Student createSingleStudentAccount(int index, String fullName, String studentEmail, Gender gender, String studentCode, Specialization specialization) {
         logger.info("Checking if student account with email '{}' exists.", studentEmail);
 
         if (accountRepository.findAccountByEmail(studentEmail).isEmpty()) {
@@ -281,50 +356,31 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .specialization(specialization)
                     .build();
 
-            profileRepository.save(studentProfile);
+            Student returmStudent = profileRepository.save(studentProfile);
 
             if(index < 5) {
-                QuestionCard questionCard = QuestionCard.builder()
-                        .content("Nội dung câu hỏi cho " + fullName)
-                        .questionType(QuestionType.ACADEMIC) // Giả sử QuestionType có giá trị GENERAL
-                        .student(studentProfile)
-                        .status(QuestionCardStatus.PENDING)
-                        .build();
+                for (int j = 0; j < 3; j++) {
+                    Topic topic = topicRepository.findByType(TopicType.ACADEMIC).get(j);
+                    QuestionCard questionCard = QuestionCard.builder()
+                            .content("Nội dung câu hỏi cho " + fullName)
+                            .questionType(QuestionType.ACADEMIC)
+                            .student(studentProfile)
+                            .status(QuestionCardStatus.PENDING)
+                            .topic(topic) // Gán topic vào QuestionCard
+                            .build();
 
-                questionCardRepository.save(questionCard);
-
-                questionCard = QuestionCard.builder()
-                        .content("Nội dung câu hỏi cho " + fullName)
-                        .questionType(QuestionType.ACADEMIC) // Giả sử QuestionType có giá trị GENERAL
-                        .student(studentProfile)
-                        .status(QuestionCardStatus.PENDING)
-                        .build();
-
-                questionCardRepository.save(questionCard);
-
-                questionCard = QuestionCard.builder()
-                        .content("Nội dung câu hỏi cho " + fullName)
-                        .questionType(QuestionType.ACADEMIC) // Giả sử QuestionType có giá trị GENERAL
-                        .student(studentProfile)
-                        .status(QuestionCardStatus.PENDING)
-                        .build();
-
-                questionCardRepository.save(questionCard);
-            } else {
-                QuestionCard questionCard = QuestionCard.builder()
-                        .content("Nội dung câu hỏi cho " + fullName)
-                        .questionType(QuestionType.NON_ACADEMIC) // Giả sử QuestionType có giá trị GENERAL
-                        .student(studentProfile)
-                        .status(QuestionCardStatus.VERIFIED)
-                        .build();
-
-                questionCardRepository.save(questionCard);
+                    questionCardRepository.save(questionCard);
+                }
             }
 
             logger.info("Student account created with email '{}'.", studentEmail);
+
+            return returmStudent;
         } else {
             logger.warn("Student account with email '{}' already exists.", studentEmail);
         }
+
+        return null;
     }
 
     private void createManagerAccount() {
@@ -393,7 +449,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             loginTypeRepository.save(supportLoginType);
 
-            Profile supportProfile = Profile.builder()
+            SupportStaff supportProfile = SupportStaff.builder()
                     .account(supportStaff)
                     .fullName("Support staff")
                     .phoneNumber("0987654321")
@@ -403,6 +459,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                             .toInstant()
                             .toEpochMilli())
                     .gender(Gender.FEMALE)  // Assuming the support staff is female
+                    .status(SupportStaff.SupportStaffStatus.AVAILABLE)
                     .build();
 
             profileRepository.save(supportProfile);

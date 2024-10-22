@@ -22,4 +22,5 @@ public class QuestionCardFilterRequestDTO {
     private Pageable pagination;
     private QuestionType type;
     private String studentCode;
+    private Long topicId;
 }

@@ -3,6 +3,9 @@ package com.capstone2024.scss.domain.counseling_booking.entities.counseling_appo
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_report.entities.AppointmentReport;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
+import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.student.entities.Student;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,6 +32,18 @@ public class CounselingAppointment {
 
     @Column(name = "end_datetime", nullable = false)
     private LocalDateTime endDateTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "meeting_type")
+    private MeetingType meetingType;
+
+    @ManyToOne
+    @JoinColumn(name = "counselor_id")
+    private Counselor counselor;
+
+    @ManyToOne
+    @JoinColumn(name = "student_id")
+    private Student student;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

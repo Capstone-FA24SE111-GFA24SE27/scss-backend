@@ -17,4 +17,7 @@ public class CreateQuestionCardRequestDTO {
 
     @NotNull(message = "Question type must not be null")
     private QuestionType questionType;
+
+    @NotNull(message = "Topic ID must not be null")
+    private Long topicId;
 }

@@ -46,6 +46,7 @@ public class QuestionCardMapper {
                 .student(studentDTO)
                 .counselor(counselorDTO)
                 .chatSession(ChatSessionMapper.toChatSessionDTO(questionCard.getChatSession()))
+                .topic(TopicMapper.toDTO(questionCard.getTopic()))
                 .build();
     }
 }

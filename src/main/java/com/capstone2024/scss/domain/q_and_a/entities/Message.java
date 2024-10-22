@@ -2,8 +2,6 @@ package com.capstone2024.scss.domain.q_and_a.entities;
 
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.common.entity.BaseEntity;
-import com.capstone2024.scss.domain.counselor.entities.Counselor;
-import com.capstone2024.scss.domain.student.entities.Student;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import jakarta.persistence.*;

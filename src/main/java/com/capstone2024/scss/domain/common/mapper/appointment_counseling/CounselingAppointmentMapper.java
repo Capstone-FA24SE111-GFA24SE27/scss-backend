@@ -20,7 +20,7 @@ public class CounselingAppointmentMapper {
                 .startDateTime(appointment.getStartDateTime())
                 .endDateTime(appointment.getEndDateTime())
                 .status(appointment.getStatus())
-                .meetingType(appointment.getAppointmentRequest().getMeetingType())
+                .meetingType(appointment.getMeetingType())
                 .isHavingReport(appointment.getReport() != null ? true : false);
 
         // Xử lý theo kiểu họp mặt
@@ -33,12 +33,12 @@ public class CounselingAppointmentMapper {
         // Mapping feedback
         AppointmentFeedback appointmentFeedback = appointment.getFeedback();
         if (appointmentFeedback != null) {
-            dtoBuilder.appointmentFeedback(AppointmentFeedbackMapper.toDTO(appointmentFeedback));
+            dtoBuilder.appointmentFeedback(AppointmentFeedbackMapper.toAppointmentDTO(appointmentFeedback));
         }
 
         // Thêm thông tin của counselor và student
-        Counselor counselor = appointment.getAppointmentRequest().getCounselor();
-        Student student = appointment.getAppointmentRequest().getStudent();
+        Counselor counselor = appointment.getCounselor();
+        Student student = appointment.getStudent();
         dtoBuilder.counselorInfo((counselor instanceof NonAcademicCounselor) ? CounselorProfileMapper.toNonAcademicCounselorProfileDTO((NonAcademicCounselor) counselor) : CounselorProfileMapper.toAcademicCounselorProfileDTO((AcademicCounselor) counselor));
         dtoBuilder.studentInfo(StudentMapper.toStudentProfileDTO(student));
 
@@ -51,7 +51,7 @@ public class CounselingAppointmentMapper {
                 .startDateTime(appointment.getStartDateTime())
                 .endDateTime(appointment.getEndDateTime())
                 .status(appointment.getStatus())
-                .meetingType(appointment.getAppointmentRequest().getMeetingType());
+                .meetingType(appointment.getMeetingType());
 
         // Xử lý theo kiểu họp mặt
         if (appointment instanceof OnlineAppointment) {

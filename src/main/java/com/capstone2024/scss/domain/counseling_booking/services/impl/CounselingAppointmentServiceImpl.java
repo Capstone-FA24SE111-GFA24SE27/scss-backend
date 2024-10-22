@@ -111,6 +111,9 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
                 .status(CounselingAppointmentStatus.WAITING)
                 .appointmentRequest(request)
                 .meetUrl(dto.getMeetUrl())
+                .meetingType(request.getMeetingType())
+                .student(request.getStudent())
+                .counselor(request.getCounselor())
                 .build();
 
         logger.info("Creating online appointment for requestId: {} with meet URL: {}", requestId, dto.getMeetUrl());
@@ -212,6 +215,9 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
                 .status(CounselingAppointmentStatus.WAITING)
                 .appointmentRequest(request)
                 .address(dto.getAddress())
+                .meetingType(request.getMeetingType())
+                .student(request.getStudent())
+                .counselor(request.getCounselor())
                 .build();
 
         request.setStatus(CounselingAppointmentRequestStatus.APPROVED);
@@ -391,7 +397,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
         }
 
         // Update counselor rating
-        Counselor counselor = appointment.getAppointmentRequest().getCounselor(); // Assuming Counselor is linked to Appointment
+        Counselor counselor = appointment.getCounselor(); // Assuming Counselor is linked to Appointment
         counselor.setRating(calculateNewRating(counselor, feedbackDTO.getRating()));
         counselorRepository.save(counselor);
 

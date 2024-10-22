@@ -4,7 +4,6 @@ import com.capstone2024.scss.domain.account.entities.Profile;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.AppointmentFeedback;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
-import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,7 +13,6 @@ import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Set;
 
 @Getter
 @Setter

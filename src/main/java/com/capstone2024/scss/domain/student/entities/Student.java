@@ -34,6 +34,7 @@ public class Student extends Profile {
     @JoinColumn(name = "specialization_id", nullable = true)
     private Specialization specialization;
 
+
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuestionFlag> flags = new ArrayList<>();
 

@@ -1,7 +1,9 @@
 package com.capstone2024.scss.domain.demand.entities;
 
 import com.capstone2024.scss.domain.common.entity.BaseEntity;
+import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import com.capstone2024.scss.domain.student.entities.Student;
+import com.capstone2024.scss.domain.support_staff.entity.SupportStaff;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -33,10 +35,21 @@ public class CounselingDemand extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
-    private Student student; // Thêm quan hệ với Student
+    private Student student;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "staff_id", nullable = false)
+    private SupportStaff supportStaff;
+
+    @Column(name = "contact_note", nullable = true, columnDefinition = "TEXT")
+    private String contactNote;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "counselor_id")
+    private Counselor counselor;
 
     public enum Status {
-        WAITING, SOLVE
+        WAITING, IN_CHARGE, SOLVE
     }
 }
 

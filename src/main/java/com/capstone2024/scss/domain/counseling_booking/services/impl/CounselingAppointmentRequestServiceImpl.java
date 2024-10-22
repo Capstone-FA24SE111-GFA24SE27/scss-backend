@@ -24,6 +24,7 @@ import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.CounselingAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OfflineAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OnlineAppointment;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
@@ -39,6 +40,7 @@ import com.capstone2024.scss.infrastructure.repositories.booking_counseling.Coun
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingAppointmentRequestRepository;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingSlotRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -57,6 +59,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CounselingAppointmentRequestServiceImpl implements CounselingAppointmentRequestService {
 
     private static final Logger logger = LoggerFactory.getLogger(CounselingAppointmentRequestService.class);
@@ -67,15 +70,6 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
     private final RabbitTemplate rabbitTemplate;
     private final NotificationService notificationService;
 
-    public CounselingAppointmentRequestServiceImpl(CounselingAppointmentRequestRepository requestRepository, CounselingSlotRepository slotRepository, CounselorRepository counselorRepository, CounselingAppointmentRepository counselingAppointmentRepository, RabbitTemplate rabbitTemplate, NotificationService notificationService) {
-        this.requestRepository = requestRepository;
-        this.slotRepository = slotRepository;
-        this.counselorRepository = counselorRepository;
-        this.counselingAppointmentRepository = counselingAppointmentRepository;
-        this.rabbitTemplate = rabbitTemplate;
-        this.notificationService = notificationService;
-    }
-
     @Override
     public Map<LocalDate, List<SlotDTO>> getDailySlots(Long counselorId, LocalDate from, LocalDate to, Long studentId) {
         logger.info("Fetching daily slots for counselorId: {}, from: {}, to: {}", counselorId, from, to);
@@ -83,6 +77,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
         Counselor counselor = counselorRepository.findById(counselorId)
                 .orElseThrow(() -> new NotFoundException("Counselor not found"));
         List<CounselingAppointmentRequest> requests = requestRepository.findByCounselorIdAndRequireDateBetween(counselorId, from, to);
+        List<CounselingAppointment> appointments = counselingAppointmentRepository.findAllByCounselorIdAndDateRange(counselorId, from.atStartOfDay(), to.plusDays(1).atStartOfDay());
         List<CounselingSlot> slots = counselor.getCounselingSlots();
         LocalDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDateTime();
 
@@ -104,7 +99,12 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                                             (r.getStatus() == CounselingAppointmentRequestStatus.WAITING ||
                                                     r.getStatus() == CounselingAppointmentRequestStatus.APPROVED) &&
                                             (r.getStartTime().isBefore(slot.getEndTime()) &&
-                                                    r.getEndTime().isAfter(slot.getStartTime())));
+                                                    r.getEndTime().isAfter(slot.getStartTime()))) ||
+                                    appointments.stream()
+                                            .anyMatch(a -> a.getStartDateTime().toLocalDate().equals(dateToCheck) &&
+                                                    a.getStatus() != CounselingAppointmentStatus.CANCELED &&
+                                                    (a.getStartDateTime().toLocalTime().isBefore(slot.getEndTime()) &&
+                                                            a.getEndDateTime().toLocalTime().isAfter(slot.getStartTime())));
 
                             boolean isMyAppointment = requests.stream()
                                     .anyMatch(r -> r.getRequireDate().equals(dateToCheck) &&
@@ -154,7 +154,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                 .orElseThrow(() -> new NotFoundException("Slot not found"));
 
         // Validate slot status
-        SlotStatus slotStatus = getSlotStatus(slot, date);
+        SlotStatus slotStatus = getSlotStatus(slot, date, counselorId);
         if (slotStatus != SlotStatus.AVAILABLE) {
             throw new BadRequestException("Slot is not available");
         }
@@ -196,13 +196,32 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
         return requestRepository.save(appointmentRequest);
     }
 
-    private SlotStatus getSlotStatus(CounselingSlot slot, LocalDate date) {
-        // Assume we have a method to get appointment requests for a slot on a specific date
-        boolean isSlotTaken = requestRepository.findByRequireDateAndStartTimeAndEndTime(date, slot.getStartTime(), slot.getEndTime()).stream()
-                .anyMatch(r -> r.getStatus() == CounselingAppointmentRequestStatus.WAITING ||
-                        r.getStatus() == CounselingAppointmentRequestStatus.APPROVED);
+    private SlotStatus getSlotStatus(CounselingSlot slot, LocalDate date, Long counselorId) {
+        Counselor counselor = counselorRepository.findById(counselorId)
+                .orElseThrow(() -> new NotFoundException("Counselor not found"));
 
-        LocalDateTime now = LocalDateTime.now();
+        if (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            return SlotStatus.UNAVAILABLE;
+        } else if(date.isBefore(counselor.getAvailableDateRange().getStartDate()) || date.isAfter(counselor.getAvailableDateRange().getEndDate())) {
+            return SlotStatus.UNAVAILABLE;
+        }
+
+        List<CounselingAppointmentRequest> requests = requestRepository.findByCounselorIdAndRequireDateBetween(counselorId, date, date);
+        List<CounselingAppointment> appointments = counselingAppointmentRepository.findAllByCounselorIdAndDateRange(counselorId, date.atStartOfDay(), date.plusDays(1).atStartOfDay());
+        LocalDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDateTime();
+
+        boolean isSlotTaken = requests.stream()
+                .anyMatch(r -> r.getRequireDate().equals(date) &&
+                        (r.getStatus() == CounselingAppointmentRequestStatus.WAITING ||
+                                r.getStatus() == CounselingAppointmentRequestStatus.APPROVED) &&
+                        (r.getStartTime().isBefore(slot.getEndTime()) &&
+                                r.getEndTime().isAfter(slot.getStartTime()))) ||
+                appointments.stream()
+                        .anyMatch(a -> a.getStartDateTime().toLocalDate().equals(date) &&
+                                a.getStatus() != CounselingAppointmentStatus.CANCELED &&
+                                (a.getStartDateTime().toLocalTime().isBefore(slot.getEndTime()) &&
+                                        a.getEndDateTime().toLocalTime().isAfter(slot.getStartTime())));
+
         if (isSlotTaken) {
             return SlotStatus.UNAVAILABLE;
         } else if (LocalDateTime.of(date, slot.getEndTime()).isBefore(now)) {

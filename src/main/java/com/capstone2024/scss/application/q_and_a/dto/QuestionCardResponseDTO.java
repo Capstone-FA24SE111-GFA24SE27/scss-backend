@@ -22,4 +22,5 @@ public class QuestionCardResponseDTO {
     private StudentProfileDTO student;
     private CounselorProfileDTO counselor;
     private ChatSessionDTO chatSession;
+    private TopicDTO topic;
 }
