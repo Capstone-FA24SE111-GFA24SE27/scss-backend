@@ -20,21 +20,43 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "appointment_report")
 public class AppointmentReport extends BaseEntity {
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "consultation_goal_id", referencedColumnName = "id")
-    private ConsultationGoal consultationGoal;
+    // Fields from Intervention
+    @Column(name = "intervention_type", nullable = false)
+    private String interventionType;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "consultation_content_id", referencedColumnName = "id")
-    private ConsultationContent consultationContent;
+    @Column(name = "intervention_description", nullable = false)
+    private String interventionDescription;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "consultation_conclusion_id", referencedColumnName = "id")
-    private ConsultationConclusion consultationConclusion;
+    // Fields from ConsultationConclusion
+    @Column(name = "counselor_conclusion", columnDefinition = "TEXT")
+    private String counselorConclusion;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "intervention_id", nullable = false)
-    private Intervention intervention;
+    @Column(name = "follow_up_needed", columnDefinition = "BIT")
+    private boolean followUpNeeded;
+
+    @Column(name = "follow_up_notes", columnDefinition = "TEXT")
+    private String followUpNotes;
+
+    // Fields from ConsultationContent
+    @Column(name = "summary_of_discussion", columnDefinition = "TEXT")
+    private String summaryOfDiscussion;
+
+    @Column(name = "main_issues", columnDefinition = "TEXT")
+    private String mainIssues;
+
+    @Column(name = "student_emotions", columnDefinition = "TEXT")
+    private String studentEmotions;
+
+    @Column(name = "student_reactions", columnDefinition = "TEXT")
+    private String studentReactions;
+
+    // Fields from ConsultationGoal
+    @Column(name = "specific_goal", columnDefinition = "TEXT")
+    private String specificGoal;
+
+    @Column(name = "goal_reason", columnDefinition = "TEXT")
+    private String reason;
+    //
 
     @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)

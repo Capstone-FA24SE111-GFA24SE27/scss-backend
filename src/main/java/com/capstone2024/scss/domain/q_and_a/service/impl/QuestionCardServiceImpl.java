@@ -19,7 +19,7 @@ import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
 import com.capstone2024.scss.domain.q_and_a.service.QuestionCardService;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
-import com.capstone2024.scss.infrastructure.repositories.StudentRepository;
+import com.capstone2024.scss.infrastructure.repositories.student.StudentRepository;
 import com.capstone2024.scss.infrastructure.repositories._and_a.*;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import lombok.RequiredArgsConstructor;

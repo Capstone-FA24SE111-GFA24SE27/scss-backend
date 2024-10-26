@@ -5,7 +5,7 @@ import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
 import com.capstone2024.scss.application.account.dto.NonAcademicCounselorProfileDTO;
 import com.capstone2024.scss.application.counselor.dto.ExpertiseDTO;
 import com.capstone2024.scss.application.counselor.dto.ManageCounselorDTO;
-import com.capstone2024.scss.application.counselor.dto.SpecializationDTO;
+import com.capstone2024.scss.application.common.dto.SpecializationDTO;
 import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.counselor.entities.*;
 import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselingSlotMapper;
@@ -38,6 +38,8 @@ public class CounselorProfileMapper {
                 .email(academicCounselor.getAccount().getEmail())
                 .gender(academicCounselor.getGender())
                 .status(academicCounselor.getStatus())
+                .department(AcademicDepartmentDetailMapper.toDepartmentDTO(academicCounselor.getDepartment()))
+                .major(AcademicDepartmentDetailMapper.toMajorDTO(academicCounselor.getMajor()))
                 .build();
     }
 

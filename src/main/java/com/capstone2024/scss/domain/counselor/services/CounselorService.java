@@ -5,7 +5,7 @@ import com.capstone2024.scss.application.account.dto.CounselorProfileDTO;
 import com.capstone2024.scss.application.account.dto.NonAcademicCounselorProfileDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.SlotDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
-import com.capstone2024.scss.application.counselor.dto.SpecializationDTO;
+import com.capstone2024.scss.application.common.dto.SpecializationDTO;
 import com.capstone2024.scss.application.counselor.dto.request.AcademicCounselorFilterRequestDTO;
 import com.capstone2024.scss.application.counselor.dto.request.CounselorFilterRequestDTO;
 import com.capstone2024.scss.application.counselor.dto.ExpertiseDTO;

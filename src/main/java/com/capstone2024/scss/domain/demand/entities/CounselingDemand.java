@@ -1,6 +1,7 @@
 package com.capstone2024.scss.domain.demand.entities;
 
 import com.capstone2024.scss.domain.common.entity.BaseEntity;
+import com.capstone2024.scss.domain.common.entity.Semester;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.support_staff.entity.SupportStaff;
@@ -44,9 +45,13 @@ public class CounselingDemand extends BaseEntity {
     @Column(name = "contact_note", nullable = true, columnDefinition = "TEXT")
     private String contactNote;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "counselor_id")
     private Counselor counselor;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "semester_id", nullable = true)
+    private Semester semester;
 
     public enum Status {
         WAITING, IN_CHARGE, SOLVE

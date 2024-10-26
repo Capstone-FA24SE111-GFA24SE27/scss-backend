@@ -35,6 +35,7 @@ import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeA
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeCounselingSlotDTO;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.*;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
+import com.capstone2024.scss.infrastructure.repositories.student.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +69,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
     private final CounselingSlotRepository counselingSlotRepository;
     private final AppointmentReportRepository appointmentReportRepository;
     private final RabbitTemplate rabbitTemplate;
+    private final StudentRepository studentRepository;
 
     @Transactional
     public void approveOnlineAppointment(Long requestId, Long counselorId, OnlineAppointmentRequestDTO dto) {
@@ -525,6 +527,36 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
     }
 
     @Override
+    public PaginationDTO<List<CounselingAppointmentDTO>> getAppointmentsWithFilterForStudent(AppointmentFilterDTO filterDTO, Long studentId) {
+        Pageable pageable = createPageable(filterDTO);
+
+        Student student = studentRepository
+                .findById(studentId)
+                .orElseThrow(() -> new NotFoundException("Student with ID:" + studentId + " not found"));
+
+        LocalDateTime fromDateTime = filterDTO.getFromDate() != null ? filterDTO.getFromDate().atStartOfDay() : null;
+        LocalDateTime toDateTime = filterDTO.getToDate() != null ? filterDTO.getToDate().atTime(LocalTime.MAX) : null;
+
+        Page<CounselingAppointment> appointmentsPage = appointmentRepository.findAppointmentsForStudentWithFilter(
+                fromDateTime,
+                toDateTime,
+                filterDTO.getStatus(),
+                student,
+                pageable);
+
+        List<CounselingAppointmentDTO> appointmentDTOs = appointmentsPage.getContent()
+                .stream()
+                .map(CounselingAppointmentMapper::toCounselingAppointmentDTO)
+                .collect(Collectors.toList());
+
+        return PaginationDTO.<List<CounselingAppointmentDTO>>builder()
+                .data(appointmentDTOs)
+                .totalPages(appointmentsPage.getTotalPages())
+                .totalElements((int) appointmentsPage.getTotalElements())
+                .build();
+    }
+
+    @Override
     public AppointmentReportResponse createAppointmentReport(AppointmentReportRequest request, Long appointmentId, Counselor counselor) {
         CounselingAppointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new NotFoundException("Appointment not found with ID: " + appointmentId));
@@ -532,40 +564,23 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
         if(appointment.getReport() != null) {
             throw new BadRequestException("This appoinment already had report");
         }
-
-        // Build nested entities
-        ConsultationGoal consultationGoal = ConsultationGoal.builder()
-                .specificGoal(request.getConsultationGoal().getSpecificGoal())
-                .reason(request.getConsultationGoal().getReason())
-                .build();
-
-        ConsultationContent consultationContent = ConsultationContent.builder()
-                .summaryOfDiscussion(request.getConsultationContent().getSummaryOfDiscussion())
-                .mainIssues(request.getConsultationContent().getMainIssues())
-                .studentEmotions(request.getConsultationContent().getStudentEmotions())
-                .studentReactions(request.getConsultationContent().getStudentReactions())
-                .build();
-
-        ConsultationConclusion consultationConclusion = ConsultationConclusion.builder()
-                .counselorConclusion(request.getConsultationConclusion().getCounselorConclusion())
-                .followUpNeeded(request.getConsultationConclusion().isFollowUpNeeded())
-                .followUpNotes(request.getConsultationConclusion().getFollowUpNotes())
-                .build();
-
-        Intervention intervention = Intervention.builder()
-                .type(request.getIntervention().getType())
-                .description(request.getIntervention().getDescription())
-                .build();
-
         // Build the main entity
         AppointmentReport appointmentReport = AppointmentReport.builder()
                 .student(appointment.getAppointmentRequest().getStudent())
                 .counselor(counselor)
                 .counselingAppointment(appointment)
-                .consultationGoal(consultationGoal)
-                .consultationContent(consultationContent)
-                .consultationConclusion(consultationConclusion)
-                .intervention(intervention)
+                .specificGoal(request.getConsultationGoal().getSpecificGoal())
+                .reason(request.getConsultationGoal().getReason())
+                .summaryOfDiscussion(request.getConsultationContent().getSummaryOfDiscussion())
+                .mainIssues(request.getConsultationContent().getMainIssues())
+                .studentEmotions(request.getConsultationContent().getStudentEmotions())
+                .studentReactions(request.getConsultationContent().getStudentReactions())
+                .counselorConclusion(request.getConsultationConclusion().getCounselorConclusion())
+                .followUpNeeded(request.getConsultationConclusion().isFollowUpNeeded())
+                .followUpNotes(request.getConsultationConclusion().getFollowUpNotes())
+                .interventionType(request.getIntervention().getType())
+                .interventionDescription(request.getIntervention().getDescription())
+
                 .build();
 
         // Save the report

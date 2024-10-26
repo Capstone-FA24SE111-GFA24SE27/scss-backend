@@ -1,4 +1,4 @@
-package com.capstone2024.scss.infrastructure.repositories;
+package com.capstone2024.scss.infrastructure.repositories.student;
 
 import com.capstone2024.scss.domain.student.entities.Student;
 import io.lettuce.core.dynamic.annotation.Param;

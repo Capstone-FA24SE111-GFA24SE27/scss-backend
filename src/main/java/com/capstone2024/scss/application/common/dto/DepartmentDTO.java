@@ -1,4 +1,4 @@
-package com.capstone2024.scss.application.counselor.dto;
+package com.capstone2024.scss.application.common.dto;
 
 import lombok.*;
 
@@ -7,7 +7,8 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SpecializationDTO {
+public class DepartmentDTO {
     private Long id;
     private String name;
+    private String code;
 }

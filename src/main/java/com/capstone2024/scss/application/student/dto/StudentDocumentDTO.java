@@ -14,5 +14,6 @@ import java.util.List;
 @AllArgsConstructor
 public class StudentDocumentDTO {
     private StudentProfileDTO studentProfile;
+    private StudentCounselingProfileDTO counselingProfile;
     private List<CounselingAppointmentDTO> counselingAppointment;
 }

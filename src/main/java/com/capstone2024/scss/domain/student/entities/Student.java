@@ -34,12 +34,23 @@ public class Student extends Profile {
     @JoinColumn(name = "specialization_id", nullable = true)
     private Specialization specialization;
 
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "department_id", nullable = false)
+    private Department department;
+
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "major_id", nullable = false)
+    private Major major;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuestionFlag> flags = new ArrayList<>();
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuestionBan> bans = new ArrayList<>();
+
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "counseling_profile_id", referencedColumnName = "id")
+    private StudentCounselingProfile counselingProfile;
 
     public boolean checkQuestionBan() {
         // Lấy lệnh "ban" gần đây nhất (nếu có)

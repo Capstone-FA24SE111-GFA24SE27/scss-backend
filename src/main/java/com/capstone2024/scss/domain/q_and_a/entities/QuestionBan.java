@@ -34,10 +34,6 @@ public class QuestionBan extends BaseEntity {
     @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
     private String reason;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ban_id", nullable = true)
-    private QuestionBan questionBan;
-
     @OneToMany(mappedBy = "questionBan", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<QuestionFlag> questionFlags;
 }

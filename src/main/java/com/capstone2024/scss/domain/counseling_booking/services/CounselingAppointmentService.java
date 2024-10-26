@@ -33,6 +33,7 @@ public interface CounselingAppointmentService {
     PaginationDTO<List<CounselingAppointmentDTO>> getAppointmentsWithFilterForCounselor(AppointmentFilterDTO filterDTO, Counselor counselor);
 
     PaginationDTO<List<CounselingAppointmentDTO>> getAppointmentsWithFilterForStudent(AppointmentFilterDTO filterDTO, Student student);
+    PaginationDTO<List<CounselingAppointmentDTO>> getAppointmentsWithFilterForStudent(AppointmentFilterDTO filterDTO, Long studentId);
 
     AppointmentReportResponse createAppointmentReport(AppointmentReportRequest request, Long appointmentId, Counselor counselor);
 

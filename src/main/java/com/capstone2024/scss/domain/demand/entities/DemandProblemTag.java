@@ -1,6 +1,7 @@
 package com.capstone2024.scss.domain.demand.entities;
 
 import com.capstone2024.scss.domain.common.entity.BaseEntity;
+import com.capstone2024.scss.domain.common.entity.Semester;
 import com.capstone2024.scss.domain.student.entities.Student;
 import jakarta.persistence.*;
 import lombok.*;
@@ -34,4 +35,8 @@ public class DemandProblemTag extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "demand_id", nullable = true)
     private CounselingDemand demand;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "semester_id", nullable = true)
+    private Semester semester;
 }

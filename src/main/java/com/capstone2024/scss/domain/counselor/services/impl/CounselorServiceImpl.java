@@ -7,7 +7,7 @@ import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.booking_counseling.dto.SlotDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.enums.SlotStatus;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
-import com.capstone2024.scss.application.counselor.dto.SpecializationDTO;
+import com.capstone2024.scss.application.common.dto.SpecializationDTO;
 import com.capstone2024.scss.application.counselor.dto.request.AcademicCounselorFilterRequestDTO;
 import com.capstone2024.scss.application.counselor.dto.request.CounselorFilterRequestDTO;
 import com.capstone2024.scss.application.counselor.dto.request.NonAcademicCounselorFilterRequestDTO;
@@ -18,7 +18,7 @@ import com.capstone2024.scss.domain.counselor.services.CounselorService;
 import com.capstone2024.scss.domain.common.mapper.account.CounselorProfileMapper;
 import com.capstone2024.scss.application.counselor.dto.ExpertiseDTO;
 import com.capstone2024.scss.domain.common.mapper.account.ExpertiseMapper;
-import com.capstone2024.scss.domain.common.mapper.account.SpecializationMapper;
+import com.capstone2024.scss.domain.common.mapper.account.AcademicDepartmentDetailMapper;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
@@ -226,7 +226,7 @@ public class CounselorServiceImpl implements CounselorService {
     public List<SpecializationDTO> getAllSpecialization() {
         List<Specialization> expertiseList = specializationRepository.findAll();
         return expertiseList.stream()
-                .map(SpecializationMapper::toSpecializationDTO)
+                .map(AcademicDepartmentDetailMapper::toSpecializationDTO)
                 .collect(Collectors.toList());
     }
 

@@ -25,8 +25,12 @@ import com.capstone2024.scss.domain.q_and_a.entities.Topic;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
 import com.capstone2024.scss.domain.q_and_a.enums.TopicType;
+import com.capstone2024.scss.domain.student.entities.Department;
+import com.capstone2024.scss.domain.student.entities.Major;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.notification.entities.Notification;
+import com.capstone2024.scss.domain.student.entities.StudentCounselingProfile;
+import com.capstone2024.scss.domain.student.enums.CounselingProfileStatus;
 import com.capstone2024.scss.domain.support_staff.entity.SupportStaff;
 import com.capstone2024.scss.infrastructure.repositories.*;
 import com.capstone2024.scss.infrastructure.repositories._and_a.QuestionCardRepository;
@@ -45,6 +49,8 @@ import com.capstone2024.scss.infrastructure.repositories.demand.CounselingDemand
 import com.capstone2024.scss.infrastructure.repositories.demand.ProblemCategoryRepository;
 import com.capstone2024.scss.infrastructure.repositories.demand.ProblemTagRepository;
 import com.capstone2024.scss.infrastructure.repositories.demand.SupportStaffRepository;
+import com.capstone2024.scss.infrastructure.repositories.student.CounselingProfileRepository;
+import com.capstone2024.scss.infrastructure.repositories.student.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +93,9 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final CounselingDemandRepository counselingDemandRepository;
     private final SupportStaffRepository supportStaffRepository;
     private final TopicRepository topicRepository;
+    private final CounselingProfileRepository counselingProfileRepository;
+    private final DepartmentRepository departmentRepository;
+    private final MajorRepository majorRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -289,12 +298,16 @@ public class DatabaseSeeder implements CommandLineRunner {
 
         List<CounselingDemand> demands = new ArrayList<>();
 
+        Counselor counselor = counselorRepository.findById(4L)
+                .orElseThrow(() -> new RuntimeException("Counselor with ID 4 not found."));
+
         for (int i = 0; i < 5; i++) { // Tạo cho 5 học sinh đầu tiên
             CounselingDemand demand = CounselingDemand.builder()
                     .status(CounselingDemand.Status.WAITING)
                     .totalPoint(0)
                     .student(students.get(i))
                     .supportStaff(supportStaff)
+                    .counselor(counselor)
                     .demandProblemTags(new ArrayList<>())
                     .build();
 
@@ -319,7 +332,19 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
 
         counselingDemandRepository.saveAll(demands);
+        injectCounselorIntoDemand(counselor);
         logger.info("Seeded Counseling Demands and Demand Problem Tags.");
+    }
+
+    private void injectCounselorIntoDemand(Counselor counselor) {
+//        List<CounselingDemand> demands = counselingDemandRepository.findAll();
+//        for(CounselingDemand demand : demands) {
+//            if (demand.getCounselor() == null) { // Chỉ gán counselor nếu demand chưa có counselor
+//                demand.setCounselor(counselor);
+//            }
+//        }
+//
+//        counselingDemandRepository.saveAll(demands);
     }
 
     private Student createSingleStudentAccount(int index, String fullName, String studentEmail, Gender gender, String studentCode, Specialization specialization) {
@@ -354,7 +379,38 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .studentCode(studentCode)
                     .gender(gender)
                     .specialization(specialization)
+                    .major(specialization.getMajor())
+                    .department(specialization.getMajor().getDepartment())
                     .build();
+
+            StudentCounselingProfile counselingProfile;
+            if (index >= 0 && index <= 5) { // Chỉ sinh viên đầu tiên có tất cả thông tin rỗng
+                counselingProfile = null;
+            } else { // Từ sinh viên thứ hai trở đi thì đã có thông tin đầy đủ
+                counselingProfile = StudentCounselingProfile.builder()
+                        .student(studentProfile)
+                        .introduction("introduction")// Set the student reference
+                        .currentHealthStatus("Healthy") // Sample data
+                        .psychologicalStatus("Stable")
+                        .stressFactors("Low stress")
+                        .academicDifficulties("None")
+                        .studyPlan("Plan to excel in studies")
+                        .careerGoals("Become a Software Engineer")
+                        .partTimeExperience("Intern at Tech Company")
+                        .internshipProgram("Summer Internship 2024")
+                        .extracurricularActivities("Football Club")
+                        .personalInterests("Reading, Traveling")
+                        .socialRelationships("Good relationships with peers")
+                        .financialSituation("Stable")
+                        .financialSupport("Parents")
+//                        .counselingIssue("General advice")
+//                        .counselingGoal("Improve time management skills")
+                        .desiredCounselingFields("Career Counseling, Mental Health")
+                        .status(CounselingProfileStatus.VERIFIED)
+                        .build();
+            }
+
+            studentProfile.setCounselingProfile(counselingProfile);
 
             Student returmStudent = profileRepository.save(studentProfile);
 
@@ -491,22 +547,54 @@ public class DatabaseSeeder implements CommandLineRunner {
                 "Hoàng Thị L1", "Hoàng Thị L2", "Hoàng Thị L3", "Hoàng Thị L4");
 
         // List of specialization names
-        List<String> specializationNames = List.of("Khoa học tâm lý", "Giáo dục", "Kinh tế");
+//        List<String> specializationNames = List.of("Khoa học tâm lý", "Giáo dục", "Kinh tế");
+
+        // 1. Seed Department "Công nghệ thông tin"
+        Department itDepartment = departmentRepository.findByName("Công nghệ thông tin")
+                .orElseGet(() -> departmentRepository.save(Department.builder().name("Công nghệ thông tin").code("IT").build()));
+
+        // 2. Seed Major "Software" for IT Department
+        Major softwareMajor = majorRepository.findByName("Software")
+                .orElseGet(() -> majorRepository.save(Major.builder().name("Software").code("IT01").department(itDepartment).build()));
+
+        // 3. Seed Specializations "Backend" and "Frontend" for Software Major
+        List<String> specializationNamesIT = List.of("Backend", "Frontend");
+        List<Specialization> specializationListIT = specializationNamesIT.stream()
+                .map(name -> specializationRepository.findByName(name)
+                        .orElseGet(() -> specializationRepository.save(Specialization.builder().name(name).major(softwareMajor).build())))
+                .toList();
+
+        // 4. Seed Department "Business Analysis"
+        Department baDepartment = departmentRepository.findByName("Business Analysis")
+                .orElseGet(() -> departmentRepository.save(Department.builder().name("Business Analysis").code("BA").build()));
+
+        // 5. Seed Major "Marketing" for BA Department
+        Major marketingMajor = majorRepository.findByName("Marketing")
+                .orElseGet(() -> majorRepository.save(Major.builder().name("Marketing").code("BA01").department(baDepartment).build()));
+
+        // 6. Seed Specialization "Marketing" for Marketing Major
+        List<String> specializationNamesBA = List.of("Marketing");
+        List<Specialization> specializationListBA = specializationNamesBA.stream()
+                .map(name -> specializationRepository.findByName(name)
+                        .orElseGet(() -> specializationRepository.save(Specialization.builder().name(name).major(marketingMajor).build())))
+                .toList();
 
         // List of expertise names
         List<String> expertiseNames = List.of("Tâm lý học", "Tư vấn gia đình", "Tư vấn nghề nghiệp");
 
-        // Creating specialization entities if they don't exist
-        List<Specialization> specializationList = specializationNames.stream()
-                .map(name -> specializationRepository.findByName(name)
-                        .orElseGet(() -> specializationRepository.save(Specialization.builder().name(name).build())))
-                .toList();
+//        // Creating specialization entities if they don't exist
+//        List<Specialization> specializationList = specializationNames.stream()
+//                .map(name -> specializationRepository.findByName(name)
+//                        .orElseGet(() -> specializationRepository.save(Specialization.builder().name(name).build())))
+//                .toList();
 
         // Creating expertise entities if they don't exist
         List<Expertise> expertiseList = expertiseNames.stream()
                 .map(name -> expertiseRepository.findByName(name)
                         .orElseGet(() -> expertiseRepository.save(Expertise.builder().name(name).build())))
                 .toList();
+
+        List<Specialization> specializationList = specializationRepository.findAll();
 
         int maleIndex = 0;
         int femaleIndex = 0;
@@ -592,6 +680,8 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .rating(BigDecimal.valueOf(4.0))
                     .gender(gender) // Adjust as needed
                     .specialization(specialization)
+                    .major(specialization.getMajor())
+                    .department(specialization.getMajor().getDepartment())
                     .status(CounselorStatus.AVAILABLE)
                     .counselingSlots(counselorSlots)
                     .academicDegree("Thạc sĩ") // Adjust degree as needed
