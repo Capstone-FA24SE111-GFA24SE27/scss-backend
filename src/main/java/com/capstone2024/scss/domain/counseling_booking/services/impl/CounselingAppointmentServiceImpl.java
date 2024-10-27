@@ -614,6 +614,112 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
         return CounselingAppointmentMapper.toCounselingAppointmentDTO(appointment);
     }
 
+    @Override
+    public void cancelAppointmentforStudent(Long appointmentId, Long studentId, String reason) {
+        // Check if the appointment exists
+        CounselingAppointment appointment = appointmentRepository.findById(appointmentId) // Use the new repository
+                .orElseThrow(() -> new NotFoundException("Appointment not found"));
+
+        if (!appointment.getAppointmentRequest().getStudent().getId().equals(studentId)) {
+            throw new ForbiddenException("You have no permission for this appointment");
+        }
+
+        if (appointment.getStatus().equals(CounselingAppointmentStatus.WAITING)) {
+            appointment.setStatus(CounselingAppointmentStatus.CANCELED);
+            CounselingAppointment counselingAppointment = appointmentRepository.save(appointment);
+
+            sendAppointmentCancelNotificationOnStudentSide(appointment, reason);
+
+            rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_COUNSELING_APPOINTMENT, RealTimeAppointmentDTO.builder()
+                    .studentId(appointment.getAppointmentRequest().getStudent().getId())
+                    .counselorId(appointment.getAppointmentRequest().getCounselor().getId())
+                    .build());
+        } else {
+            throw new BadRequestException("Invalid parameter");
+        }
+    }
+
+    @Override
+    public void cancelAppointmentforCounselor(Long appointmentId, Long counselorId, String reason) {
+        // Check if the appointment exists
+        CounselingAppointment appointment = appointmentRepository.findById(appointmentId) // Use the new repository
+                .orElseThrow(() -> new NotFoundException("Appointment not found"));
+
+        if (!appointment.getAppointmentRequest().getCounselor().getId().equals(counselorId)) {
+            throw new ForbiddenException("You have no permission for this appointment");
+        }
+
+        if (appointment.getStatus().equals(CounselingAppointmentStatus.WAITING)) {
+            appointment.setStatus(CounselingAppointmentStatus.CANCELED);
+            CounselingAppointment counselingAppointment = appointmentRepository.save(appointment);
+
+            sendAppointmentCancelNotificationOnCounselorSide(appointment, reason);
+
+            rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_COUNSELING_APPOINTMENT, RealTimeAppointmentDTO.builder()
+                    .studentId(appointment.getAppointmentRequest().getStudent().getId())
+                    .counselorId(appointment.getAppointmentRequest().getCounselor().getId())
+                    .build());
+        } else {
+            throw new BadRequestException("Invalid parameter");
+        }
+    }
+
+    private void sendAppointmentCancelNotificationOnStudentSide(CounselingAppointment appointment, String reason) {
+        Counselor counselor = appointment.getAppointmentRequest().getCounselor();
+        Student student = appointment.getAppointmentRequest().getStudent();
+
+        String appointmentDateTime = appointment.getStartDateTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
+
+        // Notify counselor
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(student.getId())
+                .message(String.format("You have marked the appointment on %s as %s.", appointmentDateTime, CounselingAppointmentStatus.CANCELED))
+                .title("Appointment Attendance Updated")
+                .sender("Counseling System")
+                .readStatus(false)
+                .build());
+
+        // Notify student
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(counselor.getId())
+                .message(String.format("Your appointment scheduled on %s has been marked as %s.\nWith reason %s", appointmentDateTime, CounselingAppointmentStatus.CANCELED, reason))
+                .title("Appointment Attendance Notification")
+                .sender("Student: " + student.getFullName())
+                .readStatus(false)
+                .build());
+
+        logger.info("Attendance notification sent: CounselorId: {}, StudentId: {}, AppointmentId: {}, Status: {}",
+                counselor.getId(), student.getId(), appointment.getId(), CounselingAppointmentStatus.CANCELED);
+    }
+
+    private void sendAppointmentCancelNotificationOnCounselorSide(CounselingAppointment appointment, String reason) {
+        Counselor counselor = appointment.getAppointmentRequest().getCounselor();
+        Student student = appointment.getAppointmentRequest().getStudent();
+
+        String appointmentDateTime = appointment.getStartDateTime().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
+
+        // Notify counselor
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(counselor.getId())
+                .message(String.format("You have marked the appointment on %s as %s.", appointmentDateTime, CounselingAppointmentStatus.CANCELED))
+                .title("Appointment Attendance Updated")
+                .sender("Counseling System")
+                .readStatus(false)
+                .build());
+
+        // Notify student
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(student.getId())
+                .message(String.format("Your appointment scheduled on %s has been marked as %s.\nWith reason %s", appointmentDateTime, CounselingAppointmentStatus.CANCELED, reason))
+                .title("Appointment Attendance Notification")
+                .sender("Counselor: " + counselor.getFullName())
+                .readStatus(false)
+                .build());
+
+        logger.info("Attendance notification sent: CounselorId: {}, StudentId: {}, AppointmentId: {}, Status: {}",
+                counselor.getId(), student.getId(), appointment.getId(), CounselingAppointmentStatus.CANCELED);
+    }
+
     private Pageable createPageable(AppointmentFilterDTO filterDTO) {
         Sort sort = Sort.by(filterDTO.getSortBy());
         sort = filterDTO.getSortDirection() == SortDirection.ASC ? sort.ascending() : sort.descending();

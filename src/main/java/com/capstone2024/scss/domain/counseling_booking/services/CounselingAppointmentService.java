@@ -40,4 +40,8 @@ public interface CounselingAppointmentService {
     AppointmentReportResponse getAppointmentReportByAppointmentId(Long appointmentId, Counselor profile);
 
     CounselingAppointmentDTO getOneAppointment(Long appointmentId);
+
+    void cancelAppointmentforStudent(Long appointmentId, Long studentId, String reason);
+
+    void cancelAppointmentforCounselor(Long appointmentId, Long counselorId, String reason);
 }

@@ -6,6 +6,7 @@ import com.capstone2024.scss.application.advice.exeptions.ForbiddenException;
 import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppointmentDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.AppointmentRequestFilterDTO;
+import com.capstone2024.scss.application.booking_counseling.dto.request.CancelAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.UpdateAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.AppointmentFeedbackDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OfflineAppointmentRequestDTO;
@@ -246,5 +247,27 @@ public class BookingCounselingController {
     ) {
         counselingAppointmentService.takeAttendanceForAppointment(appointmentId, counselingAppointmentStatus, principal.getProfile().getId());
         return ResponseUtil.getResponse("Appointment details updated successfully", HttpStatus.OK);
+    }
+
+    @PostMapping("/student/cancel/{appointmentId}")
+    public ResponseEntity<Object> cancelAppointmentForStudent(
+            @PathVariable Long appointmentId,
+            @AuthenticationPrincipal @NotNull Account principal,
+            @RequestBody CancelAppointmentRequestDTO requestBody
+    ) {
+        Long studentId = principal.getProfile().getId();
+        counselingAppointmentService.cancelAppointmentforStudent(appointmentId, studentId, requestBody.getReason());
+        return ResponseUtil.getResponse("Appointment cancel successfully", HttpStatus.OK);
+    }
+
+    @PostMapping("/counselor/cancel/{appointmentId}")
+    public ResponseEntity<Object> cancelAppointmentForCounselor(
+            @PathVariable Long appointmentId,
+            @AuthenticationPrincipal @NotNull Account principal,
+            @RequestBody CancelAppointmentRequestDTO requestBody
+    ) {
+        Long counselorId = principal.getProfile().getId();
+        counselingAppointmentService.cancelAppointmentforCounselor(appointmentId, counselorId, requestBody.getReason());
+        return ResponseUtil.getResponse("Appointment cancel successfully", HttpStatus.OK);
     }
 }

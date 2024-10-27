@@ -45,6 +45,9 @@ public class CounselingDemand extends BaseEntity {
     @Column(name = "contact_note", nullable = true, columnDefinition = "TEXT")
     private String contactNote;
 
+    @Column(name = "summarize_note", nullable = true, columnDefinition = "TEXT")
+    private String summarizeNote;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "counselor_id")
     private Counselor counselor;

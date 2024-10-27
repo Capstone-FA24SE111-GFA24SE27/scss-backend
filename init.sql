@@ -1,0 +1,3 @@
+CREATE DATABASE IF NOT EXISTS fap_system;
+GRANT ALL PRIVILEGES ON fap_system.* TO 'admin'@'%';
+FLUSH PRIVILEGES;
