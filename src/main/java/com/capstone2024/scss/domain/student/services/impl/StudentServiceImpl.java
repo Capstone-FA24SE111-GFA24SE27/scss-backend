@@ -6,6 +6,7 @@ import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.student.dto.StudentCounselingProfileRequestDTO;
 import com.capstone2024.scss.application.student.dto.StudentDocumentDTO;
 import com.capstone2024.scss.application.student.dto.StudentFilterRequestDTO;
+import com.capstone2024.scss.application.student.dto.StudyDTO;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.student.entities.StudentCounselingProfile;
 import com.capstone2024.scss.domain.student.enums.CounselingProfileStatus;
@@ -16,8 +17,10 @@ import com.capstone2024.scss.infrastructure.repositories.student.CounselingProfi
 import com.capstone2024.scss.infrastructure.repositories.student.StudentRepository;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingAppointmentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +32,10 @@ public class StudentServiceImpl implements StudentService {
     private final StudentRepository studentRepository;
     private final CounselingAppointmentRepository appointmentRepository;
     private final CounselingProfileRepository counselingProfileRepository;
+    private final RestTemplate restTemplate;
+
+    @Value("${server.api.fap.system.base.url}")
+    private String fapServerUrl;
 
     @Override
     public StudentProfileDTO getStudentById(Long id) {
@@ -111,6 +118,16 @@ public class StudentServiceImpl implements StudentService {
 
         // Lưu hồ sơ tư vấn đã cập nhật vào cơ sở dữ liệu
         counselingProfileRepository.save(profile);
+    }
+
+    @Override
+    public List<StudyDTO> getStudiesByStudentId(Long studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new NotFoundException("Student not found with id " + studentId));
+
+        String url = fapServerUrl + "/api/studies/" + student.getStudentCode();
+        StudyDTO[] studiesArray = restTemplate.getForObject(url, StudyDTO[].class);
+        return List.of(studiesArray);
     }
 
     @Override

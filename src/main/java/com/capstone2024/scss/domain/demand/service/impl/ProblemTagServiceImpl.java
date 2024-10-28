@@ -55,7 +55,7 @@ public class ProblemTagServiceImpl implements ProblemTagService {
         // Tạo mới ProblemTag và gán ProblemCategory
         ProblemTag problemTag = ProblemTag.builder()
                 .name(request.getName())
-                .point(request.getPoint())
+//                .point(request.getPoint())
                 .category(category) // Gán category cho problemTag
                 .build();
 
@@ -82,7 +82,7 @@ public class ProblemTagServiceImpl implements ProblemTagService {
 
         // Cập nhật thông tin
         existingTag.setName(request.getName());
-        existingTag.setPoint(request.getPoint());
+//        existingTag.setPoint(request.getPoint());
 
         // Tìm ProblemCategory mới nếu có
         if (request.getCategoryId() != null) {

@@ -28,11 +28,11 @@ public class CounselingDemand extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @OneToMany(mappedBy = "demand", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DemandProblemTag> demandProblemTags = new ArrayList<>();
+//    @OneToMany(mappedBy = "demand", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<DemandProblemTag> demandProblemTags = new ArrayList<>();
 
-    @Column(name = "total_point", nullable = false)
-    private int totalPoint = 0;
+//    @Column(name = "total_point", nullable = false)
+//    private int totalPoint = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)

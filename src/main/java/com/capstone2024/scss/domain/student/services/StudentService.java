@@ -5,6 +5,7 @@ import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.student.dto.StudentCounselingProfileRequestDTO;
 import com.capstone2024.scss.application.student.dto.StudentDocumentDTO;
 import com.capstone2024.scss.application.student.dto.StudentFilterRequestDTO;
+import com.capstone2024.scss.application.student.dto.StudyDTO;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,4 +22,6 @@ public interface StudentService {
     void createCounselingProfile(StudentCounselingProfileRequestDTO requestDTO, Long studentId);
 
     void updateCounselingProfile(StudentCounselingProfileRequestDTO requestDTO, Long studentId);
+
+    List<StudyDTO> getStudiesByStudentId(Long studentId);
 }

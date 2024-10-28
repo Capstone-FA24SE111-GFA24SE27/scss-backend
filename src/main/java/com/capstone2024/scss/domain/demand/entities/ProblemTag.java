@@ -20,8 +20,8 @@ public class ProblemTag extends BaseEntity {
     @Column(name = "name", columnDefinition = "TEXT", nullable = false)
     private String name;
 
-    @Column(name = "point", nullable = false)
-    private int point;
+//    @Column(name = "point", nullable = false)
+//    private int point;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)

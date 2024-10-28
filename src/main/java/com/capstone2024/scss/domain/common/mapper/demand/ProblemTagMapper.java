@@ -13,7 +13,7 @@ public class ProblemTagMapper {
         return ProblemTagResponseDTO.builder()
                 .id(problemTag.getId())
                 .name(problemTag.getName())
-                .point(problemTag.getPoint())
+//                .point(problemTag.getPoint())
                 .category(toProblemCategoryResponseDto(problemTag.getCategory()))
                 .build();
     }

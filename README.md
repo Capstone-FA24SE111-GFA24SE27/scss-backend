@@ -62,10 +62,16 @@ To run the application in the development environment, follow these steps:
 3. **Build mobile socket server**:
    ```sh
    docker build -t trinhvinhphat2003/mobile-socket-capstone-server .
-4. **Build mobile socket server**:
+4. **Push mobile socket server**:
    ```sh
    docker push trinhvinhphat2003/mobile-socket-capstone-server:latest
-5. **Run Docker Compose**:
+5. **Build fap system server**:
+   ```sh
+   docker build -f Dockerfile.frontend -t trinhvinhphat2003/fap-system-server .
+6. **Push fap system server**:
+   ```sh
+   docker push trinhvinhphat2003/fap-system-server:latest
+7. **Run Docker Compose**:
    This is what FE team have to do to run server:
 
    ```sh

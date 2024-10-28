@@ -114,31 +114,64 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     @Transactional
     public void seedProblemTags() {
-        // Tạo danh sách các ProblemCategories
-        List<ProblemCategory> categories = new ArrayList<>();
-
-        for (int i = 1; i <= 3; i++) {
-            ProblemCategory category = new ProblemCategory();
-            category.setName("Problem Category " + i);
-
-            // Tạo danh sách ProblemTags cho mỗi category
-            List<ProblemTag> problemTags = new ArrayList<>();
-            for (int j = 1; j <= 3; j++) {
-                ProblemTag tag = new ProblemTag();
-                tag.setName("Problem Tag " + i + "-" + j);
-                tag.setPoint(j);
-                tag.setCategory(category);
-
-                // Thêm ProblemTag vào danh sách
-                problemTags.add(tag);
-            }
-
-            category.setProblemTags(problemTags);  // Thiết lập danh sách ProblemTags cho category
-            categories.add(category);  // Thêm category vào danh sách
+        if (problemTagRepository.count() > 0) {
+            return; // Nếu đã có dữ liệu, không seed lại
         }
 
-        // Lưu các ProblemCategory vào cơ sở dữ liệu
-        problemCategoryRepository.saveAll(categories);
+        // Tạo hoặc lấy danh mục "Học tập" và các danh mục khác
+        ProblemCategory studyCategory = problemCategoryRepository.findByName("Học tập")
+                .orElseGet(() -> problemCategoryRepository.save(ProblemCategory.builder().name("Học tập").build()));
+
+        problemCategoryRepository.findByName("Hoạt động ngoại khóa")
+                .orElseGet(() -> problemCategoryRepository.save(ProblemCategory.builder().name("Hoạt động ngoại khóa").build()));
+
+        problemCategoryRepository.findByName("Event")
+                .orElseGet(() -> problemCategoryRepository.save(ProblemCategory.builder().name("Event").build()));
+
+        problemCategoryRepository.findByName("Câu lạc bộ")
+                .orElseGet(() -> problemCategoryRepository.save(ProblemCategory.builder().name("Câu lạc bộ").build()));
+
+        // Chỉ tạo các tag cho category "Học tập"
+        List<ProblemTag> studyTags = List.of(
+                // Thái độ và động lực học tập
+                ProblemTag.builder().name("Tham gia tích cực").category(studyCategory).build(),
+                ProblemTag.builder().name("Thái độ học tập tích cực").category(studyCategory).build(),
+                ProblemTag.builder().name("Có tinh thần học hỏi").category(studyCategory).build(),
+
+                // Kỹ năng làm việc nhóm
+                ProblemTag.builder().name("Đóng góp tốt cho nhóm").category(studyCategory).build(),
+                ProblemTag.builder().name("Hỗ trợ bạn bè trong nhóm").category(studyCategory).build(),
+                ProblemTag.builder().name("Giao tiếp nhóm tốt").category(studyCategory).build(),
+
+                // Kỹ năng cá nhân
+                ProblemTag.builder().name("Tư duy sáng tạo").category(studyCategory).build(),
+                ProblemTag.builder().name("Giải quyết vấn đề hiệu quả").category(studyCategory).build(),
+                ProblemTag.builder().name("Kỹ năng quản lý thời gian tốt").category(studyCategory).build(),
+                ProblemTag.builder().name("Chủ động trong học tập").category(studyCategory).build(),
+
+                // Thành tích và đóng góp
+                ProblemTag.builder().name("Hoàn thành nhiệm vụ đúng hạn").category(studyCategory).build(),
+                ProblemTag.builder().name("Cải thiện vượt bậc trong học tập").category(studyCategory).build(),
+                ProblemTag.builder().name("Có đóng góp nổi bật trong lớp học").category(studyCategory).build(),
+
+                // Tag tiêu cực
+                ProblemTag.builder().name("Thiếu động lực học tập").category(studyCategory).build(),
+                ProblemTag.builder().name("Thái độ không hợp tác").category(studyCategory).build(),
+                ProblemTag.builder().name("Ít tham gia vào hoạt động lớp").category(studyCategory).build(),
+                ProblemTag.builder().name("Khó làm việc với nhóm").category(studyCategory).build(),
+                ProblemTag.builder().name("Không hỗ trợ bạn bè trong nhóm").category(studyCategory).build(),
+                ProblemTag.builder().name("Giao tiếp nhóm kém").category(studyCategory).build(),
+                ProblemTag.builder().name("Tư duy hạn chế").category(studyCategory).build(),
+                ProblemTag.builder().name("Chậm chạp trong giải quyết vấn đề").category(studyCategory).build(),
+                ProblemTag.builder().name("Thiếu kỹ năng quản lý thời gian").category(studyCategory).build(),
+                ProblemTag.builder().name("Thiếu chủ động trong học tập").category(studyCategory).build(),
+                ProblemTag.builder().name("Nộp bài trễ").category(studyCategory).build(),
+                ProblemTag.builder().name("Không hoàn thành nhiệm vụ").category(studyCategory).build(),
+                ProblemTag.builder().name("Không có sự cải thiện").category(studyCategory).build()
+        );
+
+        // Lưu các tag cho "Học tập" vào database
+        problemTagRepository.saveAll(studyTags);
     }
 
     private void createVietnamHolidays() {
@@ -282,59 +315,59 @@ public class DatabaseSeeder implements CommandLineRunner {
         List<Student> students = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
-            students.add(createSingleStudentAccount(i, maleNames.get(i), "sm" + (i + 1), Gender.MALE, "SE11" + String.format("%04d", i + 1), specializations.getFirst()));
+            students.add(createSingleStudentAccount(i, maleNames.get(i), "sm" + (i + 1), Gender.MALE, "SE100" + String.format("%d", i + 1), specializations.getFirst()));
         }
 
         for (int i = 0; i < 10; i++) {
-            createSingleStudentAccount(i, femaleNames.get(i), "sf" + (i + 1), Gender.FEMALE, "SE11" + String.format("%04d", i + 11), specializations.getFirst());
+            createSingleStudentAccount(i, femaleNames.get(i), "sf" + (i + 1), Gender.FEMALE, "SE10" + String.format("%d", i + 11), specializations.getFirst());
         }
 
-        seedDemandProblemTagsAndCounselingDemands(students.subList(0, 5));
+//        seedDemandProblemTagsAndCounselingDemands(students.subList(0, 5));
     }
 
-    private void seedDemandProblemTagsAndCounselingDemands(List<Student> students) {
-        List<SupportStaff> supportStaffs = supportStaffRepository.findAll();
-        SupportStaff supportStaff = supportStaffs.getFirst();
-
-        List<CounselingDemand> demands = new ArrayList<>();
-
-        Counselor counselor = counselorRepository.findById(4L)
-                .orElseThrow(() -> new RuntimeException("Counselor with ID 4 not found."));
-
-        for (int i = 0; i < 5; i++) { // Tạo cho 5 học sinh đầu tiên
-            CounselingDemand demand = CounselingDemand.builder()
-                    .status(CounselingDemand.Status.WAITING)
-                    .totalPoint(0)
-                    .student(students.get(i))
-                    .supportStaff(supportStaff)
-                    .counselor(counselor)
-                    .demandProblemTags(new ArrayList<>())
-                    .build();
-
-            List<DemandProblemTag> demandProblemTags = new ArrayList<>();
-
-            // Tạo 3 DemandProblemTag cho mỗi CounselingDemand
-            for (int j = 1; j <= 3; j++) {
-                DemandProblemTag demandProblemTag = DemandProblemTag.builder()
-                        .student(students.get(i))
-                        .source("Generated Source " + j)
-                        .tagName("Tag " + j)
-                        .number(j)
-                        .totalPoint(j * 10)
-                        .demand(demand)
-                        .build();
-                demandProblemTags.add(demandProblemTag);
-                demand.setTotalPoint(demand.getTotalPoint() + demandProblemTag.getTotalPoint());
-            }
-
-            demand.getDemandProblemTags().addAll(demandProblemTags);
-            demands.add(demand);
-        }
-
-        counselingDemandRepository.saveAll(demands);
-        injectCounselorIntoDemand(counselor);
-        logger.info("Seeded Counseling Demands and Demand Problem Tags.");
-    }
+//    private void seedDemandProblemTagsAndCounselingDemands(List<Student> students) {
+//        List<SupportStaff> supportStaffs = supportStaffRepository.findAll();
+//        SupportStaff supportStaff = supportStaffs.getFirst();
+//
+//        List<CounselingDemand> demands = new ArrayList<>();
+//
+//        Counselor counselor = counselorRepository.findById(4L)
+//                .orElseThrow(() -> new RuntimeException("Counselor with ID 4 not found."));
+//
+//        for (int i = 0; i < 5; i++) { // Tạo cho 5 học sinh đầu tiên
+//            CounselingDemand demand = CounselingDemand.builder()
+//                    .status(CounselingDemand.Status.WAITING)
+//                    .totalPoint(0)
+//                    .student(students.get(i))
+//                    .supportStaff(supportStaff)
+//                    .counselor(counselor)
+//                    .demandProblemTags(new ArrayList<>())
+//                    .build();
+//
+//            List<DemandProblemTag> demandProblemTags = new ArrayList<>();
+//
+//            // Tạo 3 DemandProblemTag cho mỗi CounselingDemand
+//            for (int j = 1; j <= 3; j++) {
+//                DemandProblemTag demandProblemTag = DemandProblemTag.builder()
+//                        .student(students.get(i))
+//                        .source("Generated Source " + j)
+//                        .tagName("Tag " + j)
+//                        .number(j)
+//                        .totalPoint(j * 10)
+//                        .demand(demand)
+//                        .build();
+//                demandProblemTags.add(demandProblemTag);
+//                demand.setTotalPoint(demand.getTotalPoint() + demandProblemTag.getTotalPoint());
+//            }
+//
+//            demand.getDemandProblemTags().addAll(demandProblemTags);
+//            demands.add(demand);
+//        }
+//
+//        counselingDemandRepository.saveAll(demands);
+//        injectCounselorIntoDemand(counselor);
+//        logger.info("Seeded Counseling Demands and Demand Problem Tags.");
+//    }
 
     private void injectCounselorIntoDemand(Counselor counselor) {
 //        List<CounselingDemand> demands = counselingDemandRepository.findAll();

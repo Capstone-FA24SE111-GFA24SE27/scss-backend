@@ -29,12 +29,12 @@ public class DemandProblemTag extends BaseEntity {
     @Column(name = "number", nullable = false)
     private int number;
 
-    @Column(name = "total_point", nullable = false)
-    private int totalPoint = 0;
+//    @Column(name = "total_point", nullable = false)
+//    private int totalPoint = 0;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "demand_id", nullable = true)
-    private CounselingDemand demand;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "demand_id", nullable = true)
+//    private CounselingDemand demand;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "semester_id", nullable = true)

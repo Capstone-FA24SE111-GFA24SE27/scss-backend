@@ -9,6 +9,7 @@ import com.capstone2024.scss.application.counseling_appointment.dto.request.coun
 import com.capstone2024.scss.application.student.dto.StudentCounselingProfileRequestDTO;
 import com.capstone2024.scss.application.student.dto.StudentDocumentDTO;
 import com.capstone2024.scss.application.student.dto.StudentFilterRequestDTO;
+import com.capstone2024.scss.application.student.dto.StudyDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
@@ -130,6 +131,12 @@ public class StudentController {
         PaginationDTO<List<CounselingAppointmentDTO>> responseDTO = appointmentService.getAppointmentsWithFilterForStudent(filterDTO, studentId);
 
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/study/{studentId}")
+    public ResponseEntity<Object> getStudiesByStudentCode(@PathVariable Long studentId) {
+        List<StudyDTO> studies = studentService.getStudiesByStudentId(studentId);
+        return ResponseUtil.getResponse(studies, HttpStatus.OK);
     }
 }
 
