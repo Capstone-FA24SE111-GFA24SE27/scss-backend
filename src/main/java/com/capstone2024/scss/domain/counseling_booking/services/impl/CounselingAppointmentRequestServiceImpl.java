@@ -35,6 +35,8 @@ import com.capstone2024.scss.domain.notification.services.NotificationService;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentRequestService;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
+import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeAppointmentDTO;
+import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeAppointmentRequestDTO;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeCounselingSlotDTO;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingAppointmentRepository;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingAppointmentRequestRepository;
@@ -96,8 +98,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                         .map(slot -> {
                             boolean isSlotTaken = requests.stream()
                                     .anyMatch(r -> r.getRequireDate().equals(dateToCheck) &&
-                                            (r.getStatus() == CounselingAppointmentRequestStatus.WAITING ||
-                                                    r.getStatus() == CounselingAppointmentRequestStatus.APPROVED) &&
+                                            (r.getStatus() == CounselingAppointmentRequestStatus.WAITING) &&
                                             (r.getStartTime().isBefore(slot.getEndTime()) &&
                                                     r.getEndTime().isAfter(slot.getStartTime()))) ||
                                     appointments.stream()
@@ -184,6 +185,12 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                         .newStatus(SlotStatus.UNAVAILABLE)
                 .build());
 
+        rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_COUNSELING_APPOINTMENT_REQUEST, RealTimeAppointmentRequestDTO.builder()
+                .studentId(appointmentRequest.getStudent().getId())
+                .counselorId(appointmentRequest.getCounselor().getId())
+                .type(RealTimeAppointmentRequestDTO.Type.STUDENT_CREATE_NEW_REQUEST)
+                .build());
+
         notificationService.sendNotification(NotificationDTO.builder()
                 .receiverId(counselorId)
                 .message("Student named -" + student.getFullName() + "-" + student.getStudentCode() + "- has sent you a counseling appointment request")
@@ -212,8 +219,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
 
         boolean isSlotTaken = requests.stream()
                 .anyMatch(r -> r.getRequireDate().equals(date) &&
-                        (r.getStatus() == CounselingAppointmentRequestStatus.WAITING ||
-                                r.getStatus() == CounselingAppointmentRequestStatus.APPROVED) &&
+                        (r.getStatus() == CounselingAppointmentRequestStatus.WAITING) &&
                         (r.getStartTime().isBefore(slot.getEndTime()) &&
                                 r.getEndTime().isAfter(slot.getStartTime()))) ||
                 appointments.stream()

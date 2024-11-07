@@ -3,19 +3,25 @@ package com.capstone2024.scss.application.counseling_appointment.controller;
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
 import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppointmentDTO;
+import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;
+import com.capstone2024.scss.application.booking_counseling.dto.request.CreateCounselingAppointmentRequestDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
 import com.capstone2024.scss.application.counseling_appointment.dto.AppointmentReportResponse;
+import com.capstone2024.scss.application.counseling_appointment.dto.request.CreateCounselingAppointmentDTO;
 import com.capstone2024.scss.application.counseling_appointment.dto.request.appoinment_report.AppointmentReportRequest;
 import com.capstone2024.scss.application.counseling_appointment.dto.request.counseling_appointment.AppointmentFilterDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
+import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselingRequestMapper;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import com.capstone2024.scss.domain.student.entities.Student;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -34,10 +40,79 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/appointments")
+@Tag(name = "Appointment", description = "API endpoints for managing appointments")
 public class AppointmentController {
 
     private static final Logger logger = LoggerFactory.getLogger(AppointmentController.class);
     private final CounselingAppointmentService appointmentService;
+
+    @PostMapping("/create/{studentId}")
+    @io.swagger.v3.oas.annotations.Operation(
+            summary = "Create a new counseling appointment",
+            description = "Allows a counselor to create a new appointment with a student."
+    )
+    public ResponseEntity<Object> createAppointment(
+            @Valid @RequestBody CreateCounselingAppointmentDTO requestDTO,
+            @PathVariable Long studentId,
+            BindingResult errors,
+            @AuthenticationPrincipal @NotNull Account principal) {
+
+        Long counselorId = principal.getProfile().getId();
+
+        logger.info("Received createAppointment - Counselor ID: {}", principal.getUsername());
+
+        if (errors.hasErrors()) {
+            logger.warn("Validation errors: {}", errors.getAllErrors());
+            throw new BadRequestException("Invalid appointment", errors, HttpStatus.BAD_REQUEST);
+        }
+
+        if (!(principal.getProfile() instanceof Counselor)) {
+            logger.warn("Attempted appointment request by student: {}", principal.getUsername());
+            throw new BadRequestException("You are not authorized to create an appointment.");
+        }
+        logger.info("Processing appointment for slotCode: {}, date: {}, counselorId: {}",
+                requestDTO.getSlotCode(), requestDTO.getDate(), counselorId);
+
+        CounselingAppointmentDTO appointment = appointmentService.createAppointment(requestDTO, counselorId, studentId);
+
+        logger.info("Successfully created appointment with ID: {}", appointment.getId());
+
+        return ResponseUtil.getResponse(appointment, HttpStatus.OK);
+    }
+
+    @PostMapping("/demand/{demandId}/create")
+    @io.swagger.v3.oas.annotations.Operation(
+            summary = "Create a new counseling appointment for demand",
+            description = "Allows a counselor to create a new appointment for demand with a student."
+    )
+    public ResponseEntity<Object> createAppointmentForDemand(
+            @Valid @RequestBody CreateCounselingAppointmentDTO requestDTO,
+            @PathVariable Long demandId,
+            BindingResult errors,
+            @AuthenticationPrincipal @NotNull Account principal) {
+
+        Long counselorId = principal.getProfile().getId();
+
+        logger.info("Received createAppointment - Counselor ID: {}", principal.getUsername());
+
+        if (errors.hasErrors()) {
+            logger.warn("Validation errors: {}", errors.getAllErrors());
+            throw new BadRequestException("Invalid appointment", errors, HttpStatus.BAD_REQUEST);
+        }
+
+        if (!(principal.getProfile() instanceof Counselor)) {
+            logger.warn("Attempted appointment request by student: {}", principal.getUsername());
+            throw new BadRequestException("You are not authorized to create an appointment.");
+        }
+        logger.info("Processing appointment for slotCode: {}, date: {}, counselorId: {}",
+                requestDTO.getSlotCode(), requestDTO.getDate(), counselorId);
+
+        CounselingAppointmentDTO appointment = appointmentService.createAppointmentForDemand(requestDTO, counselorId, null, demandId);
+
+        logger.info("Successfully created appointment with ID: {}", appointment.getId());
+
+        return ResponseUtil.getResponse(appointment, HttpStatus.OK);
+    }
 
     @GetMapping("/counselor")
     @Operation(

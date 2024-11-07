@@ -14,27 +14,26 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CounselingAppointmentRepository extends JpaRepository<CounselingAppointment, Long> {
-    @Query("SELECT a FROM CounselingAppointment a WHERE a.appointmentRequest.counselor.id = :counselorId AND a.startDateTime BETWEEN :fromDateTime AND :toDateTime")
+    @Query("SELECT a FROM CounselingAppointment a WHERE a.counselor.id = :counselorId AND a.startDateTime BETWEEN :fromDateTime AND :toDateTime")
     List<CounselingAppointment> findAllByCounselorIdAndDateRange(@Param("counselorId") Long counselorId,
                                                                  @Param("fromDateTime") LocalDateTime fromDateTime,
                                                                  @Param("toDateTime") LocalDateTime toDateTime);
 
-    @Query("SELECT a FROM CounselingAppointment a WHERE a.appointmentRequest.student.id = :studentId AND a.startDateTime BETWEEN :fromDateTime AND :toDateTime")
+    @Query("SELECT a FROM CounselingAppointment a WHERE a.student.id = :studentId AND a.startDateTime BETWEEN :fromDateTime AND :toDateTime")
     List<CounselingAppointment> findAllByStudentIdAndDateRange(@Param("studentId") Long studentId,
                                                                @Param("fromDateTime") LocalDateTime fromDateTime,
                                                                @Param("toDateTime") LocalDateTime toDateTime);
 
-    @Query("SELECT a FROM CounselingAppointment a WHERE a.appointmentRequest.student.id = :studentId")
+    @Query("SELECT a FROM CounselingAppointment a WHERE a.student.id = :studentId")
     List<CounselingAppointment> findAllByStudentId(@Param("studentId") Long studentId);
 
-    @Query("SELECT c FROM CounselingAppointment c WHERE c.appointmentRequest.student.id = ?1 " +
+    @Query("SELECT c FROM CounselingAppointment c WHERE c.student.id = ?1 " +
             "AND c.startDateTime <= ?2 AND c.endDateTime >= ?3")
     List<CounselingAppointment> findAllByStudentIdAndStartDateTimeLessThanEqualAndEndDateTimeGreaterThanEqual(Long studentId, LocalDateTime endDateTime, LocalDateTime startDateTime);
 
     @Query("SELECT ca FROM CounselingAppointment ca " +
-            "JOIN ca.appointmentRequest car " +
-            "WHERE (:studentCode IS NULL OR car.student.studentCode = :studentCode) " +
-            "AND (:counselor IS NULL OR car.counselor = :counselor) " +
+            "WHERE (:studentCode IS NULL OR ca.student.studentCode = :studentCode) " +
+            "AND (:counselor IS NULL OR ca.counselor = :counselor) " +
             "AND (:fromDate IS NULL OR ca.startDateTime >= :fromDate) " +
             "AND (:toDate IS NULL OR ca.endDateTime <= :toDate) " +
             "AND (:status IS NULL OR ca.status = :status)")
@@ -46,8 +45,8 @@ public interface CounselingAppointmentRepository extends JpaRepository<Counselin
             Counselor counselor,
             Pageable pageable);
 
-    @Query("SELECT ca FROM CounselingAppointment ca JOIN ca.appointmentRequest car WHERE " +
-            "(:student IS NULL OR car.student = :student) AND " +
+    @Query("SELECT ca FROM CounselingAppointment ca WHERE " +
+            "(:student IS NULL OR ca.student = :student) AND " +
             "(:fromDate IS NULL OR ca.startDateTime >= :fromDate) AND " +
             "(:toDate IS NULL OR ca.endDateTime <= :toDate) AND " +
             "(:status IS NULL OR ca.status = :status)")

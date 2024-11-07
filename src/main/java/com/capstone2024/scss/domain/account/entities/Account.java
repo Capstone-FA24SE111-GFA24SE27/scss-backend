@@ -42,9 +42,12 @@ public class Account extends BaseEntity implements UserDetails {
     @Column(name = "status", nullable = false, length = 20)
     private Status status;
 
+    @Column(name = "password", unique = false, nullable = true)
+    private String password;
+
     @SuppressWarnings("java:S1948")
-    @OneToMany(mappedBy = "account")
-    private List<LoginType> loginTypes;
+//    @OneToMany(mappedBy = "account")
+//    private List<LoginType> loginTypes;
 
     @PrePersist
     protected void onCreate() {
@@ -58,15 +61,7 @@ public class Account extends BaseEntity implements UserDetails {
 
     @Override
     public String getPassword() {
-        List<LoginType> loginTypes = getLoginTypes();
-        if(loginTypes != null) {
-            for (LoginType loginType : loginTypes) {
-                if (loginType.getMethod().name().equals(LoginMethod.DEFAULT.name())) {
-                    return loginType.getPassword();
-                }
-            }
-        }
-        return null;
+        return this.password;
     }
 
     @Override

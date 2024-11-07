@@ -1,11 +1,13 @@
 package com.capstone2024.scss.infrastructure.data;
 
+import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.entities.LoginType;
 import com.capstone2024.scss.domain.account.entities.Profile;
 import com.capstone2024.scss.domain.account.enums.LoginMethod;
 import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.account.enums.Status;
+import com.capstone2024.scss.domain.common.entity.Semester;
 import com.capstone2024.scss.domain.counselor.entities.*;
 import com.capstone2024.scss.domain.common.utils.RandomUtil;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
@@ -16,7 +18,6 @@ import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appoi
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
 import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
-import com.capstone2024.scss.domain.demand.entities.CounselingDemand;
 import com.capstone2024.scss.domain.demand.entities.DemandProblemTag;
 import com.capstone2024.scss.domain.demand.entities.ProblemCategory;
 import com.capstone2024.scss.domain.demand.entities.ProblemTag;
@@ -32,6 +33,7 @@ import com.capstone2024.scss.domain.notification.entities.Notification;
 import com.capstone2024.scss.domain.student.entities.StudentCounselingProfile;
 import com.capstone2024.scss.domain.student.enums.CounselingProfileStatus;
 import com.capstone2024.scss.domain.support_staff.entity.SupportStaff;
+import com.capstone2024.scss.infrastructure.data.fap.dto.*;
 import com.capstone2024.scss.infrastructure.repositories.*;
 import com.capstone2024.scss.infrastructure.repositories._and_a.QuestionCardRepository;
 import com.capstone2024.scss.infrastructure.repositories._and_a.TopicRepository;
@@ -45,33 +47,36 @@ import com.capstone2024.scss.infrastructure.repositories.counselor.AvailableDate
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.ExpertiseRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.SpecializationRepository;
-import com.capstone2024.scss.infrastructure.repositories.demand.CounselingDemandRepository;
-import com.capstone2024.scss.infrastructure.repositories.demand.ProblemCategoryRepository;
-import com.capstone2024.scss.infrastructure.repositories.demand.ProblemTagRepository;
-import com.capstone2024.scss.infrastructure.repositories.demand.SupportStaffRepository;
+import com.capstone2024.scss.infrastructure.repositories.demand.*;
 import com.capstone2024.scss.infrastructure.repositories.student.CounselingProfileRepository;
 import com.capstone2024.scss.infrastructure.repositories.student.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class DatabaseSeeder implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseSeeder.class);
+    private final RestTemplate restTemplate;
+    @Value("${server.api.fap.system.base.url}")
+    private String fapServerUrl;
 
     private final AccountRepository accountRepository;
     private final LoginTypeRepository loginTypeRepository;
@@ -96,85 +101,216 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final CounselingProfileRepository counselingProfileRepository;
     private final DepartmentRepository departmentRepository;
     private final MajorRepository majorRepository;
+    private final SemesterRepository semesterRepository;
+    private final DemandProblemTagRepository demandProblemTagRepository;
 
     @Override
     public void run(String... args) throws Exception {
         seedTopics();
         seedProblemTags();
-        createAdminAccount();
-//        createStudentAccounts();
-        createManagerAccount();
-        createSupportStaffAccount();
-//        createCounselorAccount();
-        generateSlots();
-        createCounselorAccounts();
-        createStudentAccounts();
-        createVietnamHolidays();
+        seedVietnamHolidays();
+        seedSlots();
+        seedSemesters();
+        seedDepartments();
+
+        seedAdminAccount();
+        seedManagerAccount();
+        seedSupportStaffAccount();
+        seedCounselorAccounts();
+        seedStudentAccounts();
+        seedStudentProblemTags();
+        
+        generatePromptToOpenAI("Học sinh này học quá tệ, không thường xuyên hỗ trợ làm bài tập nhóm, thường xuyên ngủ gật");
     }
+
+    private void generatePromptToOpenAI(String prompt) {
+        List<String> predefinedTags = problemTagRepository.findAll()
+                .stream()
+                .map(ProblemTag::getName)
+                .collect(Collectors.toList());
+
+        String preDefinedTags = String.join(", ", predefinedTags);
+
+        String promptCommand = "Pre-defined tags: [" + preDefinedTags + "]\n" +
+                "Your action: [\n" +
+                "Content Analysis: Before tagging, analyze the prompt to identify its meaning, sentiment, and specific behaviors related to the student.\n" +
+                "Filter Out Stop Words: Remove unnecessary stop words to simplify the sentence and focus on key terms related to behavior and academic performance.\n" +
+                "Match with Available Tags: Based on the filtered keywords, compare them with the available tags to find the most relevant ones.\n" +
+                "Assign Multiple Tags if Necessary: In cases where multiple aspects of behavior are described, multiple tags may be assigned, with each tag representing a specific negative behavior or area of weakness.\n" +
+                "]\n" +
+                "Response: [JSON format with key (result) and value (String array of tags)]";
+
+        System.out.println(promptCommand);
+    }
+
+    @Transactional
+    private void seedStudentProblemTags() {
+        List<Student> students = studentRepository.findAll();
+        for(Student student : students) {
+            ResponseEntity<DemandProblemTagFapResponseDTO[]> response = restTemplate.getForEntity(fapServerUrl + "/api/problem-tags/" + student.getStudentCode(), DemandProblemTagFapResponseDTO[].class);
+            DemandProblemTagFapResponseDTO[] responseBody = response.getBody();
+            Map<String, Integer> tagMap = new HashMap<>();
+            if(responseBody != null) {
+                List<DemandProblemTagFapResponseDTO> body = new ArrayList<>(List.of(responseBody));
+                if(body.isEmpty()) continue;
+
+                for(DemandProblemTagFapResponseDTO dto : body) {
+                    if(tagMap.get(dto.getSemesterName() + dto.getSource()) == null) {
+                        tagMap.put(dto.getSemesterName() + dto.getSource(), 1);
+                    } else {
+                        tagMap.put(dto.getSemesterName() + dto.getSource(), tagMap.get(dto.getSemesterName() + dto.getSource()) + 1);
+                    }
+                    Optional<ProblemTag> problemTag = problemTagRepository.findByName(dto.getProblemTagName());
+                    Optional<Semester> semester = semesterRepository.findByName(dto.getSemesterName());
+                    if(problemTag.isEmpty() || semester.isEmpty()) {
+                        throw new NotFoundException(dto.getProblemTagName() + ", " + dto.getSemesterName());
+                    }
+                    demandProblemTagRepository.save(DemandProblemTag.builder()
+                                    .problemTag(problemTag.get())
+                                    .source(dto.getSource())
+                                    .semester(semester.get())
+                                    .student(student)
+                                    .isExcluded(semester.get().getName().equals("Summer2024") || !(tagMap.get(dto.getSemesterName() + dto.getSource()) != null && tagMap.get(dto.getSemesterName() + dto.getSource()) > 1))
+                            .build());
+                }
+            }
+        }
+    }
+
+    public void seedSemesters() {
+        // Gọi API để lấy danh sách SemesterFapResponseDTO
+        ResponseEntity<SemesterFapResponseDTO[]> response = restTemplate.getForEntity(fapServerUrl + "/api/academic/semesters", SemesterFapResponseDTO[].class);
+        SemesterFapResponseDTO[] semesterDTOs = response.getBody();
+
+        if (semesterDTOs != null) {
+            for (SemesterFapResponseDTO semesterDTO : semesterDTOs) {
+                // Tạo và lưu Semester
+                Semester semester = Semester.builder()
+                        .name(semesterDTO.getName())
+                        .build();
+                semesterRepository.save(semester);
+            }
+        }
+    }
+
+    public void seedDepartments() {
+        // Gọi API để lấy danh sách DepartmentFapResponseDTO
+        ResponseEntity<DepartmentFapResponseDTO[]> response = restTemplate.getForEntity(fapServerUrl + "/api/academic/departments", DepartmentFapResponseDTO[].class);
+        DepartmentFapResponseDTO[] departmentDTOs = response.getBody();
+
+        if (departmentDTOs != null) {
+            for (DepartmentFapResponseDTO departmentDTO : departmentDTOs) {
+                // Tạo và lưu Department
+                Department department = Department.builder()
+                        .name(departmentDTO.getName())
+                        .code(departmentDTO.getCode())
+                        .build();
+                departmentRepository.save(department);
+
+                // Tạo và lưu Major và Specialization cho mỗi Department
+                for (MajorFapResponseDTO majorDTO : departmentDTO.getMajors()) {
+                    Major major = Major.builder()
+                            .name(majorDTO.getName())
+                            .code(majorDTO.getCode())
+                            .department(department)
+                            .build();
+                    majorRepository.save(major);
+
+                    for (SpecializationFapResponseDTO specializationDTO : majorDTO.getSpecializations()) {
+                        Specialization specialization = Specialization.builder()
+                                .name(specializationDTO.getName())
+                                .code(specializationDTO.getCode())
+                                .major(major)
+                                .build();
+                        specializationRepository.save(specialization);
+                    }
+                }
+            }
+        }
+    }
+
+//    @Transactional
+//    private void seedSemesters() {
+//        List<String> semesterNames = List.of(
+//                "Spring2018", "Summer2018", "Fall2018",
+//                "Spring2019", "Summer2019", "Fall2019",
+//                "Spring2020", "Summer2020", "Fall2020",
+//                "Spring2021", "Summer2021", "Fall2021",
+//                "Spring2022", "Summer2022", "Fall2022",
+//                "Spring2023", "Summer2023", "Fall2023",
+//                "Spring2024", "Summer2024", "Fall2024"
+//        );
+//
+//        for (String semesterName : semesterNames) {
+//            Semester semester = new Semester();
+//            semester.setName(semesterName);
+//            semesterRepository.save(semester);
+//        }
+//    }
 
     @Transactional
     public void seedProblemTags() {
         if (problemTagRepository.count() > 0) {
-            return; // Nếu đã có dữ liệu, không seed lại
+            return; // If data already exists, do not seed again
         }
 
-        // Tạo hoặc lấy danh mục "Học tập" và các danh mục khác
-        ProblemCategory studyCategory = problemCategoryRepository.findByName("Học tập")
-                .orElseGet(() -> problemCategoryRepository.save(ProblemCategory.builder().name("Học tập").build()));
+        // Create or retrieve the "Study" category and other categories
+        ProblemCategory studyCategory = problemCategoryRepository.findByName("Study")
+                .orElseGet(() -> problemCategoryRepository.save(ProblemCategory.builder().name("Study").build()));
 
-        problemCategoryRepository.findByName("Hoạt động ngoại khóa")
-                .orElseGet(() -> problemCategoryRepository.save(ProblemCategory.builder().name("Hoạt động ngoại khóa").build()));
+        problemCategoryRepository.findByName("Extracurricular Activities")
+                .orElseGet(() -> problemCategoryRepository.save(ProblemCategory.builder().name("Extracurricular Activities").build()));
 
         problemCategoryRepository.findByName("Event")
                 .orElseGet(() -> problemCategoryRepository.save(ProblemCategory.builder().name("Event").build()));
 
-        problemCategoryRepository.findByName("Câu lạc bộ")
-                .orElseGet(() -> problemCategoryRepository.save(ProblemCategory.builder().name("Câu lạc bộ").build()));
+        problemCategoryRepository.findByName("Club")
+                .orElseGet(() -> problemCategoryRepository.save(ProblemCategory.builder().name("Club").build()));
 
-        // Chỉ tạo các tag cho category "Học tập"
+        // Only create tags for the "Study" category
         List<ProblemTag> studyTags = List.of(
-                // Thái độ và động lực học tập
-                ProblemTag.builder().name("Tham gia tích cực").category(studyCategory).build(),
-                ProblemTag.builder().name("Thái độ học tập tích cực").category(studyCategory).build(),
-                ProblemTag.builder().name("Có tinh thần học hỏi").category(studyCategory).build(),
+//                // Attitude and motivation for studying
+//                ProblemTag.builder().name("Active Participation").category(studyCategory).build(),
+//                ProblemTag.builder().name("Positive Study Attitude").category(studyCategory).build(),
+//                ProblemTag.builder().name("Willingness to Learn").category(studyCategory).build(),
+//
+//                // Teamwork skills
+//                ProblemTag.builder().name("Good Team Contribution").category(studyCategory).build(),
+//                ProblemTag.builder().name("Supports Peers in Team").category(studyCategory).build(),
+//                ProblemTag.builder().name("Good Team Communication").category(studyCategory).build(),
+//
+//                // Personal skills
+//                ProblemTag.builder().name("Creative Thinking").category(studyCategory).build(),
+//                ProblemTag.builder().name("Effective Problem Solving").category(studyCategory).build(),
+//                ProblemTag.builder().name("Good Time Management Skills").category(studyCategory).build(),
+//                ProblemTag.builder().name("Proactive in Learning").category(studyCategory).build(),
+//
+//                // Achievements and contributions
+//                ProblemTag.builder().name("Completes Tasks on Time").category(studyCategory).build(),
+//                ProblemTag.builder().name("Significant Improvement in Studies").category(studyCategory).build(),
+//                ProblemTag.builder().name("Outstanding Class Contribution").category(studyCategory).build(),
 
-                // Kỹ năng làm việc nhóm
-                ProblemTag.builder().name("Đóng góp tốt cho nhóm").category(studyCategory).build(),
-                ProblemTag.builder().name("Hỗ trợ bạn bè trong nhóm").category(studyCategory).build(),
-                ProblemTag.builder().name("Giao tiếp nhóm tốt").category(studyCategory).build(),
-
-                // Kỹ năng cá nhân
-                ProblemTag.builder().name("Tư duy sáng tạo").category(studyCategory).build(),
-                ProblemTag.builder().name("Giải quyết vấn đề hiệu quả").category(studyCategory).build(),
-                ProblemTag.builder().name("Kỹ năng quản lý thời gian tốt").category(studyCategory).build(),
-                ProblemTag.builder().name("Chủ động trong học tập").category(studyCategory).build(),
-
-                // Thành tích và đóng góp
-                ProblemTag.builder().name("Hoàn thành nhiệm vụ đúng hạn").category(studyCategory).build(),
-                ProblemTag.builder().name("Cải thiện vượt bậc trong học tập").category(studyCategory).build(),
-                ProblemTag.builder().name("Có đóng góp nổi bật trong lớp học").category(studyCategory).build(),
-
-                // Tag tiêu cực
-                ProblemTag.builder().name("Thiếu động lực học tập").category(studyCategory).build(),
-                ProblemTag.builder().name("Thái độ không hợp tác").category(studyCategory).build(),
-                ProblemTag.builder().name("Ít tham gia vào hoạt động lớp").category(studyCategory).build(),
-                ProblemTag.builder().name("Khó làm việc với nhóm").category(studyCategory).build(),
-                ProblemTag.builder().name("Không hỗ trợ bạn bè trong nhóm").category(studyCategory).build(),
-                ProblemTag.builder().name("Giao tiếp nhóm kém").category(studyCategory).build(),
-                ProblemTag.builder().name("Tư duy hạn chế").category(studyCategory).build(),
-                ProblemTag.builder().name("Chậm chạp trong giải quyết vấn đề").category(studyCategory).build(),
-                ProblemTag.builder().name("Thiếu kỹ năng quản lý thời gian").category(studyCategory).build(),
-                ProblemTag.builder().name("Thiếu chủ động trong học tập").category(studyCategory).build(),
-                ProblemTag.builder().name("Nộp bài trễ").category(studyCategory).build(),
-                ProblemTag.builder().name("Không hoàn thành nhiệm vụ").category(studyCategory).build(),
-                ProblemTag.builder().name("Không có sự cải thiện").category(studyCategory).build()
+                // Negative tags
+                ProblemTag.builder().name("Lacks Study Motivation").category(studyCategory).build(),
+                ProblemTag.builder().name("Uncooperative Attitude").category(studyCategory).build(),
+                ProblemTag.builder().name("Low Participation in Class Activities").category(studyCategory).build(),
+                ProblemTag.builder().name("Difficult to Work with in Teams").category(studyCategory).build(),
+                ProblemTag.builder().name("Does Not Support Team Members").category(studyCategory).build(),
+                ProblemTag.builder().name("Poor Team Communication").category(studyCategory).build(),
+                ProblemTag.builder().name("Limited Thinking").category(studyCategory).build(),
+                ProblemTag.builder().name("Slow in Problem Solving").category(studyCategory).build(),
+                ProblemTag.builder().name("Lacks Time Management Skills").category(studyCategory).build(),
+                ProblemTag.builder().name("Not Proactive in Learning").category(studyCategory).build(),
+                ProblemTag.builder().name("Submits Late").category(studyCategory).build(),
+                ProblemTag.builder().name("Does Not Complete Tasks").category(studyCategory).build(),
+                ProblemTag.builder().name("No Improvement").category(studyCategory).build()
         );
 
-        // Lưu các tag cho "Học tập" vào database
+        // Save tags for "Study" to the database
         problemTagRepository.saveAll(studyTags);
     }
 
-    private void createVietnamHolidays() {
+    private void seedVietnamHolidays() {
         List<Holiday> holidays = new ArrayList<>();
 
         // Tết Dương Lịch (1/1)
@@ -235,7 +371,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         holidayRepository.saveAll(holidays);
     }
 
-    private void createAdminAccount() {
+    private void seedAdminAccount() {
         String adminEmail = "a";
         logger.info("Checking if admin account with email '{}' exists.", adminEmail);
 
@@ -246,17 +382,10 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .email(adminEmail)
                     .role(Role.ADMINISTRATOR)
                     .status(Status.ACTIVE)
+                    .password(passwordEncoder.encode("a"))
                     .build();
 
             accountRepository.save(admin);
-
-            LoginType adminLoginType = LoginType.builder()
-                    .password(passwordEncoder.encode("a"))
-                    .method(LoginMethod.DEFAULT)
-                    .account(admin)
-                    .build();
-
-            loginTypeRepository.save(adminLoginType);
 
             // Create and save Profile for the admin account
             Profile adminProfile = Profile.builder()
@@ -307,123 +436,81 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
     }
 
-    private void createStudentAccounts() {
-        List<Specialization> specializations = specializationRepository.findAll();
-        List<String> maleNames = List.of("John", "Michael", "David", "James", "Robert", "William", "Charles", "Joseph", "Daniel", "Matthew");
-        List<String> femaleNames = List.of("Emily", "Olivia", "Sophia", "Isabella", "Emma", "Ava", "Mia", "Amelia", "Charlotte", "Harper");
+    private void seedStudentAccounts() {
+        ResponseEntity<StudentFapResponseDTO[]> response = restTemplate.getForEntity(fapServerUrl + "/api/students", StudentFapResponseDTO[].class);
 
-        List<Student> students = new ArrayList<>();
+        if (response.getBody() != null) {
+            List<StudentFapResponseDTO> studentDTOs = List.of(response.getBody());
 
-        for (int i = 0; i < 10; i++) {
-            students.add(createSingleStudentAccount(i, maleNames.get(i), "sm" + (i + 1), Gender.MALE, "SE100" + String.format("%d", i + 1), specializations.getFirst()));
+            List<Student> students = new ArrayList<>();
+            for (int i = 0; i < studentDTOs.size(); i++) {
+                StudentFapResponseDTO dto = studentDTOs.get(i);
+
+                Department department = departmentRepository.findByName(dto.getDepartmentName()).orElse(null);
+                Major major = majorRepository.findByName(dto.getMajorName()).orElse(null);
+                Specialization specialization = specializationRepository.findByName(dto.getSpecializationName()).orElse(null);
+
+                // Create the student account and skip counseling profile for the first two students
+                Student student = createSingleStudentAccount(
+                        dto.getStudentCode(),
+                        dto.getFullName(),
+                        dto.getEmail(),
+                        dto.getGender(),
+                        specialization,
+                        major,
+                        department,
+                        i >= 2 // Only add StudentCounselingProfile if index is 2 or greater
+                );
+                students.add(student);
+            }
+//            profileRepository.saveAll(students);
         }
-
-        for (int i = 0; i < 10; i++) {
-            createSingleStudentAccount(i, femaleNames.get(i), "sf" + (i + 1), Gender.FEMALE, "SE10" + String.format("%d", i + 11), specializations.getFirst());
-        }
-
-//        seedDemandProblemTagsAndCounselingDemands(students.subList(0, 5));
     }
 
-//    private void seedDemandProblemTagsAndCounselingDemands(List<Student> students) {
-//        List<SupportStaff> supportStaffs = supportStaffRepository.findAll();
-//        SupportStaff supportStaff = supportStaffs.getFirst();
-//
-//        List<CounselingDemand> demands = new ArrayList<>();
-//
-//        Counselor counselor = counselorRepository.findById(4L)
-//                .orElseThrow(() -> new RuntimeException("Counselor with ID 4 not found."));
-//
-//        for (int i = 0; i < 5; i++) { // Tạo cho 5 học sinh đầu tiên
-//            CounselingDemand demand = CounselingDemand.builder()
-//                    .status(CounselingDemand.Status.WAITING)
-//                    .totalPoint(0)
-//                    .student(students.get(i))
-//                    .supportStaff(supportStaff)
-//                    .counselor(counselor)
-//                    .demandProblemTags(new ArrayList<>())
-//                    .build();
-//
-//            List<DemandProblemTag> demandProblemTags = new ArrayList<>();
-//
-//            // Tạo 3 DemandProblemTag cho mỗi CounselingDemand
-//            for (int j = 1; j <= 3; j++) {
-//                DemandProblemTag demandProblemTag = DemandProblemTag.builder()
-//                        .student(students.get(i))
-//                        .source("Generated Source " + j)
-//                        .tagName("Tag " + j)
-//                        .number(j)
-//                        .totalPoint(j * 10)
-//                        .demand(demand)
-//                        .build();
-//                demandProblemTags.add(demandProblemTag);
-//                demand.setTotalPoint(demand.getTotalPoint() + demandProblemTag.getTotalPoint());
-//            }
-//
-//            demand.getDemandProblemTags().addAll(demandProblemTags);
-//            demands.add(demand);
-//        }
-//
-//        counselingDemandRepository.saveAll(demands);
-//        injectCounselorIntoDemand(counselor);
-//        logger.info("Seeded Counseling Demands and Demand Problem Tags.");
-//    }
+    private Student createSingleStudentAccount(
+            String studentCode,
+            String fullName,
+            String studentEmail,
+            Gender gender,
+            Specialization specialization,
+            Major major,
+            Department department,
+            boolean createCounselingProfile) { // New parameter to control counseling profile creation
 
-    private void injectCounselorIntoDemand(Counselor counselor) {
-//        List<CounselingDemand> demands = counselingDemandRepository.findAll();
-//        for(CounselingDemand demand : demands) {
-//            if (demand.getCounselor() == null) { // Chỉ gán counselor nếu demand chưa có counselor
-//                demand.setCounselor(counselor);
-//            }
-//        }
-//
-//        counselingDemandRepository.saveAll(demands);
-    }
-
-    private Student createSingleStudentAccount(int index, String fullName, String studentEmail, Gender gender, String studentCode, Specialization specialization) {
         logger.info("Checking if student account with email '{}' exists.", studentEmail);
 
         if (accountRepository.findAccountByEmail(studentEmail).isEmpty()) {
             logger.info("Student account does not exist. Creating new student account.");
 
-            Account student = Account.builder()
+            Account studentAccount = Account.builder()
                     .email(studentEmail)
                     .role(Role.STUDENT)
                     .status(Status.ACTIVE)
-                    .build();
-
-            accountRepository.save(student);
-
-            LoginType studentLoginType = LoginType.builder()
                     .password(passwordEncoder.encode("s"))
-                    .method(LoginMethod.DEFAULT)
-                    .account(student)
                     .build();
 
-            loginTypeRepository.save(studentLoginType);
+            accountRepository.save(studentAccount);
 
-            // Create and save Profile for the student account
+            // Create Profile for the student account
             Student studentProfile = Student.builder()
-                    .account(student)
+                    .account(studentAccount)
                     .fullName(fullName)
-                    .phoneNumber("1234567890") // You can change this to generate different phone numbers if needed
+                    .phoneNumber("1234567890")
                     .avatarLink(gender == Gender.MALE ? "https://png.pngtree.com/png-vector/20240204/ourlarge/pngtree-avatar-job-student-flat-portrait-of-man-png-image_11606889.png" : "https://thumbs.dreamstime.com/z/girl-avatar-face-student-schoolgirl-isolated-white-background-cartoon-style-vector-illustration-233213085.jpg")
-                    .dateOfBirth(LocalDate.of(2000, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()) // Sample DOB
+                    .dateOfBirth(LocalDate.of(2000, 1, 1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli())
                     .studentCode(studentCode)
                     .gender(gender)
                     .specialization(specialization)
-                    .major(specialization.getMajor())
-                    .department(specialization.getMajor().getDepartment())
+                    .major(major)
+                    .department(department)
                     .build();
 
-            StudentCounselingProfile counselingProfile;
-            if (index >= 0 && index <= 5) { // Chỉ sinh viên đầu tiên có tất cả thông tin rỗng
-                counselingProfile = null;
-            } else { // Từ sinh viên thứ hai trở đi thì đã có thông tin đầy đủ
-                counselingProfile = StudentCounselingProfile.builder()
+            // Conditionally add StudentCounselingProfile
+            if (createCounselingProfile) {
+                StudentCounselingProfile counselingProfile = StudentCounselingProfile.builder()
                         .student(studentProfile)
-                        .introduction("introduction")// Set the student reference
-                        .currentHealthStatus("Healthy") // Sample data
+                        .introduction("Introduction")
+                        .currentHealthStatus("Healthy")
                         .psychologicalStatus("Stable")
                         .stressFactors("Low stress")
                         .academicDifficulties("None")
@@ -436,43 +523,22 @@ public class DatabaseSeeder implements CommandLineRunner {
                         .socialRelationships("Good relationships with peers")
                         .financialSituation("Stable")
                         .financialSupport("Parents")
-//                        .counselingIssue("General advice")
-//                        .counselingGoal("Improve time management skills")
                         .desiredCounselingFields("Career Counseling, Mental Health")
                         .status(CounselingProfileStatus.VERIFIED)
                         .build();
-            }
 
-            studentProfile.setCounselingProfile(counselingProfile);
-
-            Student returmStudent = profileRepository.save(studentProfile);
-
-            if(index < 5) {
-                for (int j = 0; j < 3; j++) {
-                    Topic topic = topicRepository.findByType(TopicType.ACADEMIC).get(j);
-                    QuestionCard questionCard = QuestionCard.builder()
-                            .content("Nội dung câu hỏi cho " + fullName)
-                            .questionType(QuestionType.ACADEMIC)
-                            .student(studentProfile)
-                            .status(QuestionCardStatus.PENDING)
-                            .topic(topic) // Gán topic vào QuestionCard
-                            .build();
-
-                    questionCardRepository.save(questionCard);
-                }
+                studentProfile.setCounselingProfile(counselingProfile);
             }
 
             logger.info("Student account created with email '{}'.", studentEmail);
-
-            return returmStudent;
+            return profileRepository.save(studentProfile);
         } else {
             logger.warn("Student account with email '{}' already exists.", studentEmail);
         }
-
         return null;
     }
 
-    private void createManagerAccount() {
+    private void seedManagerAccount() {
         String managerEmail = "m";
         logger.info("Checking if manager account with email '{}' exists.", managerEmail);
 
@@ -482,18 +548,11 @@ public class DatabaseSeeder implements CommandLineRunner {
             Account manager = Account.builder()
                     .email(managerEmail)
                     .role(Role.MANAGER)
+                    .password(passwordEncoder.encode("m"))
                     .status(Status.ACTIVE)
                     .build();
 
             accountRepository.save(manager);
-
-            LoginType managerLoginType = LoginType.builder()
-                    .password(passwordEncoder.encode("m"))
-                    .method(LoginMethod.DEFAULT)
-                    .account(manager)
-                    .build();
-
-            loginTypeRepository.save(managerLoginType);
 
             Profile managerProfile = Profile.builder()
                     .account(manager)
@@ -515,7 +574,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
     }
 
-    private void createSupportStaffAccount() {
+    private void seedSupportStaffAccount() {
         String supportStaffEmail = "ss";
         logger.info("Checking if support staff account with email '{}' exists.", supportStaffEmail);
 
@@ -526,17 +585,10 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .email(supportStaffEmail)
                     .role(Role.SUPPORT_STAFF)  // Assuming you have a SUPPORT_STAFF role
                     .status(Status.ACTIVE)
+                    .password(passwordEncoder.encode("ss"))
                     .build();
 
             accountRepository.save(supportStaff);
-
-            LoginType supportLoginType = LoginType.builder()
-                    .password(passwordEncoder.encode("ss"))
-                    .method(LoginMethod.DEFAULT)
-                    .account(supportStaff)
-                    .build();
-
-            loginTypeRepository.save(supportLoginType);
 
             SupportStaff supportProfile = SupportStaff.builder()
                     .account(supportStaff)
@@ -560,7 +612,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     @Transactional
-    private void createCounselorAccounts() {
+    private void seedCounselorAccounts() {
 
         List<CounselingSlot> counselingSlots = counselingSlotRepository.findAll();
 
@@ -579,47 +631,8 @@ public class DatabaseSeeder implements CommandLineRunner {
                 "Đỗ Thị K1", "Đỗ Thị K2", "Đỗ Thị K3", "Đỗ Thị K4",
                 "Hoàng Thị L1", "Hoàng Thị L2", "Hoàng Thị L3", "Hoàng Thị L4");
 
-        // List of specialization names
-//        List<String> specializationNames = List.of("Khoa học tâm lý", "Giáo dục", "Kinh tế");
-
-        // 1. Seed Department "Công nghệ thông tin"
-        Department itDepartment = departmentRepository.findByName("Công nghệ thông tin")
-                .orElseGet(() -> departmentRepository.save(Department.builder().name("Công nghệ thông tin").code("IT").build()));
-
-        // 2. Seed Major "Software" for IT Department
-        Major softwareMajor = majorRepository.findByName("Software")
-                .orElseGet(() -> majorRepository.save(Major.builder().name("Software").code("IT01").department(itDepartment).build()));
-
-        // 3. Seed Specializations "Backend" and "Frontend" for Software Major
-        List<String> specializationNamesIT = List.of("Backend", "Frontend");
-        List<Specialization> specializationListIT = specializationNamesIT.stream()
-                .map(name -> specializationRepository.findByName(name)
-                        .orElseGet(() -> specializationRepository.save(Specialization.builder().name(name).major(softwareMajor).build())))
-                .toList();
-
-        // 4. Seed Department "Business Analysis"
-        Department baDepartment = departmentRepository.findByName("Business Analysis")
-                .orElseGet(() -> departmentRepository.save(Department.builder().name("Business Analysis").code("BA").build()));
-
-        // 5. Seed Major "Marketing" for BA Department
-        Major marketingMajor = majorRepository.findByName("Marketing")
-                .orElseGet(() -> majorRepository.save(Major.builder().name("Marketing").code("BA01").department(baDepartment).build()));
-
-        // 6. Seed Specialization "Marketing" for Marketing Major
-        List<String> specializationNamesBA = List.of("Marketing");
-        List<Specialization> specializationListBA = specializationNamesBA.stream()
-                .map(name -> specializationRepository.findByName(name)
-                        .orElseGet(() -> specializationRepository.save(Specialization.builder().name(name).major(marketingMajor).build())))
-                .toList();
-
         // List of expertise names
         List<String> expertiseNames = List.of("Tâm lý học", "Tư vấn gia đình", "Tư vấn nghề nghiệp");
-
-//        // Creating specialization entities if they don't exist
-//        List<Specialization> specializationList = specializationNames.stream()
-//                .map(name -> specializationRepository.findByName(name)
-//                        .orElseGet(() -> specializationRepository.save(Specialization.builder().name(name).build())))
-//                .toList();
 
         // Creating expertise entities if they don't exist
         List<Expertise> expertiseList = expertiseNames.stream()
@@ -690,17 +703,10 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .email(counselorEmail)
                     .role(Role.ACADEMIC_COUNSELOR)
                     .status(Status.ACTIVE)
+                    .password(passwordEncoder.encode("c"))
                     .build();
 
             accountRepository.save(counselor);
-
-            LoginType counselorLoginType = LoginType.builder()
-                    .password(passwordEncoder.encode("c"))
-                    .method(LoginMethod.DEFAULT)
-                    .account(counselor)
-                    .build();
-
-            loginTypeRepository.save(counselorLoginType);
 
             AcademicCounselor counselorProfile = AcademicCounselor.builder()
                     .account(counselor)
@@ -745,17 +751,10 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .email(counselorEmail)
                     .role(Role.NON_ACADEMIC_COUNSELOR)
                     .status(Status.ACTIVE)
+                    .password(passwordEncoder.encode("c"))
                     .build();
 
             accountRepository.save(counselor);
-
-            LoginType counselorLoginType = LoginType.builder()
-                    .password(passwordEncoder.encode("c"))
-                    .method(LoginMethod.DEFAULT)
-                    .account(counselor)
-                    .build();
-
-            loginTypeRepository.save(counselorLoginType);
 
             NonAcademicCounselor counselorProfile = NonAcademicCounselor.builder()
                     .account(counselor)
@@ -827,7 +826,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         counselingAppointmentRepository.save(appointment);
     }
 
-    public void generateSlots() {
+    public void seedSlots() {
         LocalTime startTime = LocalTime.of(8, 0); // Bắt đầu lúc 08:00 sáng
         LocalTime endTime = startTime.plusHours(1).plusMinutes(0); // Thời gian kết thúc của slot đầu tiên
 

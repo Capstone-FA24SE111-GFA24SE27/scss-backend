@@ -30,16 +30,16 @@ public class Student extends Profile {
     @Column(name = "student_code", nullable = false, unique = true)
     private String studentCode;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "specialization_id", nullable = true)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "specialization_id")
     private Specialization specialization;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "department_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "department_id")
     private Department department;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "major_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "major_id")
     private Major major;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -52,17 +52,17 @@ public class Student extends Profile {
     @JoinColumn(name = "counseling_profile_id", referencedColumnName = "id")
     private StudentCounselingProfile counselingProfile;
 
-    public boolean checkQuestionBan() {
-        // Lấy lệnh "ban" gần đây nhất (nếu có)
-        Optional<QuestionBan> lastBan = this.bans.stream()
-                .max(Comparator.comparing(QuestionBan::getBanEndDate)); // Lấy ban có banEndDate lớn nhất
-
-        // Kiểm tra nếu tồn tại ban và ngày hiện tại nhỏ hơn banEndDate
-        if (lastBan.isPresent()) {
-            LocalDateTime currentDate = LocalDateTime.now();
-            return currentDate.isBefore(lastBan.get().getBanEndDate());
-        }
-
-        return false;
-    }
+//    public boolean checkQuestionBan() {
+//        // Lấy lệnh "ban" gần đây nhất (nếu có)
+//        Optional<QuestionBan> lastBan = this.bans.stream()
+//                .max(Comparator.comparing(QuestionBan::getBanEndDate)); // Lấy ban có banEndDate lớn nhất
+//
+//        // Kiểm tra nếu tồn tại ban và ngày hiện tại nhỏ hơn banEndDate
+//        if (lastBan.isPresent()) {
+//            LocalDateTime currentDate = LocalDateTime.now();
+//            return currentDate.isBefore(lastBan.get().getBanEndDate());
+//        }
+//
+//        return false;
+//    }
 }

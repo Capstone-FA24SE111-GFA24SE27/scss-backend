@@ -8,6 +8,7 @@ import com.capstone2024.scss.application.holiday.dto.request.HolidayCreateReques
 import com.capstone2024.scss.application.holiday.dto.request.HolidayUpdateRequestDTO;
 import com.capstone2024.scss.domain.counseling_booking.entities.Holiday;
 import com.capstone2024.scss.domain.counseling_booking.services.HolidayService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/holidays")
+@Tag(name = "Holidays", description = "API endpoints for managing holidays")
 @RequiredArgsConstructor
 public class HolidayController {
 

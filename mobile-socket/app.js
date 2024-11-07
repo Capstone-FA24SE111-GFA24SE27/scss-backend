@@ -98,6 +98,36 @@ async function startRabbitMQ() {
             }
         });
 
+        channel.consume("real_time_q_a", (msg) => {
+            if (msg.content) {
+                let realTimeSlotMsg = JSON.parse(msg.content.toString());
+                console.log('Received message from RabbitMQ:', realTimeSlotMsg);
+                // Send notification to all connected clients
+                console.log(`/user/${realTimeSlotMsg.studentId}/question`)
+                console.log(`/user/${realTimeSlotMsg.counselorId}/question`)
+                io.emit(`/user/${realTimeSlotMsg.studentId}/question`, realTimeSlotMsg);
+                io.emit(`/user/${realTimeSlotMsg.counselorId}/question`, realTimeSlotMsg);
+
+                // Acknowledge the message
+                channel.ack(msg);
+            }
+        });
+
+        channel.consume("real_time_counseling_appointment_request", (msg) => {
+            if (msg.content) {
+                let realTimeSlotMsg = JSON.parse(msg.content.toString());
+                console.log('Received message from RabbitMQ:', realTimeSlotMsg);
+                // Send notification to all connected clients
+                console.log(`/user/${realTimeSlotMsg.studentId}/appointment/request`)
+                console.log(`/user/${realTimeSlotMsg.counselorId}/appointment/request`)
+                io.emit(`/user/${realTimeSlotMsg.studentId}/appointment/request`, realTimeSlotMsg);
+                io.emit(`/user/${realTimeSlotMsg.counselorId}/appointment/request`, realTimeSlotMsg);
+
+                // Acknowledge the message
+                channel.ack(msg);
+            }
+        });
+
         channel.consume("REAL_TIME_CHAT_SESSION", (msg) => {
             if (msg.content) {
                 console.log('////// CHAT SESSION //////');

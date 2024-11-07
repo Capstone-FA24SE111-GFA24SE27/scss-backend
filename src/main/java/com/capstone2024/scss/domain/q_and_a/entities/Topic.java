@@ -27,6 +27,6 @@ public class Topic extends BaseEntity {
     @Column(name = "type", nullable = false)
     private TopicType type; // Loại chủ đề (ACADEMIC hoặc NON_ACADEMIC)
 
-    @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<QuestionCard> questionCards; // Các câu hỏi thuộc chủ đề này
+//    @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private Set<QuestionCard> questionCards; // Các câu hỏi thuộc chủ đề này
 }

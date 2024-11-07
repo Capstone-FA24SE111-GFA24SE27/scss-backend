@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,7 +36,7 @@ public class CounselingDemand extends BaseEntity {
 //    private int totalPoint = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id", nullable = false)
+    @JoinColumn(name = "student_id", nullable = true)
     private Student student;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -48,16 +49,25 @@ public class CounselingDemand extends BaseEntity {
     @Column(name = "summarize_note", nullable = true, columnDefinition = "TEXT")
     private String summarizeNote;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "counselor_id")
     private Counselor counselor;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "semester_id", nullable = true)
-    private Semester semester;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "semester_id", nullable = true)
+//    private Semester semester;
+
+    @Column(name = "start_datetime", nullable = true)
+    private LocalDateTime startDateTime;
+
+    @Column(name = "end_datetime", nullable = true)
+    private LocalDateTime endDateTime;
+
+    @OneToMany(mappedBy = "counselingDemand", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<AppointmentForDemand> appointmentsForDemand = new ArrayList<>();
 
     public enum Status {
-        WAITING, IN_CHARGE, SOLVE
+        WAITING, PROCESSING, SOLVE
     }
 }
 

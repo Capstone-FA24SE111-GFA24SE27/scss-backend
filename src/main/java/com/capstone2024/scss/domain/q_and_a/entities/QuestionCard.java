@@ -25,12 +25,15 @@ public class QuestionCard extends BaseEntity {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content; // Nội dung câu hỏi
 
+//    @Column(name = "content", nullable = true, columnDefinition = "TEXT")
+//    private String reviewReason;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "question_type", nullable = false)
     private QuestionType questionType;
 
-    @Column(name = "is_taken", nullable = false)
-    private boolean isTaken = false;
+//    @Column(name = "is_taken", nullable = true)
+//    private boolean isTaken = false;
 
     @Column(name = "is_closed", nullable = false)
     private boolean isClosed = false;
@@ -49,10 +52,10 @@ public class QuestionCard extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "counselor_id", nullable = true)
     private Counselor counselor;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "topic_id", nullable = false) // Thêm trường topic_id
-    private Topic topic;
+//
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "topic_id", nullable = false) // Thêm trường topic_id
+//    private Topic topic;
 
     @OneToOne(mappedBy = "questionCard", cascade = CascadeType.ALL, orphanRemoval = true)
     private ChatSession chatSession;

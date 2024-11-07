@@ -1,6 +1,7 @@
 package com.capstone2024.scss.domain.account.services.impl;
 
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
+import com.capstone2024.scss.application.advice.exeptions.ForbiddenException;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.authentication.dto.request.LoginRequestDTO;
 import com.capstone2024.scss.application.authentication.dto.JwtTokenDTO;
@@ -146,46 +147,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Optional<Account> account = accountRepository
                 .findAccountByEmail(email);
 
-        Account userDetails;
+        UserDetails userDetails;
 
         if(account.isEmpty()) {
-            logger.info("Account not found for email: {}. Creating a new account.", email);
-
-            Account newAccountWithGoogle = Account.builder()
-                    .email(email)
-                    .role(Role.STUDENT)
-                    .status(Status.ACTIVE)
-                    .build();
-
-            userDetails = accountRepository.save(newAccountWithGoogle);
-
-            LoginType adminLoginType = LoginType.builder()
-                    .method(LoginMethod.GOOGLE)
-                    .account(newAccountWithGoogle)
-                    .build();
-
-            loginTypeRepository.save(adminLoginType);
-
-            // Create and save Profile for the newAccountWithGoogle account
-            Profile newProfile = Profile.builder()
-                    .account(newAccountWithGoogle)
-                    .fullName(name)
-                    .phoneNumber(null)
-                    .address(null)
-                    .dateOfBirth(null)
-                    .build();
-
-            profileRepository.save(newProfile);
-
-            logger.info("New account and profile created for email: {}", email);
-        } else {
-            userDetails = account.get();
-            LoginType adminLoginType = LoginType.builder()
-                    .method(LoginMethod.GOOGLE)
-                    .account(userDetails)
-                    .build();
-            loginTypeRepository.save(adminLoginType);
+            logger.info("Account not found for email: {}");
+            throw new ForbiddenException("No account found");
         }
+
+        userDetails = getAccount(email);
 
         String accessToken = jwtService.generateToken(userDetails);
         logger.info("Access token refreshed for email: {}. New access token generated.", email);
@@ -233,6 +202,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Cookie cookie = new Cookie(COOKIE_REFRESH_TOKEN_KEY, refreshToken);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
+//        cookie.setDomain("scss-server.southafricanorth.cloudapp.azure.com");
         cookie.setMaxAge(refreshTokenLifetime.intValue());
 
         response.addCookie(cookie);

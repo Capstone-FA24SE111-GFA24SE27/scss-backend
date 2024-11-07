@@ -22,14 +22,5 @@ public class Semester extends BaseEntity {
 
     @Column(name = "name", nullable = false, unique = true, length = 100, columnDefinition = "VARCHAR(100)")
     private String name;
-
-    @Column(name = "code", nullable = false, unique = true, length = 50, columnDefinition = "VARCHAR(50)")
-    private String code;
-
-    @Column(name = "start_date", nullable = false, columnDefinition = "DATE")
-    private LocalDate startDate;
-
-    @Column(name = "end_date", nullable = false, columnDefinition = "DATE")
-    private LocalDate endDate;
 }
 

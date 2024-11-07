@@ -10,8 +10,15 @@ import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.counselor.entities.*;
 import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselingSlotMapper;
 import com.capstone2024.scss.domain.common.mapper.counselor.AvailableDateRangeMapper;
+import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
+import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
+import org.springframework.stereotype.Component;
 
+@Component
+@RequiredArgsConstructor
 public class CounselorProfileMapper {
+
     public static CounselorProfileDTO toCounselorProfileDTO(Counselor counselor) {
         if (counselor == null) {
             return null;

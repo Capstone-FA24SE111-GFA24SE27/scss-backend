@@ -32,4 +32,5 @@ public class OpenApiConfig {
                         .description("API documentation for GMS-Capstone.")
                         .version(apiVersion));
     }
+
 }

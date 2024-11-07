@@ -11,4 +11,5 @@ public class SpecializationDTO {
     private Long id;
     private String name;
     private Long majorId;
+    private String code;
 }

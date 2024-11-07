@@ -23,6 +23,8 @@ public class RabbitMQConfig {
     public static final String REAL_TIME_COUNSELING_SLOT = "real_time_counseling_slot";
     public static final String REAL_TIME_COUNSELING_APPOINTMENT = "real_time_counseling_appointment";
     public static final String REAL_TIME_CHAT_SESSION = "REAL_TIME_CHAT_SESSION";
+    public static final String REAL_TIME_COUNSELING_APPOINTMENT_REQUEST = "real_time_counseling_appointment_request";
+    public static final String REAL_TIME_Q_A = "real_time_q_a";
 
     @Bean
     public Queue emailQueue() {
@@ -52,6 +54,16 @@ public class RabbitMQConfig {
     @Bean
     public Queue realtimeChatSessionQueue() {
         return new Queue(REAL_TIME_CHAT_SESSION, false);
+    }
+
+    @Bean
+    public Queue realtimeAppointmentRequestQueue() {
+        return new Queue(REAL_TIME_COUNSELING_APPOINTMENT_REQUEST, false);
+    }
+
+    @Bean
+    public Queue realtimeQuestionQueue() {
+        return new Queue(REAL_TIME_Q_A, false);
     }
 
     @Bean

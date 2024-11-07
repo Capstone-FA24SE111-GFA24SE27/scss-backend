@@ -6,6 +6,7 @@ import com.capstone2024.scss.application.booking_counseling.dto.request.counceli
 import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.OnlineAppointmentRequestDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.counseling_appointment.dto.AppointmentReportResponse;
+import com.capstone2024.scss.application.counseling_appointment.dto.request.CreateCounselingAppointmentDTO;
 import com.capstone2024.scss.application.counseling_appointment.dto.request.appoinment_report.AppointmentReportRequest;
 import com.capstone2024.scss.application.counseling_appointment.dto.request.counseling_appointment.AppointmentFilterDTO;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
@@ -44,4 +45,8 @@ public interface CounselingAppointmentService {
     void cancelAppointmentforStudent(Long appointmentId, Long studentId, String reason);
 
     void cancelAppointmentforCounselor(Long appointmentId, Long counselorId, String reason);
+
+    CounselingAppointmentDTO createAppointment(CreateCounselingAppointmentDTO requestDTO, Long counselorId, Long studentId);
+
+    CounselingAppointmentDTO createAppointmentForDemand(CreateCounselingAppointmentDTO requestDTO, Long counselorId, Long studentId, Long demandId);
 }

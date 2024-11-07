@@ -10,6 +10,7 @@ import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.common.mapper.q_and_a.ChatSessionMapper;
 import com.capstone2024.scss.domain.common.mapper.q_and_a.QuestionCardMapper;
+import com.capstone2024.scss.domain.counselor.entities.AcademicCounselor;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import com.capstone2024.scss.domain.counselor.entities.NonAcademicCounselor;
 import com.capstone2024.scss.domain.notification.services.NotificationService;
@@ -19,6 +20,10 @@ import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
 import com.capstone2024.scss.domain.q_and_a.service.QuestionCardService;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
+import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeAppointmentRequestDTO;
+import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeQuestionDTO;
+import com.capstone2024.scss.infrastructure.repositories.counselor.AcademicCounselorRepository;
+import com.capstone2024.scss.infrastructure.repositories.counselor.NonAcademicCounselorRepository;
 import com.capstone2024.scss.infrastructure.repositories.student.StudentRepository;
 import com.capstone2024.scss.infrastructure.repositories._and_a.*;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
@@ -32,6 +37,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,6 +59,8 @@ public class QuestionCardServiceImpl implements QuestionCardService {
     private final QuestionFlagRepository questionFlagRepository;
     private final QuestionBanRepository questionBanRepository;
     private final TopicRepository topicRepository;
+    private final AcademicCounselorRepository academicCounselorRepository;
+    private final NonAcademicCounselorRepository nonAcademicCounselorRepository;
 
     @Override
     @Transactional
@@ -64,29 +73,90 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                     return new NotFoundException("Student not found for the account");
                 });
 
-        Topic topic = topicRepository.findById(dto.getTopicId())
-                .orElseThrow(() -> {
-                    logger.error("Topic not found for ID: {}", dto.getTopicId());
-                    return new NotFoundException("Topic not found");
-                });
+//        Topic topic = topicRepository.findById(dto.getTopicId())
+//                .orElseThrow(() -> {
+//                    logger.error("Topic not found for ID: {}", dto.getTopicId());
+//                    return new NotFoundException("Topic not found");
+//                });
 
-        // Tạo thẻ câu hỏi mới
-        QuestionCard questionCard = QuestionCard.builder()
-                .content(dto.getContent())
-                .questionType(dto.getQuestionType())
-                .student(student)
-                .status(QuestionCardStatus.PENDING) // Trạng thái mặc định
-                .isTaken(false)
-                .isClosed(false)
-                .topic(topic)
-                .build();
+        QuestionCard questionCard = null;
 
-        // Lưu thẻ câu hỏi vào cơ sở dữ liệu
-        QuestionCard savedCard = questionCardRepository.save(questionCard);
-        logger.info("QuestionCard created with ID: {} for Student ID: {}", savedCard.getId(), student.getId());
+        if(dto.getQuestionType().equals(QuestionType.ACADEMIC)) {
 
-        // Chuyển đổi entity sang DTO
-        return QuestionCardMapper.toQuestionCardResponseDto(savedCard);
+            List<AcademicCounselor> counselors = academicCounselorRepository.findAcademicCounselorWithLeastQuestions(
+                    dto.getDepartmentId(),
+                    dto.getMajorId(),
+                    dto.getSpecializationId()
+            );
+
+            AcademicCounselor counselor = null;
+
+            if(counselors.size() > 0) {
+                counselor = counselors.getFirst();
+            } else {
+                throw new RuntimeException("There is no counselor match");
+            }
+
+            // Tạo thẻ câu hỏi mới
+            questionCard = QuestionCard.builder()
+                    .content(dto.getContent())
+                    .questionType(dto.getQuestionType())
+                    .counselor(counselor)
+                    .student(student)
+                    .status(QuestionCardStatus.PENDING) // Trạng thái mặc định
+//                    .isTaken(false)
+                    .isClosed(false)
+//                    .topic(topic)
+                    .build();
+        } else if(dto.getQuestionType().equals(QuestionType.NON_ACADEMIC)) {
+            List<NonAcademicCounselor> counselors = nonAcademicCounselorRepository.findNonAcademicCounselorWithLeastQuestions(
+                    dto.getExpertiseId()
+            );
+
+            NonAcademicCounselor counselor = null;
+
+            if(counselors.size() > 0) {
+                counselor = counselors.getFirst();
+            } else {
+                throw new RuntimeException("There is no counselor match");
+            }
+
+            // Tạo thẻ câu hỏi mới
+            questionCard = QuestionCard.builder()
+                    .content(dto.getContent())
+                    .questionType(dto.getQuestionType())
+                    .counselor(counselor)
+                    .student(student)
+                    .status(QuestionCardStatus.PENDING) // Trạng thái mặc định
+//                    .isTaken(false)
+                    .isClosed(false)
+                    .build();
+        } else {
+            throw new BadRequestException("Invalid question type");
+        }
+
+        if(questionCard != null) {
+            // Lưu thẻ câu hỏi vào cơ sở dữ liệu
+            QuestionCard savedCard = questionCardRepository.save(questionCard);
+            ChatSession chatSession = new ChatSession();
+            chatSession.setQuestionCard(questionCard);
+
+            chatSession.setCounselor(questionCard.getCounselor());
+            chatSession.setStudent(questionCard.getStudent());
+            chatSessionRepository.save(chatSession);
+            logger.info("QuestionCard created with ID: {} for Student ID: {}", savedCard.getId(), student.getId());
+
+            rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
+                    .studentId(questionCard.getStudent().getId())
+                    .counselorId(questionCard.getCounselor() != null ? questionCard.getCounselor().getId() : null)
+                    .type(RealTimeQuestionDTO.Type.STUDENT_CREATE_NEW)
+                    .build());
+
+            // Chuyển đổi entity sang DTO
+            return QuestionCardMapper.toQuestionCardResponseDto(savedCard);
+        } else {
+            throw new RuntimeException("System Error");
+        }
     }
 
     @Override
@@ -103,11 +173,11 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                 studentId,
                 filterRequest.getKeyword(),
                 filterRequest.getStatus(),
-                filterRequest.getIsTaken(),
+//                filterRequest.getIsTaken(),
                 filterRequest.getIsClosed(),
                 filterRequest.getIsChatSessionClosed(),
                 filterRequest.getType(),
-                filterRequest.getTopicId(),
+//                filterRequest.getTopicId(),
                 filterRequest.getPagination()
         );
 
@@ -138,10 +208,9 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                     counselorId,
                     filterRequest.getKeyword(),
                     QuestionType.NON_ACADEMIC,
-                    true,
                     filterRequest.getIsClosed(),
                     filterRequest.getIsChatSessionClosed(),
-                    filterRequest.getTopicId(),
+//                    filterRequest.getTopicId(),
                     filterRequest.getPagination()
             );
         } else  {
@@ -150,10 +219,9 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                     counselorId,
                     filterRequest.getKeyword(),
                     QuestionType.ACADEMIC,
-                    true,
                     filterRequest.getIsClosed(),
                     filterRequest.getIsChatSessionClosed(),
-                    filterRequest.getTopicId(),
+//                    filterRequest.getTopicId(),
                     filterRequest.getPagination()
             );
         }
@@ -177,15 +245,15 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         Counselor counselor = counselorRepository.findById(counselorId)
                 .orElseThrow(() -> new NotFoundException("Counselor not found with ID: " + counselorId));
 
-        if (questionCard.isTaken()) {
-            throw new BadRequestException("Question card has already been taken.");
-        }
+//        if (questionCard.isTaken()) {
+//            throw new BadRequestException("Question card has already been taken.");
+//        }
 
         if (questionCard.isClosed()) {
             throw new BadRequestException("Question card is closed and cannot be taken.");
         }
 
-        questionCard.setTaken(true);
+//        questionCard.setTaken(true);
         questionCard.setCounselor(counselor);
         questionCardRepository.save(questionCard);
 
@@ -217,8 +285,8 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                     filterRequest.getKeyword(),
                     questionType,
                     false,
-                    false,
-                    filterRequest.getTopicId(),
+//                    false,
+//                    filterRequest.getTopicId(),
                     filterRequest.getPagination());
 
         List<QuestionCardResponseDTO> questionCardDTOs = questionCardsPage.getContent().stream()
@@ -270,7 +338,8 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         Message message = new Message();
         message.setChatSession(chatSession);
         message.setContent(content);
-        message.setSentAt(LocalDateTime.now());
+        LocalDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDateTime();
+        message.setSentAt(now);
         message.setRead(false);
 
         if (!chatSession.isClosed()) {
@@ -326,9 +395,15 @@ public class QuestionCardServiceImpl implements QuestionCardService {
     public void closeQuestionCardForStudent(Long questionCardId, Long studentId) {
         QuestionCard questionCard = questionCardRepository.findById(questionCardId)
                 .orElseThrow(() -> new NotFoundException("Question card not found"));
-        if(questionCard.getStudent().getId().equals(studentId) && !questionCard.isTaken()) {
+        if(questionCard.getStudent().getId().equals(studentId)) {
             questionCard.setClosed(true);
             questionCardRepository.save(questionCard);
+
+            rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
+                    .studentId(questionCard.getStudent().getId())
+                    .counselorId(questionCard.getCounselor() != null ? questionCard.getCounselor().getId() : null)
+                    .type(RealTimeQuestionDTO.Type.STUDENT_CLOSE)
+                    .build());
         } else {
             throw new ForbiddenException("You are not allowed to close this QC");
         }
@@ -339,9 +414,15 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         QuestionCard questionCard = questionCardRepository.findById(questionCardId)
                 .orElseThrow(() -> new NotFoundException("Question card not found"));
 
-        if (questionCard.isTaken() && questionCard.getCounselor().getId().equals(counselorId) && !questionCard.isClosed()) {
+        if (questionCard.getCounselor().getId().equals(counselorId) && !questionCard.isClosed()) {
             questionCard.setAnswer(dto.getContent());
             questionCardRepository.save(questionCard);
+
+            rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
+                    .studentId(questionCard.getStudent().getId())
+                    .counselorId(questionCard.getCounselor() != null ? questionCard.getCounselor().getId() : null)
+                    .type(RealTimeQuestionDTO.Type.COUNSELOR_ANSWER)
+                    .build());
         } else {
             throw new ForbiddenException("You are not allow to answer this QC");
         }
@@ -352,7 +433,7 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         QuestionCard questionCard = questionCardRepository.findById(questionCardId)
                 .orElseThrow(() -> new NotFoundException("Question card not found"));
 
-        if (questionCard.isTaken() && questionCard.getCounselor().getId().equals(counselorId) && !questionCard.isClosed()) {
+        if (questionCard.getCounselor().getId().equals(counselorId) && !questionCard.isClosed()) {
             questionCard.setAnswer(dto.getContent());
             questionCardRepository.save(questionCard);
         } else {
@@ -397,12 +478,14 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                 questionCard.setStatus(QuestionCardStatus.REJECTED);
                 questionCardRepository.save(questionCard);
             }
-            case FLAGGED -> {
-                questionCard.setStatus(QuestionCardStatus.FLAGGED);
-                questionCardRepository.save(questionCard);
-            }
             default -> throw new BadRequestException("Invalid status");
         }
+
+        rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
+                .studentId(questionCard.getStudent().getId())
+                .counselorId(questionCard.getCounselor() != null ? questionCard.getCounselor().getId() : null)
+                .type(RealTimeQuestionDTO.Type.REVIEW)
+                .build());
     }
 
     @Override
@@ -423,6 +506,11 @@ public class QuestionCardServiceImpl implements QuestionCardService {
             ChatSession chatSession = questionCard.getChatSession();
             chatSession.setClosed(true);
             chatSessionRepository.save(chatSession);
+            rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
+                    .studentId(questionCard.getStudent().getId())
+                    .counselorId(questionCard.getCounselor().getId())
+                    .type(RealTimeQuestionDTO.Type.COUNSELOR_CLOSE)
+                    .build());
         } else {
             throw new ForbiddenException("You are not allowed to close this QC");
         }
@@ -433,8 +521,14 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         QuestionCard questionCard = questionCardRepository.findById(questionCardId)
                 .orElseThrow(() -> new NotFoundException("Question card not found"));
 
-        if (!questionCard.isTaken() && questionCard.getStudent().getId().equals(id)) {
+        if (questionCard.getStudent().getId().equals(id) && questionCard.getStatus().equals(QuestionCardStatus.PENDING)) {
             questionCardRepository.deleteById(questionCardId);
+
+            rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
+                    .studentId(questionCard.getStudent().getId())
+                    .counselorId(null)
+                    .type(RealTimeQuestionDTO.Type.STUDENT_DELETE)
+                    .build());
         } else {
             throw new ForbiddenException("You are not allow to delete this card");
         }
@@ -453,13 +547,19 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         QuestionCard questionCard = questionCardRepository.findById(questionCardId)
                 .orElseThrow(() -> new NotFoundException("Question card not found"));
 
-        if (!questionCard.isTaken() && questionCard.getStudent().getId().equals(studentId)) {
+        if (questionCard.getStudent().getId().equals(studentId) && questionCard.getStatus().equals(QuestionCardStatus.PENDING)) {
             questionCard.setContent(dto.getContent());
             questionCard.setQuestionType(dto.getQuestionType());
 
             // Lưu thẻ câu hỏi vào cơ sở dữ liệu
             QuestionCard savedCard = questionCardRepository.save(questionCard);
             logger.info("QuestionCard updated with ID: {} for Student ID: {}", savedCard.getId(), student.getId());
+
+            rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
+                    .studentId(questionCard.getStudent().getId())
+                    .counselorId(null)
+                    .type(RealTimeQuestionDTO.Type.STUDENT_UPDATE)
+                    .build());
 
             // Chuyển đổi entity sang DTO
             return QuestionCardMapper.toQuestionCardResponseDto(savedCard);
@@ -486,6 +586,12 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         questionFlag.setStudent(questionCard.getStudent());
 
         questionFlagRepository.save(questionFlag);
+
+        rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
+                .studentId(questionCard.getStudent().getId())
+                .counselorId(questionCard.getCounselor() != null ? questionCard.getCounselor().getId() : null)
+                .type(RealTimeQuestionDTO.Type.FLAG)
+                .build());
 
         checkAndCreateBanIfNeeded(questionFlag.getStudent());
     }
@@ -518,6 +624,54 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         }
 
         return response;
+    }
+
+    @Override
+    public ChatSessionDTO getMessageByChatSessionForStudent(Long questionCardId, Long studentId) {
+        QuestionCard questionCard = questionCardRepository.findByIdWithCounselor(questionCardId)
+                .orElseThrow(() -> new NotFoundException("Question card not found"));
+
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new NotFoundException("Student not found with ID: " + studentId));
+
+        if (!questionCard.getStudent().getId().equals(studentId)) {
+            throw new ForbiddenException("You do not own this card");
+        }
+
+        return ChatSessionMapper.toChatSessionDTO(questionCard.getChatSession());
+    }
+
+    @Override
+    public ChatSessionDTO getMessageByChatSessionForcounselor(Long questionCardId, Long counselorId) {
+        QuestionCard questionCard = questionCardRepository.findById(questionCardId)
+                .orElseThrow(() -> new NotFoundException("Question card not found"));
+
+        Counselor counselor = counselorRepository.findById(counselorId)
+                .orElseThrow(() -> new NotFoundException("Counselor not found with ID: " + counselorId));
+
+        if (!questionCard.getCounselor().getId().equals(counselorId)) {
+            throw new ForbiddenException("You do not own this card");
+        }
+
+        return ChatSessionMapper.toChatSessionDTO(questionCard.getChatSession());
+    }
+
+    @Override
+    public ChatSessionDTO getMessageByChatSession(Long questionCardId, Long id, Role role) {
+        QuestionCard questionCard = questionCardRepository.findById(questionCardId)
+                .orElseThrow(() -> new NotFoundException("Question card not found"));
+
+        if(role.equals(Role.STUDENT)) {
+            if (!questionCard.getStudent().getId().equals(id)) {
+                throw new ForbiddenException("You do not own this card");
+            }
+        } else {
+            if (!questionCard.getCounselor().getId().equals(id)) {
+                throw new ForbiddenException("You do not own this card");
+            }
+        }
+
+        return ChatSessionMapper.toChatSessionDTO(questionCard.getChatSession());
     }
 
     private void checkAndCreateBanIfNeeded(Student student) {

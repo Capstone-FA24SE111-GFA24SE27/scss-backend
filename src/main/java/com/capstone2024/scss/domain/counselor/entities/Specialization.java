@@ -21,6 +21,9 @@ public class Specialization extends BaseEntity {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
+    @Column(name = "code", nullable = false, unique = true)
+    private String code;
+
     @ManyToOne
     @JoinColumn(name = "major_id", nullable = true)
     private Major major;

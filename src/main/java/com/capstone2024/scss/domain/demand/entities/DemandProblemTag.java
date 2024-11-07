@@ -23,11 +23,15 @@ public class DemandProblemTag extends BaseEntity {
     @Column(name = "source", columnDefinition = "TEXT", nullable = false)
     private String source;
 
-    @Column(name = "tag_name", columnDefinition = "TEXT", nullable = false)
-    private String tagName;
+//    @Column(name = "tag_name", columnDefinition = "TEXT", nullable = false)
+//    private String tagName;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "prob_tag_id", nullable = false)
+    private ProblemTag problemTag;
 
     @Column(name = "number", nullable = false)
-    private int number;
+    private boolean isExcluded;
 
 //    @Column(name = "total_point", nullable = false)
 //    private int totalPoint = 0;

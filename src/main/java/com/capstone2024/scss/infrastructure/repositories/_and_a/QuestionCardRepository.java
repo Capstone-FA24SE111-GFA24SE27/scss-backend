@@ -21,19 +21,21 @@ public interface QuestionCardRepository extends JpaRepository<QuestionCard, Long
             "AND q.student.id = :studentId " +
             "AND (:status IS NULL OR q.status = :status) " +
             "AND (:questionType IS NULL OR q.questionType = :questionType) " +
-            "AND (:isTaken IS NULL OR q.isTaken = :isTaken) " +
+//            "AND (:isTaken IS NULL OR q.isTaken = :isTaken) " +
             "AND (:isClosed IS NULL OR q.isClosed = :isClosed) " +
-            "AND (:isChatSessionClosed IS NULL OR cs.isClosed = :isChatSessionClosed)" +
-            "AND (:topicId IS NULL OR q.topic.id = :topicId)")
+            "AND (:isChatSessionClosed IS NULL OR cs.isClosed = :isChatSessionClosed)"
+//            +
+//            "AND (:topicId IS NULL OR q.topic.id = :topicId)"
+    )
     Page<QuestionCard> findQuestionCardsWithFilterForStudent(
             @Param("studentId") Long studentId,
             @Param("keyword") String keyword,
             @Param("status") QuestionCardStatus status,
-            @Param("isTaken") Boolean isTaken,
+//            @Param("isTaken") Boolean isTaken,
             @Param("isClosed") Boolean isClosed,
             @Param("isChatSessionClosed") Boolean isChatSessionClosed,
             @Param("questionType") QuestionType questionType,
-            @Param("topicId") Long topicId,
+//            @Param("topicId") Long topicId,
             Pageable pageable);
 
     @Query("SELECT q FROM QuestionCard q " +
@@ -42,19 +44,19 @@ public interface QuestionCardRepository extends JpaRepository<QuestionCard, Long
             "AND (:studentCode IS NULL OR q.student.studentCode = :studentCode) " +
             "AND q.counselor.id = :counselorId " +
             "AND (:questionType IS NULL OR q.questionType = :questionType) " +
-            "AND (:isTaken IS NULL OR q.isTaken = :isTaken) " +
-            "AND (:isClosed IS NULL OR q.isClosed = :isClosed) " +
-            "AND (:isChatSessionClosed IS NULL OR cs.isClosed = :isChatSessionClosed) " +
-            "AND (:topicId IS NULL OR q.topic.id = :topicId)")
+            "AND (:isClosed IS NULL OR (q.isClosed IS NULL OR q.isClosed = :isClosed)) " +
+            "AND (:isChatSessionClosed IS NULL OR cs.isClosed = :isChatSessionClosed) "
+//            +
+//            "AND (:topicId IS NULL OR q.topic.id = :topicId)"
+    )
     Page<QuestionCard> findQuestionCardsWithFilterForCounselor(
             @Param("studentCode") String studentCode,
             @Param("counselorId") Long counselorId,
             @Param("keyword") String keyword,
             @Param("questionType") QuestionType questionType,
-            @Param("isTaken") Boolean isTaken,
             @Param("isClosed") Boolean isClosed,
             @Param("isChatSessionClosed") Boolean isChatSessionClosed,
-            @Param("topicId") Long topicId,
+//            @Param("topicId") Long topicId,
             Pageable pageable);
 
     @Query("SELECT q FROM QuestionCard q " +
@@ -63,16 +65,18 @@ public interface QuestionCardRepository extends JpaRepository<QuestionCard, Long
             "AND (:studentCode IS NULL OR q.student.studentCode = :studentCode) " +
             "AND q.status = com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus.VERIFIED " +
             "AND (:questionType IS NULL OR q.questionType = :questionType) " +
-            "AND (:isTaken IS NULL OR q.isTaken = :isTaken)" +
-            "AND (:isClosed IS NULL OR q.isClosed = :isClosed)" +
-            "AND (:topicId IS NULL OR q.topic.id = :topicId)")
+//            "AND (:isTaken IS NULL OR q.isTaken = :isTaken)" +
+            "AND (:isClosed IS NULL OR q.isClosed = :isClosed)"
+//            +
+//            "AND (:topicId IS NULL OR q.topic.id = :topicId)"
+    )
     Page<QuestionCard> findQuestionCardsLibraryForCounselor(
             @Param("studentCode") String studentCode,
             @Param("keyword") String keyword,
             @Param("questionType") QuestionType questionType,
-            @Param("isTaken") Boolean isTaken,
-            @Param("isTaken") Boolean isClosed,
-            @Param("topicId") Long topicId,
+//            @Param("isTaken") Boolean isTaken,
+            @Param("isClosed") Boolean isClosed,
+//            @Param("topicId") Long topicId,
             Pageable pageable);
 
     @Query("SELECT qc FROM QuestionCard qc LEFT JOIN FETCH qc.counselor WHERE qc.id = :id")

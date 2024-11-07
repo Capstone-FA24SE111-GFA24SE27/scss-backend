@@ -6,9 +6,11 @@ import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
 import com.capstone2024.scss.application.q_and_a.dto.*;
 import com.capstone2024.scss.domain.account.entities.Account;
+import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
 import com.capstone2024.scss.domain.q_and_a.service.QuestionCardService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
@@ -27,6 +29,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/question-cards")
+@Tag(name = "Question Cards", description = "API endpoints for managing question cards")
 @RequiredArgsConstructor
 public class QuestionCardController {
 
@@ -216,6 +219,40 @@ public class QuestionCardController {
             @NotNull @AuthenticationPrincipal Account principle) {
 
         QuestionCardResponseDTO responseDTO = questionCardService.getOneQuestionCardsForStudent(questionCardId, principle.getProfile().getId());
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/student/message/{questionCardId}")
+    public ResponseEntity<Object> getOneChatSessionForStudent(
+            @PathVariable Long questionCardId,
+            @NotNull @AuthenticationPrincipal Account principle) {
+
+        Long studentId = principle.getProfile().getId();
+
+        ChatSessionDTO responseDTO = questionCardService.getMessageByChatSessionForStudent(questionCardId, studentId);
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/counselor/message/{questionCardId}")
+    public ResponseEntity<Object> getOneChatSessionForCounselor(
+            @PathVariable Long questionCardId,
+            @NotNull @AuthenticationPrincipal Account principle) {
+
+        Long counselorId = principle.getProfile().getId();
+
+        ChatSessionDTO responseDTO = questionCardService.getMessageByChatSessionForcounselor(questionCardId, counselorId);
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/message/{questionCardId}")
+    public ResponseEntity<Object> getOneChatSession(
+            @PathVariable Long questionCardId,
+            @NotNull @AuthenticationPrincipal Account principle) {
+
+        Long id = principle.getProfile().getId();
+        Role role = principle.getRole();
+
+        ChatSessionDTO responseDTO = questionCardService.getMessageByChatSession(questionCardId, id, role);
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }
 

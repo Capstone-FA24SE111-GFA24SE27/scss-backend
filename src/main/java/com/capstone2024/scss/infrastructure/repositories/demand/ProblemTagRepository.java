@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface ProblemTagRepository extends JpaRepository<ProblemTag, Long> {
 
@@ -16,4 +18,6 @@ public interface ProblemTagRepository extends JpaRepository<ProblemTag, Long> {
     Page<ProblemTag> findProblemTags(@Param("keyword") String keyword,
                                      @Param("problemCategoryId") Long problemCategoryId,
                                      Pageable pageable);
+
+    Optional<ProblemTag> findByName(String problemTagName);
 }

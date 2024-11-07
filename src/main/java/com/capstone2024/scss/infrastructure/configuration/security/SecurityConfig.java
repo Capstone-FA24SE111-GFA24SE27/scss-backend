@@ -92,9 +92,9 @@ public class SecurityConfig {
                         config.requestMatchers(HttpMethod.GET,"/api/account/**")
                                 .hasAnyRole(Role.ADMINISTRATOR.name()))
 
-                .authorizeHttpRequests(config ->
-                        config.requestMatchers(HttpMethod.GET,"/api/counselors/**")
-                                .hasAnyRole(Role.STUDENT.name()))
+//                .authorizeHttpRequests(config ->
+//                        config.requestMatchers(HttpMethod.GET,"/api/counselors/**")
+//                                .hasAnyRole(Role.STUDENT.name()))
 
                 .authorizeHttpRequests(config ->
                         config.requestMatchers(HttpMethod.POST,"/api/booking-counseling/**")

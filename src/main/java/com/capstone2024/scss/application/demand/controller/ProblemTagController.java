@@ -10,6 +10,7 @@ import com.capstone2024.scss.application.demand.dto.request.ProblemTagFilterRequ
 import com.capstone2024.scss.application.demand.dto.ProblemTagResponseDTO;
 import com.capstone2024.scss.application.demand.dto.request.ProblemTagRequestDTO;
 import com.capstone2024.scss.domain.demand.service.ProblemTagService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -25,6 +26,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/problem-tags")
+@Tag(name = "Problem Tags", description = "API endpoints for managing problem tags")
 @RequiredArgsConstructor// Đường dẫn cho API
 public class ProblemTagController {
 

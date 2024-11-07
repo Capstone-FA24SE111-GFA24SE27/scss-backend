@@ -40,13 +40,13 @@ public class QuestionCardMapper {
                 .answer(questionCard.getAnswer())
                 .content(questionCard.getContent())
                 .questionType(questionCard.getQuestionType())
-                .isTaken(questionCard.isTaken())
+//                .isTaken(questionCard.isTaken())
                 .isClosed(questionCard.isClosed())
                 .status(questionCard.getStatus())
                 .student(studentDTO)
                 .counselor(counselorDTO)
                 .chatSession(ChatSessionMapper.toChatSessionDTO(questionCard.getChatSession()))
-                .topic(TopicMapper.toDTO(questionCard.getTopic()))
+//                .topic(TopicMapper.toDTO(questionCard.getTopic()))
                 .build();
     }
 }

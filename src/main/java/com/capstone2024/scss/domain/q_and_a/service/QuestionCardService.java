@@ -3,6 +3,7 @@ package com.capstone2024.scss.domain.q_and_a.service;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.q_and_a.dto.*;
 import com.capstone2024.scss.domain.account.entities.Account;
+import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
 
@@ -47,4 +48,10 @@ public interface QuestionCardService {
     void flagQuestionCard(Long questionCardId, FlagQuestionCardRequestDTO dto);
 
     BanInformationResponseDTO getBanInformation(Long studentId);
+
+    ChatSessionDTO getMessageByChatSessionForStudent(Long questionCardId, Long studentId);
+
+    ChatSessionDTO getMessageByChatSessionForcounselor(Long questionCardId, Long counselorId);
+
+    ChatSessionDTO getMessageByChatSession(Long questionCardId, Long id, Role role);
 }

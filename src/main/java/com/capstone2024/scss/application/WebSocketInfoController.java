@@ -26,7 +26,9 @@ public class WebSocketInfoController {
                 "/user/{account_id}/private/notification", "topic for notification",
                 "`/user/{dateChange}/{counselorId}/slot`", "topic for slot realtime",
                 "/user/${profileId}/appointment", "topic for appointment schedule realtime",
-                "/user/${chatSessionId}/chat", "topic for chatting Q&A"
+                "/user/${chatSessionId}/chat", "topic for chatting Q&A",
+                "/user/${profileId}/appointment/request", "topic for appointment request realtime",
+                "/user/${profileId}/question", "topic for q and a realtime"
         );
     }
 }

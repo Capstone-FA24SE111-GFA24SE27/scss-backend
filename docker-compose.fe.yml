@@ -43,6 +43,7 @@ services:
       - mysql
 #      - redis
       - rabbitmq
+      - fap-server
   fap-server:
     image: trinhvinhphat2003/fap-system-server:latest
     container_name: fap_server
@@ -50,7 +51,6 @@ services:
       - "8081:8081"  # Cổng của ứng dụng server
     depends_on:
       - mysql
-      - server
   mobile_socket_server:
     image: trinhvinhphat2003/mobile-socket-capstone-server
     container_name: mobile_socket_capstone_server

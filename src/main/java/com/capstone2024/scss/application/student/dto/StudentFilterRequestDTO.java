@@ -9,9 +9,15 @@ import org.springframework.data.domain.Pageable;
 @Builder
 public class StudentFilterRequestDTO {
     private String studentCode;
-    private Long specializationId;
     private String sortBy;
     private SortDirection sortDirection;
     private String keyword;
+
+    private StudentAcademicFilterDTO academicOption;
+    private StudentGPAFilterDTO gpaOption;
+
+    private boolean isIncludeBehavior;
+    private StudentBehaviorFilterDTO behaviorOption;
+
     private Pageable pagination;
 }
