@@ -49,7 +49,7 @@ services:
     image: trinhvinhphat2003/fap-system-server:latest
     container_name: fap_server
     ports:
-      - "8081:8081"  # Cổng của ứng dụng server
+      - "8085:8081"  # Cổng của ứng dụng server
     depends_on:
       - mysql
   mobile_socket_server:

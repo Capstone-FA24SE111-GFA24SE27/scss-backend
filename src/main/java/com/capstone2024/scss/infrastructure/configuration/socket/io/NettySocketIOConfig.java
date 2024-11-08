@@ -10,7 +10,7 @@ public class NettySocketIOConfig {
     @Bean
     public SocketIOServer socketIOServer() {
         Configuration config = new Configuration();
-        config.setHostname("localhost");  // Đổi thành hostname nếu cần
+        config.setHostname("0.0.0.0");  // Đổi thành hostname nếu cần
         config.setPort(9092);             // Đặt cổng cho server
 
         config.setOrigin("*");            // Cho phép tất cả nguồn gốc, hoặc giới hạn nếu cần
