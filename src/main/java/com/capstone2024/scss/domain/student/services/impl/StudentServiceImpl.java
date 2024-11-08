@@ -211,7 +211,7 @@ public class StudentServiceImpl implements StudentService {
                                     result.put("isNotExcluded", new ArrayList<>());
 
                                     // Populate result map with merged lists
-                                    map.forEach((key, list) -> result.put(key, mergeByProblemTagName(list)));
+                                    map.forEach((key, list) -> result.put(key, mergeByProblemTagName(list, false)));
                                     return result;
                                 }
                         )
@@ -232,7 +232,7 @@ public class StudentServiceImpl implements StudentService {
                 tagList,
                 filterRequest.getBehaviorOption().getSemesterId(), filterRequest.getPagination());
         List<StudentDetailForFilterDTO> studentDTOs = studentPage.getContent().stream()
-                .map(student -> toStudentDetailDTO(student, tagList, filterRequest))
+                .map(student -> toStudentDetailDTO(student, tagList, filterRequest, true))
                 .collect(Collectors.toList());
 
         return PaginationDTO.<List<StudentDetailForFilterDTO>>builder()
@@ -278,7 +278,7 @@ public class StudentServiceImpl implements StudentService {
                     tagList,
                     filterRequest.getBehaviorOption().getSemesterId(), filterRequest.getPagination());
             studentDTOs = studentPage.getContent().stream()
-                    .map(student -> toStudentDetailDTO(student, tagList, filterRequest))
+                    .map(student -> toStudentDetailDTO(student, tagList, filterRequest, false))
                     .collect(Collectors.toList());
         } else {
             studentPage = studentRepository.findStudents(
@@ -288,7 +288,7 @@ public class StudentServiceImpl implements StudentService {
                     filterRequest.getAcademicOption().getMajorId(),
                     filterRequest.getPagination());
             studentDTOs = studentPage.getContent().stream()
-                    .map(student -> toStudentDetailDTO(student, null, filterRequest))
+                    .map(student -> toStudentDetailDTO(student, null, filterRequest, false))
                     .collect(Collectors.toList());
         }
         return PaginationDTO.<List<StudentDetailForFilterDTO>>builder()
@@ -325,6 +325,9 @@ public class StudentServiceImpl implements StudentService {
     private String openAiApiKey;
 
     public String callOpenAPI(String prompt) {
+        if(prompt == null || prompt.isBlank()) {
+            return "";
+        }
 
         // Tạo đối tượng Content
         OpenAIRequest.Message.Content content = new OpenAIRequest.Message.Content("text",prompt);
@@ -403,7 +406,7 @@ public class StudentServiceImpl implements StudentService {
         return Arrays.asList(callOpenAPI(openAICommand).split(",\\s*"));
     }
 
-    public StudentDetailForFilterDTO toStudentDetailDTO(Student student, List<String> tagList, StudentFilterRequestDTO filterRequestDTO) {
+    public StudentDetailForFilterDTO toStudentDetailDTO(Student student, List<String> tagList, StudentFilterRequestDTO filterRequestDTO, boolean isRecommend) {
         if (student == null) {
             return null;
         }
@@ -424,12 +427,13 @@ public class StudentServiceImpl implements StudentService {
             List<DemandProblemTagResponseDTO> demandProblemTagResponseDTOS = demandProblemTags.stream().map(demandProblemTag -> {
                 boolean isContained = tagList.stream().anyMatch(tag -> tag.equals(demandProblemTag.getProblemTag().getName()));
                 return DemandProblemTagResponseDTO.builder()
+                        .isExcluded(demandProblemTag.isExcluded())
                         .problemTagName(demandProblemTag.getProblemTag().getName())
                         .isContained(isContained)
                         .build();
             }).collect(Collectors.toList());
 
-            studentDetailForFilterDTO.setBehaviorTagList(mergeByProblemTagName(demandProblemTagResponseDTOS));
+            studentDetailForFilterDTO.setBehaviorTagList(mergeByProblemTagName(demandProblemTagResponseDTOS, isRecommend));
         } else {
             studentDetailForFilterDTO.setBehaviorTagList(new ArrayList<>());
         }
@@ -437,20 +441,36 @@ public class StudentServiceImpl implements StudentService {
         return studentDetailForFilterDTO;
     }
 
-    private List<DemandProblemTagResponseDTO> mergeByProblemTagName(List<DemandProblemTagResponseDTO> inputList) {
+    private List<DemandProblemTagResponseDTO> mergeByProblemTagName(List<DemandProblemTagResponseDTO> inputList, boolean isRecommend) {
         Map<String, DemandProblemTagResponseDTO> mergedMap = new HashMap<>();
 
-        for (DemandProblemTagResponseDTO dto : inputList) {
-            String problemTagName = dto.getProblemTagName();
+        if(!isRecommend) {
+            for (DemandProblemTagResponseDTO dto : inputList) {
+                String problemTagName = dto.getProblemTagName();
 
-            // Nếu problemTagName đã tồn tại trong mergedMap, cộng dồn number
-            if (mergedMap.containsKey(problemTagName)) {
-                DemandProblemTagResponseDTO existingDTO = mergedMap.get(problemTagName);
-                existingDTO.setNumber(existingDTO.getNumber() + 1);
-            } else {
-                // Nếu chưa tồn tại, thêm đối tượng vào mergedMap
-                dto.setNumber(1);
-                mergedMap.put(problemTagName, dto);
+                // Nếu problemTagName đã tồn tại trong mergedMap, cộng dồn number
+                if (mergedMap.containsKey(problemTagName)) {
+                    DemandProblemTagResponseDTO existingDTO = mergedMap.get(problemTagName);
+                    existingDTO.setNumber(existingDTO.getNumber() + 1);
+                } else {
+                    // Nếu chưa tồn tại, thêm đối tượng vào mergedMap
+                    dto.setNumber(1);
+                    mergedMap.put(problemTagName, dto);
+                }
+            }
+        } else {
+            for (DemandProblemTagResponseDTO dto : inputList) {
+                String problemTagName = dto.getProblemTagName();
+
+                // Nếu problemTagName đã tồn tại trong mergedMap, cộng dồn number
+                if (mergedMap.containsKey(problemTagName)) {
+                    DemandProblemTagResponseDTO existingDTO = mergedMap.get(problemTagName);
+                    existingDTO.setNumber(existingDTO.getNumber() + 1);
+                } else if (!mergedMap.containsKey(problemTagName) && !dto.isExcluded()) {
+                    // Nếu chưa tồn tại, thêm đối tượng vào mergedMap
+                    dto.setNumber(1);
+                    mergedMap.put(problemTagName, dto);
+                }
             }
         }
 

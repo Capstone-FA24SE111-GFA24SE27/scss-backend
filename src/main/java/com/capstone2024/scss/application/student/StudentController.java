@@ -104,7 +104,7 @@ public class StudentController {
 
             @RequestParam(name = "isIncludeBehavior", required = true, defaultValue = "false") boolean isIncludeBehavior,
             @RequestParam(name = "semesterIdForBehavior", required = false) Long semesterIdForBehavior,
-            @RequestParam(name = "promptForBehavior", required = false, defaultValue = "Creative Thinking, Good Time Management Skills") String promptForBehavior,
+            @RequestParam(name = "promptForBehavior", required = false) String promptForBehavior,
 
             @RequestParam(name = "sortBy", defaultValue = "createdDate") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
@@ -207,7 +207,7 @@ public class StudentController {
             @RequestParam(name = "majorId", required = false) Long majorId,
 
             @RequestParam(name = "semesterIdForBehavior", required = false) Long semesterIdForBehavior,
-            @RequestParam(name = "promptForBehavior", required = false, defaultValue = "Creative Thinking, Good Time Management Skills") String promptForBehavior,
+            @RequestParam(name = "promptForBehavior", required = false) String promptForBehavior,
 
             @RequestParam(name = "sortBy", defaultValue = "createdDate") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
@@ -231,7 +231,7 @@ public class StudentController {
                 .isIncludeBehavior(true)
                 .behaviorOption(StudentBehaviorFilterDTO.builder()
                         .semesterId(semesterIdForBehavior)
-                        .prompt(promptForBehavior != null ? promptForBehavior : "Creative Thinking, Good Time Management Skills")
+                        .prompt(promptForBehavior)
                         .build())
                 .build();
 

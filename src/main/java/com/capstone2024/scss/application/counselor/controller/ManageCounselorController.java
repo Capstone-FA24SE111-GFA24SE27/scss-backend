@@ -21,6 +21,7 @@ import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appoi
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
 import com.capstone2024.scss.domain.counselor.entities.AvailableDateRange;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
+import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import com.capstone2024.scss.domain.counselor.services.ManageCounselorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -280,7 +281,11 @@ public class ManageCounselorController {
             @RequestParam(name = "ratingTo", required = false) BigDecimal ratingTo,
             @RequestParam(name = "availableFrom", required = false) LocalDate availableFrom,
             @RequestParam(name = "availableTo", required = false) LocalDate availableTo,
-            @RequestParam(name = "specializationId", required = false) Long specializationId, // Add specialization ID
+            @RequestParam(name = "specializationId", required = false) Long specializationId,
+            @RequestParam(name = "majorId", required = false) Long majorId,
+            @RequestParam(name = "departmentId", required = false) Long departmentId,
+            @RequestParam(name = "gender", required = false) Gender gender,
+            @RequestParam(name = "status", required = false) CounselorStatus status,
             @RequestParam(name = "SortDirection", defaultValue = "ASC") SortDirection sortDirection,
             @RequestParam(name = "sortBy", defaultValue = "fullName") String sortBy,
             @RequestParam(name = "page", defaultValue = "1") Integer page) {
@@ -297,8 +302,12 @@ public class ManageCounselorController {
                 .ratingTo(ratingTo)
                 .availableFrom(availableFrom)
                 .availableTo(availableTo)
-                .specializationId(specializationId) // Set specialization ID
+                .specializationId(specializationId)
+                .departmentId(departmentId)
+                .majorId(majorId)
                 .sortBy(sortBy)
+                .gender(gender)
+                .status(status)
                 .sortDirection(sortDirection)
                 .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .build();
@@ -316,6 +325,8 @@ public class ManageCounselorController {
             @RequestParam(name = "availableTo", required = false) LocalDate availableTo,
             @RequestParam(name = "expertiseId", required = false) Long expertiseId, // Add expertise ID
             @RequestParam(name = "SortDirection", defaultValue = "ASC") SortDirection sortDirection,
+            @RequestParam(name = "gender", required = false) Gender gender,
+            @RequestParam(name = "status", required = false) CounselorStatus status,
             @RequestParam(name = "sortBy", defaultValue = "fullName") String sortBy,
             @RequestParam(name = "page", defaultValue = "1") Integer page) {
 
@@ -332,6 +343,8 @@ public class ManageCounselorController {
                 .availableTo(availableTo)
                 .expertiseId(expertiseId) // Set expertise ID
                 .sortBy(sortBy)
+                .gender(gender)
+                .status(status)
                 .sortDirection(sortDirection)
                 .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .build();

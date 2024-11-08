@@ -186,7 +186,8 @@ public class CounselorServiceImpl implements CounselorService {
                 filterRequest.getRatingTo(),
                 filterRequest.getAvailableFrom(),
                 filterRequest.getAvailableTo(),
-                filterRequest.getExpertiseId(), // Pass expertise ID
+                filterRequest.getExpertiseId(),
+                filterRequest.getGender(),
                 filterRequest.getPagination());
 
         List<NonAcademicCounselorProfileDTO> counselorDTOs = counselorsPage.getContent().stream()
@@ -208,7 +209,10 @@ public class CounselorServiceImpl implements CounselorService {
                 filterRequest.getRatingTo(),
                 filterRequest.getAvailableFrom(),
                 filterRequest.getAvailableTo(),
-                filterRequest.getSpecializationId(), // Pass specialization ID
+                filterRequest.getSpecializationId(),
+                filterRequest.getDepartmentId(),
+                filterRequest.getMajorId(),
+                filterRequest.getGender(),
                 filterRequest.getPagination());
 
         List<AcademicCounselorProfileDTO> counselorDTOs = counselorsPage.getContent().stream()
@@ -254,7 +258,7 @@ public class CounselorServiceImpl implements CounselorService {
     }
 
     @Override
-    public CounselorProfileDTO findBestAvailableCounselorForAcademic(Long slotId, LocalDate date, Gender gender, Long specializationId) {
+    public CounselorProfileDTO findBestAvailableCounselorForAcademic(Long slotId, LocalDate date, Gender gender, Long specializationId, Long departmentId, Long majorId) {
         CounselingSlot slot = counselingSlotRepository.findById(slotId)
                 .orElseThrow(() -> new NotFoundException("Slot not found with ID: " + slotId));
 
@@ -273,7 +277,7 @@ public class CounselorServiceImpl implements CounselorService {
 
         // Thực hiện truy vấn
         List<AcademicCounselor> counselors = counselorRepository.findAvailableCounselorsByGenderAndExpertiseOrderedForAcademic(
-                gender, specialization, date, slot.getStartTime(), slot.getEndTime(), pageable);
+                gender, specialization, departmentId, majorId, date, slot.getStartTime(), slot.getEndTime(), pageable);
 
         if (counselors.isEmpty()) {
             throw new NotFoundException("Không tìm thấy counselor nào khả dụng vào thời gian này với yêu cầu giới tính và chuyên môn.");

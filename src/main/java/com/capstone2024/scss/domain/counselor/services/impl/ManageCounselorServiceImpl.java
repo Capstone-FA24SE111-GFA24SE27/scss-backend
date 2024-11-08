@@ -245,13 +245,17 @@ public class ManageCounselorServiceImpl implements ManageCounselorService {
 
     @Override
     public PaginationDTO<List<ManageCounselorDTO>> getAcademicCounselorsWithFilter(AcademicCounselorFilterRequestDTO filterRequest) {
-        Page<AcademicCounselor> counselorsPage = counselorRepository.findAcademicCounselorsWithFilter(
+        Page<AcademicCounselor> counselorsPage = counselorRepository.findAcademicCounselorsWithFilterForManaging(
                 filterRequest.getSearch(),
                 filterRequest.getRatingFrom(),
                 filterRequest.getRatingTo(),
                 filterRequest.getAvailableFrom(),
                 filterRequest.getAvailableTo(),
-                filterRequest.getSpecializationId(), // Pass specialization ID
+                filterRequest.getSpecializationId(),
+                filterRequest.getDepartmentId(),
+                filterRequest.getMajorId(),
+                filterRequest.getStatus(),
+                filterRequest.getGender(),
                 filterRequest.getPagination());
 
         List<ManageCounselorDTO> counselorDTOs = counselorsPage.getContent().stream()
@@ -267,14 +271,17 @@ public class ManageCounselorServiceImpl implements ManageCounselorService {
 
     @Override
     public PaginationDTO<List<ManageCounselorDTO>> getNonAcademicCounselorsWithFilter(NonAcademicCounselorFilterRequestDTO filterRequest) {
-        Page<NonAcademicCounselor> counselorsPage = counselorRepository.findNonAcademicCounselorsWithFilter(
+        Page<NonAcademicCounselor> counselorsPage = counselorRepository.findNonAcademicCounselorsWithFilterForManaging(
                 filterRequest.getSearch(),
                 filterRequest.getRatingFrom(),
                 filterRequest.getRatingTo(),
                 filterRequest.getAvailableFrom(),
                 filterRequest.getAvailableTo(),
-                filterRequest.getExpertiseId(), // Pass expertise ID
-                filterRequest.getPagination());
+                filterRequest.getExpertiseId(),
+                filterRequest.getStatus(),
+                filterRequest.getGender(),
+                filterRequest.getPagination()
+        );
 
         List<ManageCounselorDTO> counselorDTOs = counselorsPage.getContent().stream()
                 .map(CounselorProfileMapper::toManageCounselorDTO)

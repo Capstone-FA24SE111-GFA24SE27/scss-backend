@@ -11,6 +11,7 @@ import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import com.capstone2024.scss.domain.demand.entities.CounselingDemand;
 import com.capstone2024.scss.domain.demand.service.CounselingDemandService;
 import com.capstone2024.scss.domain.student.entities.Student;
+import com.capstone2024.scss.domain.student.services.StudentService;
 import com.capstone2024.scss.domain.support_staff.entity.SupportStaff;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import com.capstone2024.scss.infrastructure.repositories.demand.CounselingDemandRepository;
@@ -32,6 +33,7 @@ public class CounselingDemandServiceImpl implements CounselingDemandService {
     private final SupportStaffRepository supportStaffRepository;
     private final CounselingDemandRepository counselingDemandRepository;
     private final CounselorRepository counselorRepository;
+    private final StudentService studentService;
 
     public CounselingDemandDTO createCounselingDemand(Long studentId, Long supportStaffId) {
         Student student = studentRepository.findById(studentId)
@@ -138,6 +140,7 @@ public class CounselingDemandServiceImpl implements CounselingDemandService {
         CounselingDemand counselingDemand = counselingDemandRepository.findById(counselingDemandId)
                 .orElseThrow(() -> new NotFoundException("Counseling demand not found with ID: " + counselingDemandId));
 
+        studentService.excludeAllDemandProblemTagsByStudentId(counselingDemand.getStudent().getId());
         counselingDemand.setEndDateTime(LocalDateTime.now());
         counselingDemand.setStatus(CounselingDemand.Status.SOLVE);
         counselingDemand.setSummarizeNote(summarizeNote);

@@ -1,6 +1,8 @@
 package com.capstone2024.scss.application.counselor.dto.request;
 
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
+import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
+import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import lombok.*;
 import org.springframework.data.domain.Pageable;
 
@@ -18,7 +20,11 @@ public class AcademicCounselorFilterRequestDTO {
     private BigDecimal ratingTo;
     private LocalDate availableFrom;
     private LocalDate availableTo;
-    private Long specializationId; // Specialization ID for filtering
+    private Long specializationId;
+    private Long majorId;
+    private Long departmentId;
+    private CounselorStatus status;
+    private Gender gender;
     private String sortBy;
     private SortDirection sortDirection;
     private Pageable pagination;

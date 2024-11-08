@@ -36,5 +36,5 @@ public interface CounselorService {
 
     AcademicCounselorProfileDTO getAcademicCounselorById(Long id);
 
-    CounselorProfileDTO findBestAvailableCounselorForAcademic(Long slotId, LocalDate date, Gender gender, Long specializationId);
+    CounselorProfileDTO findBestAvailableCounselorForAcademic(Long slotId, LocalDate date, Gender gender, Long specializationId, Long departmentId, Long majorId);
 }

@@ -160,9 +160,11 @@ public class CounselorController {
             @RequestParam(name = "slotId", required = true) Long slotId,
             @RequestParam(name = "date", required = true) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(name = "gender", required = false) Gender gender,
-            @RequestParam(name = "specializationId", required = false) Long specializationId) {
+            @RequestParam(name = "specializationId", required = false) Long specializationId,
+            @RequestParam(name = "departmentId", required = false) Long departmentId,
+            @RequestParam(name = "majorId", required = false) Long majorId) {
 
-        CounselorProfileDTO counselor = counselorService.findBestAvailableCounselorForAcademic(slotId, date, gender, specializationId);
+        CounselorProfileDTO counselor = counselorService.findBestAvailableCounselorForAcademic(slotId, date, gender, specializationId, departmentId, majorId);
         return ResponseUtil.getResponse(counselor, HttpStatus.OK);
     }
 
@@ -184,6 +186,7 @@ public class CounselorController {
             @RequestParam(name = "availableTo", required = false) LocalDate availableTo,
             @RequestParam(name = "expertiseId", required = false) Long expertiseId, // Add expertise ID
             @RequestParam(name = "SortDirection", defaultValue = "ASC") SortDirection sortDirection,
+            @RequestParam(name = "gender", required = false) Gender gender,
             @RequestParam(name = "sortBy", defaultValue = "fullName") String sortBy,
             @RequestParam(name = "page", defaultValue = "1") Integer page) {
 
@@ -200,6 +203,7 @@ public class CounselorController {
                 .availableTo(availableTo)
                 .expertiseId(expertiseId) // Set expertise ID
                 .sortBy(sortBy)
+                .gender(gender)
                 .sortDirection(sortDirection)
                 .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .build();
@@ -215,7 +219,10 @@ public class CounselorController {
             @RequestParam(name = "ratingTo", required = false) BigDecimal ratingTo,
             @RequestParam(name = "availableFrom", required = false) LocalDate availableFrom,
             @RequestParam(name = "availableTo", required = false) LocalDate availableTo,
-            @RequestParam(name = "specializationId", required = false) Long specializationId, // Add specialization ID
+            @RequestParam(name = "specializationId", required = false) Long specializationId,
+            @RequestParam(name = "majorId", required = false) Long majorId,
+            @RequestParam(name = "departmentId", required = false) Long departmentId,
+            @RequestParam(name = "gender", required = false) Gender gender,
             @RequestParam(name = "SortDirection", defaultValue = "ASC") SortDirection sortDirection,
             @RequestParam(name = "sortBy", defaultValue = "fullName") String sortBy,
             @RequestParam(name = "page", defaultValue = "1") Integer page) {
@@ -232,7 +239,10 @@ public class CounselorController {
                 .ratingTo(ratingTo)
                 .availableFrom(availableFrom)
                 .availableTo(availableTo)
-                .specializationId(specializationId) // Set specialization ID
+                .specializationId(specializationId)
+                .majorId(majorId)
+                .departmentId(departmentId)
+                .gender(gender)
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
                 .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))

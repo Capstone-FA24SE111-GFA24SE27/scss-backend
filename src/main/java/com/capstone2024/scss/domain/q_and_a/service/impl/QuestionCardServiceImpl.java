@@ -138,12 +138,12 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         if(questionCard != null) {
             // Lưu thẻ câu hỏi vào cơ sở dữ liệu
             QuestionCard savedCard = questionCardRepository.save(questionCard);
-            ChatSession chatSession = new ChatSession();
-            chatSession.setQuestionCard(questionCard);
-
-            chatSession.setCounselor(questionCard.getCounselor());
-            chatSession.setStudent(questionCard.getStudent());
-            chatSessionRepository.save(chatSession);
+//            ChatSession chatSession = new ChatSession();
+//            chatSession.setQuestionCard(questionCard);
+//
+//            chatSession.setCounselor(questionCard.getCounselor());
+//            chatSession.setStudent(questionCard.getStudent());
+//            chatSessionRepository.save(chatSession);
             logger.info("QuestionCard created with ID: {} for Student ID: {}", savedCard.getId(), student.getId());
 
             rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
@@ -416,6 +416,13 @@ public class QuestionCardServiceImpl implements QuestionCardService {
 
         if (questionCard.getCounselor().getId().equals(counselorId) && !questionCard.isClosed()) {
             questionCard.setAnswer(dto.getContent());
+            questionCard.setStatus(QuestionCardStatus.VERIFIED);
+            ChatSession chatSession = new ChatSession();
+            chatSession.setQuestionCard(questionCard);
+
+            chatSession.setCounselor(questionCard.getCounselor());
+            chatSession.setStudent(questionCard.getStudent());
+            chatSessionRepository.save(chatSession);
             questionCardRepository.save(questionCard);
 
             rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
