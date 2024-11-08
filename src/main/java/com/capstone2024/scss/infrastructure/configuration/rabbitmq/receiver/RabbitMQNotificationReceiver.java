@@ -19,9 +19,9 @@ public class RabbitMQNotificationReceiver {
         this.notificationSocketService = notificationSocketService;
     }
 
-    public void receiveNotificationMessage(NotificationDTO notificationMessage) {
-        notificationSocketService.sendNotificationToUser(notificationMessage.getReceiverId(), notificationMessage);
-        System.out.println("Notification sent to WebSocket successfully!");
-    }
+//    public void receiveNotificationMessage(NotificationDTO notificationMessage) {
+//        notificationSocketService.sendNotificationToUser(notificationMessage.getReceiverId(), notificationMessage);
+//        System.out.println("Notification sent to WebSocket successfully!");
+//    }
 
 }

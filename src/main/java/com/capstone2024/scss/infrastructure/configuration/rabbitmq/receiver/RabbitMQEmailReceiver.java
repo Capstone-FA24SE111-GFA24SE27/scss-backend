@@ -11,13 +11,13 @@ public class RabbitMQEmailReceiver {
     @Autowired
     private JavaMailSender mailSender;
 
-    public void receiveEmailMessage(String emailMessage) {
-        // Logic gửi email
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo("recipient@example.com");
-        message.setSubject("Test Mail from RabbitMQ");
-        message.setText(emailMessage);
-        mailSender.send(message);
-        System.out.println("Email sent successfully!");
-    }
+//    public void receiveEmailMessage(String emailMessage) {
+//        // Logic gửi email
+//        SimpleMailMessage message = new SimpleMailMessage();
+//        message.setTo("recipient@example.com");
+//        message.setSubject("Test Mail from RabbitMQ");
+//        message.setText(emailMessage);
+//        mailSender.send(message);
+//        System.out.println("Email sent successfully!");
+//    }
 }

@@ -152,6 +152,14 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                     .type(RealTimeQuestionDTO.Type.STUDENT_CREATE_NEW)
                     .build());
 
+            notificationService.sendNotification(NotificationDTO.builder()
+                    .receiverId(questionCard.getCounselor().getId())
+                    .message("Student named -" + student.getFullName() + "-" + student.getStudentCode() + "- has sent you a question")
+                    .title("New question ard from student")
+                    .sender("Student: " + student.getFullName() + "-" + student.getStudentCode())
+                    .readStatus(false)
+                    .build());
+
             // Chuyển đổi entity sang DTO
             return QuestionCardMapper.toQuestionCardResponseDto(savedCard);
         } else {
@@ -430,6 +438,16 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                     .counselorId(questionCard.getCounselor() != null ? questionCard.getCounselor().getId() : null)
                     .type(RealTimeQuestionDTO.Type.COUNSELOR_ANSWER)
                     .build());
+
+            Student student = questionCard.getStudent();
+
+            notificationService.sendNotification(NotificationDTO.builder()
+                    .receiverId(student.getId())
+                    .message("Counselor has answered your question")
+                    .title("Counselor has answered your question")
+                    .sender("Counselor: " + questionCard.getCounselor().getFullName())
+                    .readStatus(false)
+                    .build());
         } else {
             throw new ForbiddenException("You are not allow to answer this QC");
         }
@@ -518,6 +536,14 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                     .counselorId(questionCard.getCounselor().getId())
                     .type(RealTimeQuestionDTO.Type.COUNSELOR_CLOSE)
                     .build());
+
+            notificationService.sendNotification(NotificationDTO.builder()
+                    .receiverId(questionCard.getStudent().getId())
+                    .message("Counselor has closed your question")
+                    .title("Counselor has closed your question")
+                    .sender("Counselor: " + questionCard.getCounselor().getFullName())
+                    .readStatus(false)
+                    .build());
         } else {
             throw new ForbiddenException("You are not allowed to close this QC");
         }
@@ -598,6 +624,14 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                 .studentId(questionCard.getStudent().getId())
                 .counselorId(questionCard.getCounselor() != null ? questionCard.getCounselor().getId() : null)
                 .type(RealTimeQuestionDTO.Type.FLAG)
+                .build());
+
+        notificationService.sendNotification(NotificationDTO.builder()
+                .receiverId(questionCard.getStudent().getId())
+                .message("Counselor has flag your question")
+                .title("Counselor has flag your question")
+                .sender("Counselor: " + questionCard.getCounselor().getFullName())
+                .readStatus(false)
                 .build());
 
         checkAndCreateBanIfNeeded(questionFlag.getStudent());

@@ -1,6 +1,7 @@
 package com.capstone2024.scss.infrastructure.configuration.rabbitmq;
 
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.receiver.RabbitMQEmailReceiver;
+import com.capstone2024.scss.infrastructure.configuration.rabbitmq.receiver.RabbitMQListener;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.receiver.RabbitMQNotificationReceiver;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
@@ -78,37 +79,92 @@ public class RabbitMQConfig {
         return template;
     }
 
+    // Cấu hình listener cho các hàng đợi
     @Bean
-    public SimpleMessageListenerContainer emailListenerContainer(ConnectionFactory connectionFactory,
-                                                                 MessageListenerAdapter emailListenerAdapter) {
-        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
-        container.setConnectionFactory(connectionFactory);
-        container.setQueueNames(EMAIL_QUEUE);
-        container.setMessageListener(emailListenerAdapter);
+    public SimpleMessageListenerContainer notificationListener(ConnectionFactory connectionFactory,
+                                                               RabbitMQListener rabbitMQListener) {
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+        container.setQueueNames("notification_mobile_queue");
+        container.setMessageListener(new MessageListenerAdapter(rabbitMQListener, "handleNotificationMessage"));
         return container;
     }
 
     @Bean
-    public SimpleMessageListenerContainer notificationListenerContainer(ConnectionFactory connectionFactory,
-                                                                        MessageListenerAdapter notificationListenerAdapter) {
-        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
-        container.setConnectionFactory(connectionFactory);
-        container.setQueueNames(NOTIFICATION_QUEUE);
-        container.setMessageListener(notificationListenerAdapter);
+    public SimpleMessageListenerContainer counselingSlotListener(ConnectionFactory connectionFactory,
+                                                                 RabbitMQListener rabbitMQListener) {
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+        container.setQueueNames("real_time_counseling_slot");
+        container.setMessageListener(new MessageListenerAdapter(rabbitMQListener, "handleCounselingSlotMessage"));
         return container;
     }
 
     @Bean
-    public MessageListenerAdapter emailListenerAdapter(RabbitMQEmailReceiver receiver) {
-        MessageListenerAdapter adapter = new MessageListenerAdapter(receiver, "receiveEmailMessage");
-        adapter.setMessageConverter(jsonMessageConverter());
-        return adapter;
+    public SimpleMessageListenerContainer counselingAppointmentListener(ConnectionFactory connectionFactory,
+                                                                        RabbitMQListener rabbitMQListener) {
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+        container.setQueueNames("real_time_counseling_appointment");
+        container.setMessageListener(new MessageListenerAdapter(rabbitMQListener, "handleCounselingAppointmentMessage"));
+        return container;
     }
 
     @Bean
-    public MessageListenerAdapter notificationListenerAdapter(RabbitMQNotificationReceiver receiver) {
-        MessageListenerAdapter adapter = new MessageListenerAdapter(receiver, "receiveNotificationMessage");
-        adapter.setMessageConverter(jsonMessageConverter());
-        return adapter;
+    public SimpleMessageListenerContainer questionListener(ConnectionFactory connectionFactory,
+                                                           RabbitMQListener rabbitMQListener) {
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+        container.setQueueNames("real_time_q_a");
+        container.setMessageListener(new MessageListenerAdapter(rabbitMQListener, "handleQAMessage"));
+        return container;
     }
+
+    @Bean
+    public SimpleMessageListenerContainer appointmentRequestListener(ConnectionFactory connectionFactory,
+                                                                     RabbitMQListener rabbitMQListener) {
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+        container.setQueueNames("real_time_counseling_appointment_request");
+        container.setMessageListener(new MessageListenerAdapter(rabbitMQListener, "handleAppointmentRequest"));
+        return container;
+    }
+
+    @Bean
+    public SimpleMessageListenerContainer chatSessionListener(ConnectionFactory connectionFactory,
+                                                              RabbitMQListener rabbitMQListener) {
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+        container.setQueueNames("REAL_TIME_CHAT_SESSION");
+        container.setMessageListener(new MessageListenerAdapter(rabbitMQListener, "handleChatSession"));
+        return container;
+    }
+
+//    @Bean
+//    public SimpleMessageListenerContainer emailListenerContainer(ConnectionFactory connectionFactory,
+//                                                                 MessageListenerAdapter emailListenerAdapter) {
+//        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+//        container.setConnectionFactory(connectionFactory);
+//        container.setQueueNames(EMAIL_QUEUE);
+//        container.setMessageListener(emailListenerAdapter);
+//        return container;
+//    }
+//
+//    @Bean
+//    public SimpleMessageListenerContainer notificationListenerContainer(ConnectionFactory connectionFactory,
+//                                                                        MessageListenerAdapter notificationListenerAdapter) {
+//        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+//        container.setConnectionFactory(connectionFactory);
+//        container.setQueueNames(NOTIFICATION_QUEUE);
+//        container.setMessageListener(notificationListenerAdapter);
+//        return container;
+//    }
+//
+//    @Bean
+//    public MessageListenerAdapter emailListenerAdapter(RabbitMQEmailReceiver receiver) {
+//        MessageListenerAdapter adapter = new MessageListenerAdapter(receiver, "receiveEmailMessage");
+//        adapter.setMessageConverter(jsonMessageConverter());
+//        return adapter;
+//    }
+//
+//    @Bean
+//    public MessageListenerAdapter notificationListenerAdapter(RabbitMQNotificationReceiver receiver) {
+//        MessageListenerAdapter adapter = new MessageListenerAdapter(receiver, "receiveNotificationMessage");
+//        adapter.setMessageConverter(jsonMessageConverter());
+//        return adapter;
+//    }
 }

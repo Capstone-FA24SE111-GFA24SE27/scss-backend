@@ -39,6 +39,7 @@ services:
     container_name: capstone_server
     ports:
       - "8080:8080"  # Cổng của ứng dụng server
+      - "9092:9092"
     depends_on:
       - mysql
 #      - redis
