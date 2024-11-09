@@ -120,7 +120,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public JwtTokenDTO loginWithGoogle(String googleAccessToken) {
+    public JwtTokenDTO loginWithGoogle(String googleAccessToken, HttpServletResponse servletResponse) {
         RestTemplate restTemplate = new RestTemplate();
 
         // URL để xác thực mã thông báo Google
@@ -155,6 +155,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         userDetails = getAccount(email);
+
+        setRefreshTokenInCookie(userDetails, servletResponse);
 
         String accessToken = jwtService.generateToken(userDetails);
         logger.info("Access token refreshed for email: {}. New access token generated.", email);

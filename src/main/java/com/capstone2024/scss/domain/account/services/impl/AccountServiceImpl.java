@@ -1,10 +1,12 @@
 package com.capstone2024.scss.domain.account.services.impl;
 
+import com.capstone2024.scss.application.account.dto.ChangePasswordDTO;
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
 import com.capstone2024.scss.application.account.dto.request.AccountCreationRequest;
 import com.capstone2024.scss.application.account.dto.request.FilterRequestDTO;
 import com.capstone2024.scss.application.account.dto.request.LoginTypeRequest;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
+import com.capstone2024.scss.application.advice.exeptions.ForbiddenException;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.authentication.dto.AccountDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
@@ -250,5 +252,22 @@ public class AccountServiceImpl implements AccountService {
         profileRepository.save(profile);
 
         return account;
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(String email, ChangePasswordDTO changePasswordDTO) {
+        // Tìm account bằng email
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        // Kiểm tra mật khẩu hiện tại
+        if (!passwordEncoder.matches(changePasswordDTO.getCurrentPassword(), account.getPassword())) {
+            throw new ForbiddenException("Current password is incorrect");
+        }
+
+        // Đổi mật khẩu mới
+        account.setPassword(passwordEncoder.encode(changePasswordDTO.getNewPassword()));
+        accountRepository.save(account);
     }
 }

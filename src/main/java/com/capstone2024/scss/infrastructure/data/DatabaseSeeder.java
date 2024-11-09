@@ -465,6 +465,15 @@ public class DatabaseSeeder implements CommandLineRunner {
             }
 //            profileRepository.saveAll(students);
         }
+
+//        Specialization specialization = specializationRepository.findByName("NodeJS").orElse(null);
+//        Department department = departmentRepository.findByName("Information Technology").orElse(null);
+//        Major major = majorRepository.findByName("Software Engineering").orElse(null);
+//
+//        createSingleStudentAccount("SE170042", "Trình Vĩnh Phát", "phattvse170042@fpt.edu.vn", Gender.MALE, specialization, major, department, true);
+//        createSingleStudentAccount("SE170440", "Đoàn Tiến Phát", "phatdtse170440@fpt.edu.vn", Gender.MALE, specialization, major, department, true);
+//        createSingleStudentAccount("SE170225", "Vũ Ngọc Hải Đăng", "dangvnhse170225@fpt.edu.vn", Gender.MALE, specialization, major, department, true);
+//        createSingleStudentAccount("SE170431", "Nguyễn An Khánh", "khanhnase170431@fpt.edu.vn", Gender.MALE, specialization, major, department, true);
     }
 
     private Student createSingleStudentAccount(

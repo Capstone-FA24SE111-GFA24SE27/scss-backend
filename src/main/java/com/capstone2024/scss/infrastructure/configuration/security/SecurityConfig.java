@@ -73,6 +73,14 @@ public class SecurityConfig {
                                 .permitAll())
 
                 .authorizeHttpRequests(config ->
+                        config.requestMatchers("/api/account/reset-password")
+                                .permitAll())
+
+                .authorizeHttpRequests(config ->
+                        config.requestMatchers("/api/account/forgot-password")
+                                .permitAll())
+
+                .authorizeHttpRequests(config ->
                         config.requestMatchers("/ws/**")
                                 .permitAll())
 
@@ -88,9 +96,9 @@ public class SecurityConfig {
 //                        config.requestMatchers(HttpMethod.GET,"/api/profile/**")
 //                                .hasAnyRole(Role.ADMINISTRATOR.name(), Role.STUDENT.name()))
 
-                .authorizeHttpRequests(config ->
-                        config.requestMatchers(HttpMethod.GET,"/api/account/**")
-                                .hasAnyRole(Role.ADMINISTRATOR.name()))
+//                .authorizeHttpRequests(config ->
+//                        config.requestMatchers(HttpMethod.GET,"/api/account/**")
+//                                .hasAnyRole(Role.ADMINISTRATOR.name()))
 
 //                .authorizeHttpRequests(config ->
 //                        config.requestMatchers(HttpMethod.GET,"/api/counselors/**")

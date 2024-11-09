@@ -16,6 +16,7 @@ import com.capstone2024.scss.domain.student.enums.CounselingProfileStatus;
 import com.capstone2024.scss.domain.student.services.StudentService;
 import com.capstone2024.scss.domain.common.mapper.student.StudentMapper;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.CounselingAppointment;
+import com.capstone2024.scss.infrastructure.configuration.openai.OpenAIService;
 import com.capstone2024.scss.infrastructure.data.fap.dto.DemandProblemTagFapResponseDTO;
 import com.capstone2024.scss.infrastructure.repositories.SemesterRepository;
 import com.capstone2024.scss.infrastructure.repositories.demand.DemandProblemTagRepository;
@@ -52,6 +53,7 @@ public class StudentServiceImpl implements StudentService {
     private final SemesterRepository semesterRepository;
     private final DemandProblemTagRepository demandProblemTagRepository;
     private final ProblemTagRepository problemTagRepository;
+    private final OpenAIService openAIService;
 
     @Value("${server.api.fap.system.base.url}")
     private String fapServerUrl;
@@ -403,7 +405,7 @@ public class StudentServiceImpl implements StudentService {
 
     public List<String> parseTagList(String input) {
         String openAICommand = generatePromptToOpenAI(input == null ? "" : input);
-        return Arrays.asList(callOpenAPI(openAICommand).split(",\\s*"));
+        return Arrays.asList(openAIService.callOpenAPI(openAICommand).split(",\\s*"));
     }
 
     public StudentDetailForFilterDTO toStudentDetailDTO(Student student, List<String> tagList, StudentFilterRequestDTO filterRequestDTO, boolean isRecommend) {

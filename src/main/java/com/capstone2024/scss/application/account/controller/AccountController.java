@@ -1,5 +1,7 @@
 package com.capstone2024.scss.application.account.controller;
 
+import com.capstone2024.scss.application.account.dto.ChangePasswordDTO;
+import com.capstone2024.scss.application.account.dto.ForgotPasswordDTO;
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
 import com.capstone2024.scss.application.account.dto.request.AccountCreationRequest;
 import com.capstone2024.scss.application.account.dto.request.FilterRequestDTO;
@@ -12,6 +14,7 @@ import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.account.enums.Status;
 import com.capstone2024.scss.domain.account.services.AccountService;
+import com.capstone2024.scss.domain.account.services.impl.PasswordResetService;
 import com.capstone2024.scss.domain.notification.services.NotificationService;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +22,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +30,8 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -35,17 +41,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/account")
 @Tag(name = "account", description = "API for managing user accounts.")
+@RequiredArgsConstructor
 public class AccountController {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountController.class);
 
     private final AccountService accountService;
     private final NotificationService notificationService;
-
-    public AccountController(AccountService accountService, NotificationService notificationService) {
-        this.accountService = accountService;
-        this.notificationService = notificationService;
-    }
+    private final PasswordResetService passwordResetService;
 
     @GetMapping()
     @Operation(
@@ -189,5 +192,52 @@ public class AccountController {
         }
         Account account = accountService.createAccount(request);
         return new ResponseEntity<>(account, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<Object> changePassword(@RequestBody ChangePasswordDTO changePasswordDTO,
+                                                 @NotNull @AuthenticationPrincipal Account principle) {
+        String email = principle.getEmail(); // Lấy email từ thông tin xác thực hiện tại
+        accountService.changePassword(email, changePasswordDTO);
+        return ResponseUtil.getResponse("Change password successfully", HttpStatus.OK);
+    }
+
+    // Endpoint để yêu cầu quên mật khẩu
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordDTO forgotPasswordDTO) {
+        passwordResetService.handleForgotPassword(forgotPasswordDTO.getEmail());
+        return ResponseEntity.ok("Password reset link sent to your email");
+    }
+
+    // Endpoint để xác thực token và gửi mật khẩu mới
+    @GetMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestParam String token) {
+        try {
+            passwordResetService.handlePasswordReset(token);
+            return ResponseEntity.ok("A new password has been sent to your email");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    private final JavaMailSender mailSender;
+
+    @GetMapping("/send-test-email")
+    public String sendTestEmail() {
+        try {
+            // Tạo email đơn giản
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo("phattvse170042@fpt.edu.vn");
+            message.setSubject("Test Email");
+            message.setText("This is a test email sent from Spring Boot application.");
+
+            // Gửi email
+            mailSender.send(message);
+
+            return "Test email sent successfully";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Failed to send email: " + e.getMessage();
+        }
     }
 }

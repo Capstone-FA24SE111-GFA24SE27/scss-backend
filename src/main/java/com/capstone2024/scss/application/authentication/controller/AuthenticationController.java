@@ -113,9 +113,9 @@ public class AuthenticationController {
                     )
             }
     )
-    public ResponseEntity<Object> loginWithGoogle(@PathVariable("access_token") String accessToken) {
+    public ResponseEntity<Object> loginWithGoogle(@PathVariable("access_token") String accessToken, HttpServletResponse response) {
         logger.info("Processing Google OAuth login with access token.");
-        JwtTokenDTO responseDTO = authenticationService.loginWithGoogle(accessToken);
+        JwtTokenDTO responseDTO = authenticationService.loginWithGoogle(accessToken, response);
         logger.info("Google OAuth login successful.");
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }

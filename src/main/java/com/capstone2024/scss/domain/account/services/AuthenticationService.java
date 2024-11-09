@@ -13,5 +13,5 @@ public interface AuthenticationService {
 
     JwtTokenDTO refreshAccessToken(HttpServletResponse response, HttpServletRequest request);
 
-    JwtTokenDTO loginWithGoogle(String accessToken);
+    JwtTokenDTO loginWithGoogle(String accessToken, HttpServletResponse servletResponse);
 }

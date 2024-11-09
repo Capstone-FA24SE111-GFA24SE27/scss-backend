@@ -85,7 +85,9 @@ public class RabbitMQConfig {
                                                                RabbitMQListener rabbitMQListener) {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
         container.setQueueNames("notification_mobile_queue");
-        container.setMessageListener(new MessageListenerAdapter(rabbitMQListener, "handleNotificationMessage"));
+        MessageListenerAdapter adapter = new MessageListenerAdapter(rabbitMQListener, "handleNotificationMessage");
+        adapter.setMessageConverter(jsonMessageConverter());
+        container.setMessageListener(adapter);
         return container;
     }
 
@@ -94,7 +96,9 @@ public class RabbitMQConfig {
                                                                  RabbitMQListener rabbitMQListener) {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
         container.setQueueNames("real_time_counseling_slot");
-        container.setMessageListener(new MessageListenerAdapter(rabbitMQListener, "handleCounselingSlotMessage"));
+        MessageListenerAdapter adapter = new MessageListenerAdapter(rabbitMQListener, "handleCounselingSlotMessage");
+        adapter.setMessageConverter(jsonMessageConverter());
+        container.setMessageListener(adapter);
         return container;
     }
 
@@ -103,7 +107,9 @@ public class RabbitMQConfig {
                                                                         RabbitMQListener rabbitMQListener) {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
         container.setQueueNames("real_time_counseling_appointment");
-        container.setMessageListener(new MessageListenerAdapter(rabbitMQListener, "handleCounselingAppointmentMessage"));
+        MessageListenerAdapter adapter = new MessageListenerAdapter(rabbitMQListener, "handleCounselingAppointmentMessage");
+        adapter.setMessageConverter(jsonMessageConverter());
+        container.setMessageListener(adapter);
         return container;
     }
 
@@ -112,7 +118,9 @@ public class RabbitMQConfig {
                                                            RabbitMQListener rabbitMQListener) {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
         container.setQueueNames("real_time_q_a");
-        container.setMessageListener(new MessageListenerAdapter(rabbitMQListener, "handleQAMessage"));
+        MessageListenerAdapter adapter = new MessageListenerAdapter(rabbitMQListener, "handleQAMessage");
+        adapter.setMessageConverter(jsonMessageConverter());
+        container.setMessageListener(adapter);
         return container;
     }
 
@@ -121,7 +129,9 @@ public class RabbitMQConfig {
                                                                      RabbitMQListener rabbitMQListener) {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
         container.setQueueNames("real_time_counseling_appointment_request");
-        container.setMessageListener(new MessageListenerAdapter(rabbitMQListener, "handleAppointmentRequest"));
+        MessageListenerAdapter adapter = new MessageListenerAdapter(rabbitMQListener, "handleAppointmentRequest");
+        adapter.setMessageConverter(jsonMessageConverter());
+        container.setMessageListener(adapter);
         return container;
     }
 
@@ -130,36 +140,28 @@ public class RabbitMQConfig {
                                                               RabbitMQListener rabbitMQListener) {
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
         container.setQueueNames("REAL_TIME_CHAT_SESSION");
-        container.setMessageListener(new MessageListenerAdapter(rabbitMQListener, "handleChatSession"));
+        MessageListenerAdapter adapter = new MessageListenerAdapter(rabbitMQListener, "handleChatSession");
+        adapter.setMessageConverter(jsonMessageConverter());
+        container.setMessageListener(adapter);
         return container;
     }
 
-//    @Bean
-//    public SimpleMessageListenerContainer emailListenerContainer(ConnectionFactory connectionFactory,
-//                                                                 MessageListenerAdapter emailListenerAdapter) {
-//        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
-//        container.setConnectionFactory(connectionFactory);
-//        container.setQueueNames(EMAIL_QUEUE);
-//        container.setMessageListener(emailListenerAdapter);
-//        return container;
-//    }
-//
-//    @Bean
-//    public SimpleMessageListenerContainer notificationListenerContainer(ConnectionFactory connectionFactory,
-//                                                                        MessageListenerAdapter notificationListenerAdapter) {
-//        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
-//        container.setConnectionFactory(connectionFactory);
-//        container.setQueueNames(NOTIFICATION_QUEUE);
-//        container.setMessageListener(notificationListenerAdapter);
-//        return container;
-//    }
-//
-//    @Bean
-//    public MessageListenerAdapter emailListenerAdapter(RabbitMQEmailReceiver receiver) {
-//        MessageListenerAdapter adapter = new MessageListenerAdapter(receiver, "receiveEmailMessage");
-//        adapter.setMessageConverter(jsonMessageConverter());
-//        return adapter;
-//    }
+    @Bean
+    public SimpleMessageListenerContainer emailListenerContainer(ConnectionFactory connectionFactory,
+                                                                 MessageListenerAdapter emailListenerAdapter) {
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+        container.setConnectionFactory(connectionFactory);
+        container.setQueueNames(EMAIL_QUEUE);
+        container.setMessageListener(emailListenerAdapter);
+        return container;
+    }
+
+    @Bean
+    public MessageListenerAdapter emailListenerAdapter(RabbitMQEmailReceiver receiver) {
+        MessageListenerAdapter adapter = new MessageListenerAdapter(receiver, "receiveEmailMessage");
+        adapter.setMessageConverter(jsonMessageConverter());
+        return adapter;
+    }
 //
 //    @Bean
 //    public MessageListenerAdapter notificationListenerAdapter(RabbitMQNotificationReceiver receiver) {

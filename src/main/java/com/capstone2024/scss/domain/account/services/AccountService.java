@@ -1,5 +1,6 @@
 package com.capstone2024.scss.domain.account.services;
 
+import com.capstone2024.scss.application.account.dto.ChangePasswordDTO;
 import com.capstone2024.scss.application.account.dto.request.AccountCreationRequest;
 import com.capstone2024.scss.application.account.dto.request.FilterRequestDTO;
 import com.capstone2024.scss.application.authentication.dto.AccountDTO;
@@ -18,4 +19,6 @@ public interface AccountService {
     AccountDTO getOne(Long accountId);
 
     Account createAccount(AccountCreationRequest request);
+
+    void changePassword(String email, ChangePasswordDTO changePasswordDTO);
 }
