@@ -2,6 +2,7 @@ package com.capstone2024.scss.application.account.controller;
 
 import com.capstone2024.scss.application.account.dto.*;
 import com.capstone2024.scss.domain.account.entities.Account;
+import com.capstone2024.scss.domain.account.entities.Profile;
 import com.capstone2024.scss.domain.account.services.ProfileService;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
 import com.capstone2024.scss.domain.common.mapper.account.CounselorProfileMapper;
@@ -16,25 +17,30 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/profile")
 @Tag(name = "profile")
+@RequiredArgsConstructor
 public class ProfileController {
 
     private final ProfileService profileService;
     private static final Logger logger = LoggerFactory.getLogger(ProfileController.class);
 
-    public ProfileController(ProfileService profileService) {
-        this.profileService = profileService;
+    @PutMapping("/{profileId}/avatar")
+    public ResponseEntity<?> updateAvatar(@PathVariable Long profileId, @RequestParam("file") MultipartFile file) throws IOException {
+
+        return ResponseEntity.ok(profileService.updateAvatar(profileId, file));
     }
 
     @GetMapping()

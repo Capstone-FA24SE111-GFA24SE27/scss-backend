@@ -32,4 +32,8 @@ public class CloudinaryService {
                         "format", "mp4"
                 ));
     }
+
+    public Map deleteFile(String publicId) throws IOException {
+        return cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+    }
 }
