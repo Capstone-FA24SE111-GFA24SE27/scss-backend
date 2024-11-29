@@ -17,4 +17,5 @@ public class AppointmentFilterDTO {
     private String sortBy;
     private SortDirection sortDirection;
     private int page;
+    private int size;
 }

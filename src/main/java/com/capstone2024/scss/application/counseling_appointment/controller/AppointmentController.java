@@ -140,6 +140,7 @@ public class AppointmentController {
             @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
             @RequestParam(name = "SortDirection", defaultValue = "DESC") SortDirection sortDirection,
             @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size,
             @NotNull @AuthenticationPrincipal Account principle) {
 
         AppointmentFilterDTO filterDTO = AppointmentFilterDTO.builder()
@@ -150,6 +151,7 @@ public class AppointmentController {
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
                 .page(page)
+                .size(size)
                 .build();
 
         PaginationDTO<List<CounselingAppointmentDTO>> responseDTO = appointmentService.getAppointmentsWithFilterForCounselor(filterDTO, (Counselor) principle.getProfile());
@@ -181,6 +183,7 @@ public class AppointmentController {
             @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
             @RequestParam(name = "SortDirection", defaultValue = "DESC") SortDirection sortDirection,
             @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size,
             @NotNull @AuthenticationPrincipal Account principle) {
 
         AppointmentFilterDTO filterDTO = AppointmentFilterDTO.builder()
@@ -190,6 +193,7 @@ public class AppointmentController {
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
                 .page(page)
+                .size(size)
                 .build();
 
         PaginationDTO<List<CounselingAppointmentDTO>> responseDTO = appointmentService.getAppointmentsWithFilterForStudent(filterDTO, (Student) principle.getProfile());
@@ -202,6 +206,16 @@ public class AppointmentController {
             @PathVariable Long appointmentId
     ) {
         CounselingAppointmentDTO responseDTO = appointmentService.getOneAppointment(appointmentId);
+
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/manage/find-all")
+    public ResponseEntity<Object> getAllAppointments(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        List<CounselingAppointmentDTO> responseDTO = appointmentService.getAllAppointment(from, to);
 
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }

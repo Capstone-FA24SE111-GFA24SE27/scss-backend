@@ -2,6 +2,7 @@ package com.capstone2024.scss.domain.common.mapper.q_and_a;
 
 import com.capstone2024.scss.application.q_and_a.dto.ChatSessionDTO;
 import com.capstone2024.scss.application.q_and_a.dto.MessageDTO;
+import com.capstone2024.scss.domain.common.helpers.DateTimeHelper;
 import com.capstone2024.scss.domain.common.mapper.account.AccountMapper;
 import com.capstone2024.scss.domain.q_and_a.entities.ChatSession;
 import com.capstone2024.scss.domain.q_and_a.entities.Message;
@@ -50,7 +51,7 @@ public class ChatSessionMapper {
                 .id(message.getId())
                 .sender(AccountMapper.toAccountDTO(message.getSender()))
                 .content(message.getContent())
-                .sentAt(message.getSentAt().toString())
+                .sentAt(DateTimeHelper.toZoneDateTimeString(message.getSentAt()))
                 .isRead(message.isRead())
                 .build();
     }

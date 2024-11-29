@@ -91,4 +91,10 @@ public class ProfileController {
             }
         }
     }
+
+    @GetMapping("/{accountId}")
+    @Operation(summary = "Get profile by account ID")
+    public ResponseEntity<Object> getProfileForManage(@PathVariable Long accountId) {
+        return ResponseUtil.getResponse(profileService.getProfileByAccountIdForEachRole(accountId), HttpStatus.OK);
+    }
 }

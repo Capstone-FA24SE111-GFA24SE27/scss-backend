@@ -1,6 +1,7 @@
 package com.capstone2024.scss.domain.common.mapper.appointment_counseling;
 
 import com.capstone2024.scss.application.booking_counseling.dto.AppointmentFeedbackDTO;
+import com.capstone2024.scss.domain.common.helpers.DateTimeHelper;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.AppointmentFeedback;
 
 public class AppointmentFeedbackMapper {
@@ -14,7 +15,7 @@ public class AppointmentFeedbackMapper {
                 .rating(feedback.getRating())
                 .comment(feedback.getComment())
                 .appointment(CounselingAppointmentMapper.toCounselingAppointmentDTO(feedback.getAppointment()))
-                .createdAt(feedback.getCreatedDate())
+                .createdAt(DateTimeHelper.toMilliseconds(feedback.getCreatedDate()))
                 .build();
     }
 
@@ -27,7 +28,7 @@ public class AppointmentFeedbackMapper {
                 .id(feedback.getId())
                 .rating(feedback.getRating())
                 .comment(feedback.getComment())
-                .createdAt(feedback.getCreatedDate())
+                .createdAt(DateTimeHelper.toMilliseconds(feedback.getCreatedDate()))
                 .build();
     }
 }

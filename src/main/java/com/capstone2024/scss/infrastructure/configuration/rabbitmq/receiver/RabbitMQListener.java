@@ -2,10 +2,7 @@ package com.capstone2024.scss.infrastructure.configuration.rabbitmq.receiver;
 
 import com.capstone2024.scss.application.notification.dtos.NotificationDTO;
 import com.capstone2024.scss.application.q_and_a.dto.MessageDTO;
-import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeAppointmentDTO;
-import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeAppointmentRequestDTO;
-import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeCounselingSlotDTO;
-import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeQuestionDTO;
+import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.*;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
@@ -14,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 
 @Service
 //@EnableRabbit
@@ -41,8 +39,17 @@ public class RabbitMQListener {
     @RabbitListener(queues = "real_time_counseling_slot")
     public void handleCounselingSlotMessage(RealTimeCounselingSlotDTO slotMessage) {
         try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            String dateString = slotMessage.getDateChange().format(formatter);
             System.out.println("Received message from RabbitMQ: " + slotMessage);
-            socketIOServer.getBroadcastOperations().sendEvent("/user/" + slotMessage.getDateChange() + "/" + slotMessage.getCounselorId() + "/slot", slotMessage);
+            RealTimeCounselingSlotMesageDTO message = RealTimeCounselingSlotMesageDTO.builder()
+                    .dateChange(dateString)
+                    .slotId(slotMessage.getSlotId())
+                    .counselorId(slotMessage.getCounselorId())
+                    .newStatus(slotMessage.getNewStatus())
+                    .studentId(slotMessage.getStudentId())
+                    .build();
+            socketIOServer.getBroadcastOperations().sendEvent("/user/" + dateString + "/" + slotMessage.getCounselorId() + "/slot", message);
         } catch (Exception e) {
             e.printStackTrace();
         }

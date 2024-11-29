@@ -45,6 +45,12 @@ public class CounselingAppointment {
     @JoinColumn(name = "student_id")
     private Student student;
 
+    @Column(name = "reason", columnDefinition = "TEXT")
+    private String reason;
+
+    @Column(name = "cancel_reason", columnDefinition = "TEXT")
+    private String cancelReason;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private CounselingAppointmentStatus status;

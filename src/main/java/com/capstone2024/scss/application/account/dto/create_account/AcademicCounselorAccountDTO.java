@@ -1,5 +1,7 @@
 package com.capstone2024.scss.application.account.dto.create_account;
 
+import com.capstone2024.scss.application.counselor.dto.CertificationDTO;
+import com.capstone2024.scss.application.counselor.dto.QualificationDTO;
 import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
@@ -39,5 +41,17 @@ public class AcademicCounselorAccountDTO {
 
     @NotNull(message = "Specialization ID is required")
     private Long specializationId;
+
+    private String specializedSkills;
+
+    private String otherSkills;
+
+    private String workHistory;
+
+    private String achievements;
+
+    private List<QualificationDTO> qualifications;
+
+    private List<CertificationDTO> certifications;
 }
 

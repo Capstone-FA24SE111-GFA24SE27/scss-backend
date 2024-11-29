@@ -58,7 +58,6 @@ public class CounselingRequestMapper {
                 .reason(request.getReason())
                 .counselor(counselorDTO)
                 .student(studentDTO)
-                .requestType(request.getRequestType())
                 .appointmentDetails(appointmentDetails)
                 .build();
     }

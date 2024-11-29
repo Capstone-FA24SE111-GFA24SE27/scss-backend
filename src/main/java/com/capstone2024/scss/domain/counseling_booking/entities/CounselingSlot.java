@@ -3,6 +3,7 @@ package com.capstone2024.scss.domain.counseling_booking.entities;
 
 import com.capstone2024.scss.domain.common.entity.BaseEntity;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.counselor.entities.SlotOfCounselor;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,4 +35,7 @@ public class CounselingSlot extends BaseEntity {
 
     @ManyToMany(mappedBy = "counselingSlots")
     private List<Counselor> counselors;
+
+    @OneToMany(mappedBy = "counselingSlot")
+    private List<SlotOfCounselor> slotOfCounselors;
 }

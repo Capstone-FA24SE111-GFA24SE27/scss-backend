@@ -1,7 +1,6 @@
 package com.capstone2024.scss.domain.demand.entities;
 
 import com.capstone2024.scss.domain.common.entity.BaseEntity;
-import com.capstone2024.scss.domain.common.entity.Semester;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.support_staff.entity.SupportStaff;
@@ -63,11 +62,36 @@ public class CounselingDemand extends BaseEntity {
     @Column(name = "end_datetime", nullable = true)
     private LocalDateTime endDateTime;
 
+    @Column(name = "priority_level", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private PriorityLevel priorityLevel;
+
+    @Column(name = "demand_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private DemandType demandType;
+
+    @Column(name = "additional_information", nullable = true, columnDefinition = "TEXT")
+    private String additionalInformation;
+
+    @Column(name = "issue_description", nullable = true, columnDefinition = "TEXT")
+    private String issueDescription;
+
+    @Column(name = "cause_description", nullable = true, columnDefinition = "TEXT")
+    private String causeDescription;
+
     @OneToMany(mappedBy = "counselingDemand", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<AppointmentForDemand> appointmentsForDemand = new ArrayList<>();
 
     public enum Status {
-        WAITING, PROCESSING, SOLVE
+        PROCESSING, DONE
+    }
+
+    public enum PriorityLevel {
+        LOW, MEDIUM, HIGH, URGENT
+    }
+
+    public enum DemandType {
+        ACADEMIC, NON_ACADEMIC
     }
 }
 

@@ -1,6 +1,7 @@
 package com.capstone2024.scss.domain.counselor.entities;
 
 import com.capstone2024.scss.domain.account.entities.Profile;
+import com.capstone2024.scss.domain.contribution_question_card.entities.ContributionQuestionCard;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.AppointmentFeedback;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
@@ -26,18 +27,30 @@ import java.util.List;
 @PrimaryKeyJoinColumn(name = "profile_id")
 public class Counselor extends Profile {
 
-    @OneToMany(mappedBy = "counselor", fetch = FetchType.LAZY) // Link with QuestionCard
-    private List<QuestionCard> questionCards;
-
     @Column(name = "rating")
     private BigDecimal rating;
 
-    @OneToMany(mappedBy = "counselor")
-    private List<AppointmentFeedback> feedbackList;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private CounselorStatus status;
 
-//    @ManyToOne
-//    @JoinColumn(name = "expertise_id", nullable = false)
-//    private Expertise expertise;
+    @Column(name = "specialized_skills", columnDefinition = "TEXT")
+    private String specializedSkills;
+
+    @Column(name = "other_skills", columnDefinition = "TEXT")
+    private String otherSkills;
+
+    @Column(name = "work_history", columnDefinition = "TEXT")
+    private String workHistory;
+
+    @Column(name = "achievements", columnDefinition = "TEXT")
+    private String achievements;
+
+    @OneToMany(mappedBy = "counselor", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Qualification> qualifications;
+
+    @OneToMany(mappedBy = "counselor", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Certification> certifications;
 
     @ManyToMany
     @JoinTable(
@@ -47,10 +60,18 @@ public class Counselor extends Profile {
     )
     private List<CounselingSlot> counselingSlots;
 
+    @OneToMany(mappedBy = "counselor", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SlotOfCounselor> slotOfCounselors;
+
     @OneToOne(mappedBy = "counselor", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private AvailableDateRange availableDateRange;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private CounselorStatus status;
+    @OneToMany(mappedBy = "counselor", fetch = FetchType.LAZY) // Link with QuestionCard
+    private List<QuestionCard> questionCards;
+
+    @OneToMany(mappedBy = "counselor", fetch = FetchType.LAZY) // Link with QuestionCard
+    private List<ContributionQuestionCard> contributionQuestionCards;
+
+    @OneToMany(mappedBy = "counselor")
+    private List<AppointmentFeedback> feedbackList;
 }

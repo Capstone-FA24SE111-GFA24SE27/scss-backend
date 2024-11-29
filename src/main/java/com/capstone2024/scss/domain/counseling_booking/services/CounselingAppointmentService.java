@@ -49,4 +49,6 @@ public interface CounselingAppointmentService {
     CounselingAppointmentDTO createAppointment(CreateCounselingAppointmentDTO requestDTO, Long counselorId, Long studentId);
 
     CounselingAppointmentDTO createAppointmentForDemand(CreateCounselingAppointmentDTO requestDTO, Long counselorId, Long studentId, Long demandId);
+
+    List<CounselingAppointmentDTO> getAllAppointment(LocalDate from, LocalDate to);
 }

@@ -144,27 +144,38 @@ public class CounselorController {
         return ResponseUtil.getResponse(expertiseList, HttpStatus.OK);
     }
 
+    @GetMapping("/random/match/reason/meaning/{studentId}")
+    public ResponseEntity<Object> getReasonMeaning(@RequestParam String reason,
+                                                   @PathVariable Long studentId) {
+        String meaning = counselorService.getReasonMeaning(reason, studentId);
+        return ResponseUtil.getResponse(meaning, HttpStatus.OK);
+    }
+
     @GetMapping("/non-academic/random/match")
     public ResponseEntity<Object> findBestCounselorNonAcademic(
             @RequestParam(name = "slotId", required = true) Long slotId,
             @RequestParam(name = "date", required = true) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(name = "gender", required = false) Gender gender,
-            @RequestParam(name = "expertiseId", required = false) Long expertiseId) {
+//            @RequestParam(name = "expertiseId", required = false) Long expertiseId,
+            @RequestParam(name = "reason", required = false) String reason) {
 
-        CounselorProfileDTO counselor = counselorService.findBestAvailableCounselorForNonAcademic(slotId, date, gender, expertiseId);
+        CounselorProfileDTO counselor = counselorService.findBestAvailableCounselorForNonAcademic(slotId, date, gender, reason);
         return ResponseUtil.getResponse(counselor, HttpStatus.OK);
     }
 
-    @GetMapping("/academic/random/match")
+    @GetMapping("/academic/random/match/{studentId}")
     public ResponseEntity<Object> findBestCounselorAcademic(
             @RequestParam(name = "slotId", required = true) Long slotId,
             @RequestParam(name = "date", required = true) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(name = "gender", required = false) Gender gender,
-            @RequestParam(name = "specializationId", required = false) Long specializationId,
-            @RequestParam(name = "departmentId", required = false) Long departmentId,
-            @RequestParam(name = "majorId", required = false) Long majorId) {
+            @PathVariable Long studentId,
+            @RequestParam(name = "reason", required = true) String reason
+//            @RequestParam(name = "specializationId", required = false) Long specializationId,
+//            @RequestParam(name = "departmentId", required = false) Long departmentId,
+//            @RequestParam(name = "majorId", required = false) Long majorId
+            ) {
 
-        CounselorProfileDTO counselor = counselorService.findBestAvailableCounselorForAcademic(slotId, date, gender, specializationId, departmentId, majorId);
+        CounselorProfileDTO counselor = counselorService.findBestAvailableCounselorForAcademic(slotId, date, gender, studentId, reason);
         return ResponseUtil.getResponse(counselor, HttpStatus.OK);
     }
 
@@ -188,7 +199,8 @@ public class CounselorController {
             @RequestParam(name = "SortDirection", defaultValue = "ASC") SortDirection sortDirection,
             @RequestParam(name = "gender", required = false) Gender gender,
             @RequestParam(name = "sortBy", defaultValue = "fullName") String sortBy,
-            @RequestParam(name = "page", defaultValue = "1") Integer page) {
+            @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size) {
 
         if (page < 1) {
             logger.error("Invalid page number: {}", page);
@@ -205,7 +217,7 @@ public class CounselorController {
                 .sortBy(sortBy)
                 .gender(gender)
                 .sortDirection(sortDirection)
-                .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
+                .pagination(PageRequest.of(page - 1, size, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .build();
 
         PaginationDTO<List<NonAcademicCounselorProfileDTO>> responseDTO = counselorService.getNonAcademicCounselorsWithFilter(filterRequest);
@@ -225,7 +237,8 @@ public class CounselorController {
             @RequestParam(name = "gender", required = false) Gender gender,
             @RequestParam(name = "SortDirection", defaultValue = "ASC") SortDirection sortDirection,
             @RequestParam(name = "sortBy", defaultValue = "fullName") String sortBy,
-            @RequestParam(name = "page", defaultValue = "1") Integer page) {
+            @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size) {
 
         if (page < 1) {
             logger.error("Invalid page number: {}", page);
@@ -245,7 +258,7 @@ public class CounselorController {
                 .gender(gender)
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
-                .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
+                .pagination(PageRequest.of(page - 1, size, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .build();
 
         PaginationDTO<List<AcademicCounselorProfileDTO>> responseDTO = counselorService.getAcademicCounselorsWithFilter(filterRequest);

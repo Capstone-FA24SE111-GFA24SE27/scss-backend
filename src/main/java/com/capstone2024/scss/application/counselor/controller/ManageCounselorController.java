@@ -13,13 +13,18 @@ import com.capstone2024.scss.application.counseling_appointment.dto.request.coun
 import com.capstone2024.scss.application.counselor.dto.AvailableDateRangeDTO;
 import com.capstone2024.scss.application.counselor.dto.CounselingSlotDTO;
 import com.capstone2024.scss.application.counselor.dto.ManageCounselorDTO;
+import com.capstone2024.scss.application.counselor.dto.counseling_slot.CounselingSlotCreateDTO;
+import com.capstone2024.scss.application.counselor.dto.counseling_slot.CounselingSlotUpdateDTO;
 import com.capstone2024.scss.application.counselor.dto.request.*;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselingSlotMapper;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
+import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
+import com.capstone2024.scss.domain.counseling_booking.services.impl.CounselingSlotService;
 import com.capstone2024.scss.domain.counselor.entities.AvailableDateRange;
+import com.capstone2024.scss.domain.counselor.entities.SlotOfCounselor;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
 import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import com.capstone2024.scss.domain.counselor.services.ManageCounselorService;
@@ -27,7 +32,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -38,10 +42,10 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -53,6 +57,8 @@ public class ManageCounselorController {
 
     private static final Logger logger = LoggerFactory.getLogger(CounselorController.class);
     private final ManageCounselorService manageCounselorService;
+    private final CounselingSlotService counselingSlotService;
+    private final CounselingAppointmentService appointmentService;
 
     @GetMapping("/appointment-request/{counselorId}")
     @io.swagger.v3.oas.annotations.Operation(
@@ -66,7 +72,8 @@ public class ManageCounselorController {
             @RequestParam(name = "meetingType", required = false) MeetingType meetingType,
             @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
-            @RequestParam(name = "page", defaultValue = "1") Integer page) {
+            @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size) {
 
         if (page < 1) {
             logger.error("Invalid page number: {}", page);
@@ -79,10 +86,10 @@ public class ManageCounselorController {
                 .meetingType(meetingType)
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
-                .pagination(PageRequest.of(page - 1, 10))
+                .pagination(PageRequest.of(page - 1, size))
                 .build();
 
-        PaginationDTO<List<CounselingAppointmentRequestDTO>> responseDTO = manageCounselorService.getAppointmentsRequest(counselorId, filterDTO);
+        PaginationDTO<List<CounselingAppointmentRequestDTO>> responseDTO = manageCounselorService.getAppointmentsRequestOfCounselorForManage(counselorId, filterDTO);
 
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }
@@ -133,7 +140,8 @@ public class ManageCounselorController {
             @RequestParam(name = "status", required = false) CounselingAppointmentStatus status,
             @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
             @RequestParam(name = "SortDirection", defaultValue = "DESC") SortDirection sortDirection,
-            @RequestParam(name = "page", defaultValue = "1") Integer page) {
+            @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size) {
 
         AppointmentFilterDTO filterDTO = AppointmentFilterDTO.builder()
                 .studentCode(studentCode)
@@ -143,6 +151,7 @@ public class ManageCounselorController {
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
                 .page(page)
+                .size(size)
                 .build();
 
         PaginationDTO<List<CounselingAppointmentDTO>> responseDTO = manageCounselorService.getAppointmentsWithFilterForCounselor(filterDTO, counselorId);
@@ -195,27 +204,52 @@ public class ManageCounselorController {
     }
 
     @PostMapping("/counselling-slots")
-    public ResponseEntity<Object> createCounselingSlot(BindingResult errors, @Valid @RequestBody CreateCounselingSlotRequestDTO createCounselingSlotDTO) {
-        if (errors.hasErrors()) {
-            logger.warn("Login request failed due to validation errors: {}", errors.getAllErrors());
-            throw new BadRequestException("Invalid login request", errors, HttpStatus.BAD_REQUEST);
-        }
-        CounselingSlotDTO createdSlot = manageCounselorService.createCounselingSlot(createCounselingSlotDTO);
-        return ResponseUtil.getResponse(createdSlot, HttpStatus.OK);
+    public ResponseEntity<?> createOne(@RequestBody CounselingSlotCreateDTO createDTO) {
+        CounselingSlotDTO createdSlot = counselingSlotService.createOne(createDTO);
+        return ResponseUtil.getResponse(createdSlot, HttpStatus.CREATED);
     }
+
+    @GetMapping("/counselling-slots/{id}")
+    public ResponseEntity<?> getOne(@PathVariable Long id) {
+        CounselingSlotDTO slot = counselingSlotService.getOne(id);
+        return ResponseUtil.getResponse(slot, HttpStatus.OK);
+    }
+
+    @PutMapping("/counselling-slots/{id}")
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody CounselingSlotUpdateDTO updateDTO) {
+        CounselingSlotDTO updatedSlot = counselingSlotService.update(id, updateDTO);
+        return ResponseUtil.getResponse(updatedSlot, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/counselling-slots/{id}")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        counselingSlotService.delete(id);
+        return ResponseUtil.getResponse("Deleted successfully", HttpStatus.OK);
+    }
+
+//    @PostMapping("/counselling-slots")
+//    public ResponseEntity<Object> createCounselingSlot(BindingResult errors, @Valid @RequestBody CreateCounselingSlotRequestDTO createCounselingSlotDTO) {
+//        if (errors.hasErrors()) {
+//            logger.warn("Login request failed due to validation errors: {}", errors.getAllErrors());
+//            throw new BadRequestException("Invalid login request", errors, HttpStatus.BAD_REQUEST);
+//        }
+//        CounselingSlotDTO createdSlot = manageCounselorService.createCounselingSlot(createCounselingSlotDTO);
+//        return ResponseUtil.getResponse(createdSlot, HttpStatus.OK);
+//    }
 
     @GetMapping("/{counselorId}/counseling-slots")
     public ResponseEntity<Object> getCounselingSlotsByCounselorId(@PathVariable Long counselorId) {
-        List<CounselingSlot> slots = manageCounselorService.getCounselingSlotsByCounselorId(counselorId);
-        return ResponseUtil.getResponse(slots.stream().map(CounselingSlotMapper::toDTO).toList(), HttpStatus.OK);
+        List<SlotOfCounselor> slots = manageCounselorService.getCounselingSlotsByCounselorId(counselorId);
+        return ResponseUtil.getResponse(slots.stream().map(CounselingSlotMapper::toDTOSlotOfCounselor).toList(), HttpStatus.OK);
     }
 
     @PutMapping("/{counselorId}/assign-slot")
     public ResponseEntity<String> assignSlotToCounselor(
             @PathVariable Long counselorId,
-            @RequestParam Long slotId
-    ) {
-        manageCounselorService.assignSlotToCounselor(counselorId, slotId);
+            @RequestParam Long slotId,
+            @RequestParam DayOfWeek dayOfWeek
+            ) {
+        manageCounselorService.assignSlotToCounselor(counselorId, slotId, dayOfWeek);
         return ResponseEntity.ok("Gán CounselingSlot thành công");
     }
 
@@ -367,6 +401,56 @@ public class ManageCounselorController {
         ManageCounselorDTO responseDTO = manageCounselorService.getOneCounselor(counselorId);
 
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/schedule/appointment/counselor/{counselorId}")
+    @io.swagger.v3.oas.annotations.Operation(
+            summary = "Get appointments by date range",
+            description = "Retrieve counseling appointments for either a counselor or student within a date range."
+    )
+    public ResponseEntity<Object> getAppointmentsByDateRangeForCounselor(
+            @PathVariable Long counselorId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @AuthenticationPrincipal @NotNull Account principal) {
+
+        logger.info("Received request to get appointments from {} to {}, User: {}", fromDate, toDate, principal.getUsername());
+
+        if (fromDate.isAfter(toDate)) {
+            logger.error("Invalid date range: fromDate {} is after toDate {}", fromDate, toDate);
+            throw new BadRequestException("Invalid date range. 'fromDate' cannot be after 'toDate'.");
+        }
+
+        List<CounselingAppointmentDTO> appointments;
+        appointments = appointmentService.getAppointmentsForCounselor(fromDate, toDate, counselorId);
+        logger.info("Returning appointments for counselor: {}", principal.getUsername());
+
+        return ResponseUtil.getResponse(appointments, HttpStatus.OK);
+    }
+
+    @GetMapping("/schedule/appointment/student/{studentId}")
+    @io.swagger.v3.oas.annotations.Operation(
+            summary = "Get appointments by date range",
+            description = "Retrieve counseling appointments for either a counselor or student within a date range."
+    )
+    public ResponseEntity<Object> getAppointmentsByDateRangeForStudent(
+            @PathVariable Long studentId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @AuthenticationPrincipal @NotNull Account principal) {
+
+        logger.info("Received request to get appointments from {} to {}, User: {}", fromDate, toDate, principal.getUsername());
+
+        if (fromDate.isAfter(toDate)) {
+            logger.error("Invalid date range: fromDate {} is after toDate {}", fromDate, toDate);
+            throw new BadRequestException("Invalid date range. 'fromDate' cannot be after 'toDate'.");
+        }
+
+        List<CounselingAppointmentDTO> appointments;
+        appointments = appointmentService.getAppointmentsForStudent(fromDate, toDate, studentId);
+        logger.info("Returning appointments for student: {}", principal.getUsername());
+
+        return ResponseUtil.getResponse(appointments, HttpStatus.OK);
     }
 
 }

@@ -6,6 +6,8 @@ import com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,5 +24,7 @@ public class QuestionCardResponseDTO {
     private StudentProfileDTO student;
     private CounselorProfileDTO counselor;
     private ChatSessionDTO chatSession;
+    private String reviewReason;
     private TopicDTO topic;
+    private LocalDateTime createdDate;
 }

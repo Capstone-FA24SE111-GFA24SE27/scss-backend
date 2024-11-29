@@ -40,7 +40,8 @@ public class ProblemTagController {
             @RequestParam(name = "problemCategoryId", required = false) Long problemCategoryId,
             @RequestParam(name = "sortBy", defaultValue = "createdDate") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
-            @RequestParam(name = "page", defaultValue = "1") Integer page) {
+            @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size) {
 
         // Kiểm tra số trang hợp lệ
         if (page < 1) {
@@ -54,7 +55,7 @@ public class ProblemTagController {
                 .problemCategoryId(problemCategoryId)
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
-                .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
+                .pagination(PageRequest.of(page - 1, size, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .build();
 
         // Lấy danh sách ProblemTags từ service

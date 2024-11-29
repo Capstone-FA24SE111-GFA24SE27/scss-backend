@@ -83,7 +83,8 @@ public class AccountServiceImpl implements AccountService {
         switch (filterRequest.getRole()) {
             case STUDENT -> {
                 List<AccountDTO> accountDTOs = accountsPage.getContent().stream()
-                        .map(AccountMapper::toStudentAccountDTO)
+//                        .map(AccountMapper::toStudentAccountDTO)
+                        .map(AccountMapper::toAccountDTO)
                         .collect(Collectors.toList());
 
                 paginationDTO = PaginationDTO.<List<AccountDTO>>builder()
@@ -105,7 +106,8 @@ public class AccountServiceImpl implements AccountService {
             }
             case ACADEMIC_COUNSELOR -> {
                 List<AccountDTO> accountDTOs = accountsPage.getContent().stream()
-                        .map(AccountMapper::toAcademicCounselorAccountDTO)
+//                        .map(AccountMapper::toAcademicCounselorAccountDTO)
+                        .map(AccountMapper::toAccountDTO)
                         .collect(Collectors.toList());
 
                 paginationDTO = PaginationDTO.<List<AccountDTO>>builder()
@@ -116,7 +118,8 @@ public class AccountServiceImpl implements AccountService {
             }
             case NON_ACADEMIC_COUNSELOR -> {
                 List<AccountDTO> accountDTOs = accountsPage.getContent().stream()
-                        .map(AccountMapper::toNonAcademicCounselorAccountDTO)
+//                        .map(AccountMapper::toNonAcademicCounselorAccountDTO)
+                        .map(AccountMapper::toAccountDTO)
                         .collect(Collectors.toList());
 
                 paginationDTO = PaginationDTO.<List<AccountDTO>>builder()

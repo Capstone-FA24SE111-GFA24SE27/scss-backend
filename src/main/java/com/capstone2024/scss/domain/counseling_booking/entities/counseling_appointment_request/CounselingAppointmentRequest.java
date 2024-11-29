@@ -44,11 +44,7 @@ public class CounselingAppointmentRequest extends BaseEntity {
     @Column(name = "meeting_type")
     private MeetingType meetingType;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "request_type")
-    private RequestType requestType = RequestType.NORMAL;
-
-    @Column(name = "reason")
+    @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
 
     @ManyToOne
@@ -65,8 +61,4 @@ public class CounselingAppointmentRequest extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "counseling_demand_id", nullable = true)
     private CounselingDemand counselingDemand;
-
-    public enum RequestType {
-        NORMAL, DEMAND
-    }
 }

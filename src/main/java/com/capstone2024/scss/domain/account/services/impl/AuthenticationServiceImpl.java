@@ -88,6 +88,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .accessToken(accessToken)
                 .type(ACCESS_TOKEN_TYPE)
                 .account(AccountMapper.toAccountDTO((Account) userDetails))
+                .refreshToken(jwtService.generateToken(userDetails, refreshTokenLifetime))
                 .build();
     }
 
@@ -124,7 +125,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         RestTemplate restTemplate = new RestTemplate();
 
         // URL để xác thực mã thông báo Google
-        String url = "https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=" + googleAccessToken;
+        String url = "https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + googleAccessToken;
 
         // Lấy thông tin người dùng từ Google
         ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
@@ -157,6 +158,35 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         userDetails = getAccount(email);
 
         setRefreshTokenInCookie(userDetails, servletResponse);
+
+        String accessToken = jwtService.generateToken(userDetails);
+        logger.info("Access token refreshed for email: {}. New access token generated.", email);
+
+        return JwtTokenDTO.builder()
+                .accessToken(accessToken)
+                .type(ACCESS_TOKEN_TYPE)
+                .refreshToken(jwtService.generateToken(userDetails, refreshTokenLifetime))
+                .account(AccountMapper.toAccountDTO((Account) userDetails))
+                .build();
+    }
+
+    @Override
+    public JwtTokenDTO refreshAccessTokenOnPath(HttpServletResponse response, String refreshTokenPath) {
+        String refreshToken = refreshTokenPath;
+        if (refreshToken == null) {
+            logger.warn("Refresh token not found in cookies.");
+            throw new BadRequestException("Refresh token not found", HttpStatus.BAD_REQUEST);
+        }
+
+        String email = jwtService.validateJwtToken(refreshToken);
+        if (email == null) {
+            logger.warn("Invalid refresh token provided.");
+            throw new BadRequestException("Invalid refresh token", HttpStatus.BAD_REQUEST);
+        }
+
+        logger.info("Attempting to find account with email: {}", email);
+
+        UserDetails userDetails = getAccount(email);
 
         String accessToken = jwtService.generateToken(userDetails);
         logger.info("Access token refreshed for email: {}. New access token generated.", email);
@@ -202,8 +232,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String refreshToken = jwtService.generateToken(userDetails, refreshTokenLifetime);
 
         Cookie cookie = new Cookie(COOKIE_REFRESH_TOKEN_KEY, refreshToken);
-        cookie.setHttpOnly(true);
         cookie.setPath("/");
+//        cookie.setSecure(true); // Đảm bảo đang dùng HTTPS khi triển khai
+//        cookie.setSameSite("None");
 //        cookie.setDomain("scss-server.southafricanorth.cloudapp.azure.com");
         cookie.setMaxAge(refreshTokenLifetime.intValue());
 

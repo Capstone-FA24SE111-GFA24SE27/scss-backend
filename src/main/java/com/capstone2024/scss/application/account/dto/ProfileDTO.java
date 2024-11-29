@@ -15,4 +15,5 @@ public class ProfileDTO {
     private Long dateOfBirth;
     private String avatarLink;
     private Gender gender;
+    private String email;
 }

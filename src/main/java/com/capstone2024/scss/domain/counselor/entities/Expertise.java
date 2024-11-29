@@ -21,7 +21,4 @@ public class Expertise extends BaseEntity {
 
     @Column(name = "name", nullable = false)
     private String name;
-
-//    @OneToMany(mappedBy = "expertise")
-//    private Set<Counselor> counselors;
 }

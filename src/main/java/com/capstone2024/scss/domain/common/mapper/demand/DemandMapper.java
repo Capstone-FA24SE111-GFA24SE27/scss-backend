@@ -25,7 +25,11 @@ public class DemandMapper {
                 .contactNote(demand.getContactNote())
                 .summarizeNote(demand.getSummarizeNote())
                 .counselor(demand.getCounselor() != null ? CounselorProfileMapper.toCounselorProfileDTO(demand.getCounselor()) : null)
-//                .semester(SemesterMapper.toSemesterDTO(demand.getSemester()))
+                .additionalInformation(demand.getAdditionalInformation())
+                .issueDescription(demand.getIssueDescription())
+                .causeDescription(demand.getCauseDescription())
+                .priorityLevel(demand.getPriorityLevel())
+                .demandType(demand.getDemandType())
                 .startDateTime(demand.getStartDateTime())
                 .endDateTime(demand.getEndDateTime())
                 .appointments(demand.getAppointmentsForDemand() != null

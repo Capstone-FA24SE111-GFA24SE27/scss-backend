@@ -24,5 +24,7 @@ public class CounselingAppointmentDTO {
     private CounselorProfileDTO counselorInfo;
     private StudentProfileDTO studentInfo;
     private AppointmentFeedbackDTO appointmentFeedback;
+    private String reason;
+    private String cancelReason;
     private boolean isHavingReport;
 }

@@ -5,6 +5,7 @@ import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
 import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -123,13 +124,13 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
             Pageable pageable);
 
     @Query("SELECT c FROM AcademicCounselor c " +
-            "JOIN c.specialization s " +
+//            "JOIN c.specialization s " +
             "JOIN c.department d " +
             "JOIN c.major m " +
             "WHERE (:search IS NULL OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :search, '%'))) " +
             "AND (:ratingFrom IS NULL OR c.rating >= :ratingFrom) " +
             "AND (:ratingTo IS NULL OR c.rating <= :ratingTo) " +
-            "AND (:specializationId IS NULL OR s.id = :specializationId) " +
+//            "AND (:specializationId IS NULL OR s.id = :specializationId) " +
             "AND (:departmentId IS NULL OR d.id = :departmentId) " +
             "AND (:majorId IS NULL OR m.id = :majorId) " +
             "AND c.status = com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus.AVAILABLE " +
@@ -141,7 +142,7 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
             @Param("ratingTo") BigDecimal ratingTo,
             @Param("availableFrom") LocalDate availableFrom,
             @Param("availableTo") LocalDate availableTo,
-            @Param("specializationId") Long specializationId,
+//            @Param("specializationId") Long specializationId,
             @Param("departmentId") Long departmentId,
             @Param("majorId") Long majorId,
             @Param("gender") Gender gender,
@@ -209,4 +210,41 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
                                                                                           @Param("startTime") LocalTime startTime,
                                                                                           @Param("endTime") LocalTime endTime,
                                                                                           Pageable pageable);
+
+    @Query("SELECT DISTINCT c FROM AcademicCounselor c " +
+            "JOIN c.department d " +
+            "JOIN c.major m " +
+            "LEFT JOIN CounselingDemand cd ON c.id = cd.counselor.id " +
+            "WHERE (:gender IS NULL OR c.gender = :gender) " +
+//            "  AND c.availableDateRange.startDate <= :date " +
+//            "  AND c.availableDateRange.endDate >= :date " +
+            "  AND c.status = com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus.AVAILABLE " +
+            "  AND (:specialization IS NULL OR c.specialization = :specialization) " +
+            "  AND (:departmentId IS NULL OR d.id = :departmentId) " +
+            "  AND (:majorId IS NULL OR m.id = :majorId) " +
+            "AND (cd.startDateTime IS NULL OR " +
+            "MONTH(cd.startDateTime) = MONTH(CURRENT_DATE) AND YEAR(cd.startDateTime) = YEAR(CURRENT_DATE)) " +
+            "GROUP BY c.id " +
+            "ORDER BY COUNT(cd.id) ASC")
+    List<AcademicCounselor> findBestAvailableCounselorForAcademicWithLowestDemand(@Param("gender") Gender gender,
+                                                                                  @Param("specialization") Specialization specialization,
+                                                                                  @Param("departmentId") Long departmentId,
+                                                                                  @Param("majorId") Long majorId,
+                                                                                  Pageable pageable);
+
+    @Query("SELECT DISTINCT c FROM NonAcademicCounselor c " +
+            "LEFT JOIN CounselingDemand cd ON c.id = cd.counselor.id " +
+            "WHERE (:gender IS NULL OR c.gender = :gender) " +
+//            "  AND c.availableDateRange.startDate <= :date " +
+//            "  AND c.availableDateRange.endDate >= :date " +
+            "  AND c.status = com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus.AVAILABLE " +
+            "  AND (:expertise IS NULL OR c.expertise = :expertise) " +
+            "AND (cd.startDateTime IS NULL OR " +
+            "MONTH(cd.startDateTime) = MONTH(CURRENT_DATE) AND YEAR(cd.startDateTime) = YEAR(CURRENT_DATE)) " +
+            "GROUP BY c.id " +
+            "ORDER BY COUNT(cd.id) ASC")
+    List<NonAcademicCounselor> findBestAvailableCounselorForNonAcademicWithLowestDemandInMonth(
+            @Param("gender") Gender gender,
+            @Param("expertise") Expertise expertise,
+            Pageable pageable);
 }

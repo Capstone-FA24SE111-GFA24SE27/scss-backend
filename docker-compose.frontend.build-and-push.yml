@@ -1,0 +1,7 @@
+version: '3.8'
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: trinhvinhphat2003/capstone-backend-server-fe:latest

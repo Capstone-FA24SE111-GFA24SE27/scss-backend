@@ -45,7 +45,9 @@ public class QuestionCardMapper {
                 .status(questionCard.getStatus())
                 .student(studentDTO)
                 .counselor(counselorDTO)
+                .reviewReason(questionCard.getReviewReason())
                 .chatSession(ChatSessionMapper.toChatSessionDTO(questionCard.getChatSession()))
+                .createdDate(questionCard.getCreatedDate())
 //                .topic(TopicMapper.toDTO(questionCard.getTopic()))
                 .build();
     }

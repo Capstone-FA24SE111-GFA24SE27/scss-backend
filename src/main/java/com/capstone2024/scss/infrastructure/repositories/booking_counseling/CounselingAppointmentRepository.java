@@ -56,4 +56,14 @@ public interface CounselingAppointmentRepository extends JpaRepository<Counselin
             @Param("status") CounselingAppointmentStatus status,
             Student student,
             Pageable pageable);
+
+    @Query("SELECT a FROM CounselingAppointment a " +
+            "WHERE (:from IS NULL OR a.startDateTime >= :from) " +
+            "AND (:to IS NULL OR a.startDateTime <= :to)")
+    List<CounselingAppointment> findAllByStartDateTimeBetween(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
+
+    @Query("SELECT ca FROM CounselingAppointment ca WHERE ca.status = 'WAITING' AND ca.startDateTime >= :startOfDay AND ca.startDateTime < :endOfDay")
+    List<CounselingAppointment> findWaitingAppointmentsForToday(LocalDateTime startOfDay, LocalDateTime endOfDay);
 }

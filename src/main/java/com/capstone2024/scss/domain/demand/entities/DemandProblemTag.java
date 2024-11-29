@@ -30,7 +30,7 @@ public class DemandProblemTag extends BaseEntity {
     @JoinColumn(name = "prob_tag_id", nullable = false)
     private ProblemTag problemTag;
 
-    @Column(name = "number", nullable = false)
+    @Column(name = "is_excluded", nullable = false)
     private boolean isExcluded;
 
 //    @Column(name = "total_point", nullable = false)

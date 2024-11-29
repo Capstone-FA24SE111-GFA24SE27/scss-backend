@@ -12,6 +12,7 @@ import com.capstone2024.scss.domain.common.mapper.q_and_a.ChatSessionMapper;
 import com.capstone2024.scss.domain.common.mapper.q_and_a.QuestionCardMapper;
 import com.capstone2024.scss.domain.counselor.entities.AcademicCounselor;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
+import com.capstone2024.scss.domain.counselor.entities.Expertise;
 import com.capstone2024.scss.domain.counselor.entities.NonAcademicCounselor;
 import com.capstone2024.scss.domain.notification.services.NotificationService;
 import com.capstone2024.scss.domain.q_and_a.entities.*;
@@ -19,10 +20,11 @@ import com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
 import com.capstone2024.scss.domain.q_and_a.service.QuestionCardService;
 import com.capstone2024.scss.domain.student.entities.Student;
+import com.capstone2024.scss.infrastructure.configuration.openai.OpenAIService;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
-import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeAppointmentRequestDTO;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.dto.RealTimeQuestionDTO;
 import com.capstone2024.scss.infrastructure.repositories.counselor.AcademicCounselorRepository;
+import com.capstone2024.scss.infrastructure.repositories.counselor.ExpertiseRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.NonAcademicCounselorRepository;
 import com.capstone2024.scss.infrastructure.repositories.student.StudentRepository;
 import com.capstone2024.scss.infrastructure.repositories._and_a.*;
@@ -36,9 +38,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -61,6 +61,8 @@ public class QuestionCardServiceImpl implements QuestionCardService {
     private final TopicRepository topicRepository;
     private final AcademicCounselorRepository academicCounselorRepository;
     private final NonAcademicCounselorRepository nonAcademicCounselorRepository;
+    private final OpenAIService openAIService;
+    private final ExpertiseRepository expertiseRepository;
 
     @Override
     @Transactional
@@ -84,9 +86,9 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         if(dto.getQuestionType().equals(QuestionType.ACADEMIC)) {
 
             List<AcademicCounselor> counselors = academicCounselorRepository.findAcademicCounselorWithLeastQuestions(
-                    dto.getDepartmentId(),
-                    dto.getMajorId(),
-                    dto.getSpecializationId()
+                    student.getDepartment().getId(),
+                    student.getMajor().getId(),
+                    null
             );
 
             AcademicCounselor counselor = null;
@@ -109,8 +111,14 @@ public class QuestionCardServiceImpl implements QuestionCardService {
 //                    .topic(topic)
                     .build();
         } else if(dto.getQuestionType().equals(QuestionType.NON_ACADEMIC)) {
+            String prompt = openAIService.generatePromptToOpenAIForBestExpertiseMatching(dto.getContent());
+            String expertiseName = openAIService.callOpenAPIForBestExpertiseMatching(prompt);
+
+            Expertise expertise = expertiseRepository.findByName(expertiseName)
+                    .orElseThrow(() -> new NotFoundException("Expertise not found with name: " + expertiseName));
+
             List<NonAcademicCounselor> counselors = nonAcademicCounselorRepository.findNonAcademicCounselorWithLeastQuestions(
-                    dto.getExpertiseId()
+                    expertise.getId()
             );
 
             NonAcademicCounselor counselor = null;
@@ -183,7 +191,6 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                 filterRequest.getStatus(),
 //                filterRequest.getIsTaken(),
                 filterRequest.getIsClosed(),
-                filterRequest.getIsChatSessionClosed(),
                 filterRequest.getType(),
 //                filterRequest.getTopicId(),
                 filterRequest.getPagination()
@@ -205,6 +212,9 @@ public class QuestionCardServiceImpl implements QuestionCardService {
     public PaginationDTO<List<QuestionCardResponseDTO>> getQuestionCardsWithFilterForCounselor(QuestionCardFilterRequestDTO filterRequest, Long counselorId) {
         logger.info("Fetching Question Cards with filters: {}", filterRequest);
 
+        LocalDateTime fromDateTime = (filterRequest.getFrom() != null) ? filterRequest.getFrom().atStartOfDay() : null;
+        LocalDateTime toDateTime = (filterRequest.getTo() != null) ? filterRequest.getTo().atTime(LocalTime.MAX) : null;
+
         Counselor counselor = counselorRepository.findById(counselorId)
                 .orElseThrow(() -> new NotFoundException("Counselor not found with ID: " + counselorId));
 
@@ -212,24 +222,72 @@ public class QuestionCardServiceImpl implements QuestionCardService {
 
         if(counselor instanceof NonAcademicCounselor) {
             questionCardsPage = questionCardRepository.findQuestionCardsWithFilterForCounselor(
-                    filterRequest.getStudentCode(),
                     counselorId,
                     filterRequest.getKeyword(),
                     QuestionType.NON_ACADEMIC,
                     filterRequest.getIsClosed(),
-                    filterRequest.getIsChatSessionClosed(),
-//                    filterRequest.getTopicId(),
+                    filterRequest.getStatus(),
+                    fromDateTime,
+                    toDateTime,
                     filterRequest.getPagination()
             );
         } else  {
             questionCardsPage = questionCardRepository.findQuestionCardsWithFilterForCounselor(
-                    filterRequest.getStudentCode(),
                     counselorId,
                     filterRequest.getKeyword(),
                     QuestionType.ACADEMIC,
                     filterRequest.getIsClosed(),
-                    filterRequest.getIsChatSessionClosed(),
 //                    filterRequest.getTopicId(),
+                    filterRequest.getStatus(),
+                    fromDateTime,
+                    toDateTime,
+                    filterRequest.getPagination()
+            );
+        }
+
+        List<QuestionCardResponseDTO> questionCardDTOs = questionCardsPage.getContent().stream()
+                .map(QuestionCardMapper::toQuestionCardResponseDto)
+                .collect(Collectors.toList());
+
+        return PaginationDTO.<List<QuestionCardResponseDTO>>builder()
+                .data(questionCardDTOs)
+                .totalPages(questionCardsPage.getTotalPages())
+                .totalElements((int) questionCardsPage.getTotalElements())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginationDTO<List<QuestionCardResponseDTO>> getQuestionCardsWithFilterForCounselorForManage(QuestionCardFilterRequestDTO filterRequest, Long counselorId) {
+        logger.info("Fetching Question Cards with filters: {}", filterRequest);
+        LocalDateTime fromDateTime = (filterRequest.getFrom() != null) ? filterRequest.getFrom().atStartOfDay() : null;
+        LocalDateTime toDateTime = (filterRequest.getTo() != null) ? filterRequest.getTo().atTime(LocalTime.MAX) : null;
+
+        Counselor counselor = counselorRepository.findById(counselorId)
+                .orElseThrow(() -> new NotFoundException("Counselor not found with ID: " + counselorId));
+
+        Page<QuestionCard> questionCardsPage = new PageImpl<>(Collections.emptyList(), filterRequest.getPagination(), 0);
+
+        if(counselor instanceof NonAcademicCounselor) {
+            questionCardsPage = questionCardRepository.findQuestionCardsWithFilterForCounselorForManage(
+                    counselorId,
+                    filterRequest.getKeyword(),
+                    QuestionType.NON_ACADEMIC,
+                    filterRequest.getIsClosed(),
+                    filterRequest.getStatus(),
+                    fromDateTime,
+                    toDateTime,
+                    filterRequest.getPagination()
+            );
+        } else  {
+            questionCardsPage = questionCardRepository.findQuestionCardsWithFilterForCounselorForManage(
+                    counselorId,
+                    filterRequest.getKeyword(),
+                    QuestionType.ACADEMIC,
+                    filterRequest.getIsClosed(),
+                    filterRequest.getStatus(),
+                    fromDateTime,
+                    toDateTime,
                     filterRequest.getPagination()
             );
         }
@@ -412,6 +470,14 @@ public class QuestionCardServiceImpl implements QuestionCardService {
                     .counselorId(questionCard.getCounselor() != null ? questionCard.getCounselor().getId() : null)
                     .type(RealTimeQuestionDTO.Type.STUDENT_CLOSE)
                     .build());
+
+            notificationService.sendNotification(NotificationDTO.builder()
+                    .receiverId(questionCard.getCounselor().getId())
+                    .message("Student has closed question")
+                    .title("Student has closed question")
+                    .sender("Student: " + questionCard.getStudent().getFullName())
+                    .readStatus(false)
+                    .build());
         } else {
             throw new ForbiddenException("You are not allowed to close this QC");
         }
@@ -424,13 +490,7 @@ public class QuestionCardServiceImpl implements QuestionCardService {
 
         if (questionCard.getCounselor().getId().equals(counselorId) && !questionCard.isClosed()) {
             questionCard.setAnswer(dto.getContent());
-            questionCard.setStatus(QuestionCardStatus.VERIFIED);
-            ChatSession chatSession = new ChatSession();
-            chatSession.setQuestionCard(questionCard);
-
-            chatSession.setCounselor(questionCard.getCounselor());
-            chatSession.setStudent(questionCard.getStudent());
-            chatSessionRepository.save(chatSession);
+//            questionCard.setStatus(QuestionCardStatus.VERIFIED);
             questionCardRepository.save(questionCard);
 
             rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
@@ -461,6 +521,12 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         if (questionCard.getCounselor().getId().equals(counselorId) && !questionCard.isClosed()) {
             questionCard.setAnswer(dto.getContent());
             questionCardRepository.save(questionCard);
+
+            rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
+                    .studentId(questionCard.getStudent().getId())
+                    .counselorId(questionCard.getCounselor() != null ? questionCard.getCounselor().getId() : null)
+                    .type(RealTimeQuestionDTO.Type.COUNSELOR_EDIT_ANSWER)
+                    .build());
         } else {
             throw new ForbiddenException("You are not allow to edit this QC");
         }
@@ -486,21 +552,24 @@ public class QuestionCardServiceImpl implements QuestionCardService {
     }
 
     @Override
-    public void reviewQuestionCard(Long questionCardId, QuestionCardStatus questionCardStatus) {
+    public void reviewQuestionCard(Long questionCardId, QuestionCardStatus questionCardStatus, String reviewReason) {
         QuestionCard questionCard = questionCardRepository.findById(questionCardId)
                 .orElseThrow(() -> new NotFoundException("Question card not found"));
 
-        if(!questionCard.getStatus().equals(QuestionCardStatus.PENDING)) {
-            throw new ForbiddenException("This card is not PENDING");
-        }
-
         switch (questionCardStatus) {
             case VERIFIED -> {
+                if(!questionCard.getStatus().equals(QuestionCardStatus.PENDING)) {
+                    throw new ForbiddenException("This card is not PENDING");
+                }
                 questionCard.setStatus(QuestionCardStatus.VERIFIED);
                 questionCardRepository.save(questionCard);
             }
             case REJECTED -> {
+                if(questionCard.getStatus().equals(QuestionCardStatus.PENDING)) {
+                    throw new ForbiddenException("This card is PENDING");
+                }
                 questionCard.setStatus(QuestionCardStatus.REJECTED);
+                questionCard.setReviewReason(reviewReason);
                 questionCardRepository.save(questionCard);
             }
             default -> throw new BadRequestException("Invalid status");
@@ -528,9 +597,9 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         if(questionCard.getCounselor().getId().equals(counselorId)) {
             questionCard.setClosed(true);
             questionCardRepository.save(questionCard);
-            ChatSession chatSession = questionCard.getChatSession();
-            chatSession.setClosed(true);
-            chatSessionRepository.save(chatSession);
+//            ChatSession chatSession = questionCard.getChatSession();
+//            chatSession.setClosed(true);
+//            chatSessionRepository.save(chatSession);
             rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
                     .studentId(questionCard.getStudent().getId())
                     .counselorId(questionCard.getCounselor().getId())
@@ -615,7 +684,7 @@ public class QuestionCardServiceImpl implements QuestionCardService {
 
         QuestionFlag questionFlag = new QuestionFlag();
         questionFlag.setQuestionCard(questionCard);
-        questionFlag.setReason(dto.getReason());
+        questionCard.setReviewReason(dto.getReason());
         questionFlag.setStudent(questionCard.getStudent());
 
         questionFlagRepository.save(questionFlag);
@@ -654,7 +723,7 @@ public class QuestionCardServiceImpl implements QuestionCardService {
             List<BanInformationResponseDTO.QuestionFlagResponseDTO> flagResponses = flags.stream()
                     .map(flag -> BanInformationResponseDTO.QuestionFlagResponseDTO.builder()
                             .flagDate(flag.getFlagDate())
-                            .reason(flag.getReason())
+                            .reason(flag.getQuestionCard().getReviewReason())
                             .questionCard(QuestionCardMapper.toQuestionCardResponseDto(flag.getQuestionCard()))
                             .build())
                     .collect(Collectors.toList());
@@ -713,6 +782,53 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         }
 
         return ChatSessionMapper.toChatSessionDTO(questionCard.getChatSession());
+    }
+
+    @Override
+    public void createChatSessionForQuestionCard(Long studentId, Long questionCardId) {
+        QuestionCard questionCard = questionCardRepository.findById(questionCardId)
+                .orElseThrow(() -> new NotFoundException("Question card not found"));
+
+        if (questionCard.getStudent().getId().equals(studentId) && !questionCard.isClosed()) {
+            ChatSession chatSession = new ChatSession();
+            chatSession.setQuestionCard(questionCard);
+
+            chatSession.setCounselor(questionCard.getCounselor());
+            chatSession.setStudent(questionCard.getStudent());
+            chatSessionRepository.save(chatSession);
+            questionCardRepository.save(questionCard);
+
+            rabbitTemplate.convertAndSend(RabbitMQConfig.REAL_TIME_Q_A, RealTimeQuestionDTO.builder()
+                    .studentId(questionCard.getStudent().getId())
+                    .counselorId(questionCard.getCounselor() != null ? questionCard.getCounselor().getId() : null)
+                    .type(RealTimeQuestionDTO.Type.STUDENT_CREATE_CHAT_SESSION)
+                    .build());
+
+            Counselor counselor = questionCard.getCounselor();
+            Student student = questionCard.getStudent();
+
+            notificationService.sendNotification(NotificationDTO.builder()
+                    .receiverId(counselor.getId())
+                    .message("A student want to have a chat session with you")
+                    .title("New chat session for Q and A is created")
+                    .sender(String.format("Student: -%s-%s-", student.getStudentCode(), student.getFullName()))
+                    .readStatus(false)
+                    .build());
+        } else {
+            throw new ForbiddenException("You are not allow to answer this QC");
+        }
+    }
+
+    @Override
+    public List<QuestionCardResponseDTO> getAll(LocalDate from, LocalDate to) {
+        LocalDateTime fromDateTime = (from != null) ? from.atStartOfDay() : null;
+        LocalDateTime toDateTime = (to != null) ? to.atTime(LocalTime.MAX) : null;
+
+        List<QuestionCard> questionCards = questionCardRepository.findAllByCreatedDateBetween(fromDateTime, toDateTime);
+
+        return questionCards.stream()
+                .map(QuestionCardMapper::toQuestionCardResponseDto)
+                .collect(Collectors.toList());
     }
 
     private void checkAndCreateBanIfNeeded(Student student) {

@@ -32,5 +32,10 @@ public class CounselingDemandDTO {
     private LocalDateTime startDateTime;
     private LocalDateTime endDateTime;
     private List<CounselingAppointmentDTO> appointments;
+    private CounselingDemand.PriorityLevel priorityLevel;
+    private String additionalInformation;
+    private String issueDescription;
+    private String causeDescription;
+    private CounselingDemand.DemandType demandType;
 }
 

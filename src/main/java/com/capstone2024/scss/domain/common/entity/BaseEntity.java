@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Objects;
 
 @Getter
@@ -21,14 +23,15 @@ public class BaseEntity {
     private Long id;
 
     @Column(name = "created_date", nullable = false, updatable = false)
-    private Long createdDate;
+    private LocalDateTime createdDate;
 
     @Column(name = "soft_delete", nullable = false)
     private boolean softDelete = false;
 
     @PrePersist
     protected void onCreate() {
-        this.createdDate = System.currentTimeMillis();
+        // Lấy thời gian hiện tại với múi giờ Việt Nam
+        this.createdDate = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
     }
 
     @Override

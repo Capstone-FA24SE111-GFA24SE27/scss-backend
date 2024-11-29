@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -17,5 +18,6 @@ public class AttendanceDTO {
     private String studentCode;
     private String subjectName;
     private String semesterName;
+    private BigDecimal grade;
     private List<AttendanceDetailDTO> detais;
 }

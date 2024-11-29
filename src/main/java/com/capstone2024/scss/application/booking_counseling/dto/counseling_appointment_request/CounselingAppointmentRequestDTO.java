@@ -19,7 +19,6 @@ public class CounselingAppointmentRequestDTO {
     private LocalTime endTime;
     private String status;
     private MeetingType meetingType;
-    private CounselingAppointmentRequest.RequestType requestType;
     private String reason;
     private AppointmentDetailsDTO appointmentDetails;
 

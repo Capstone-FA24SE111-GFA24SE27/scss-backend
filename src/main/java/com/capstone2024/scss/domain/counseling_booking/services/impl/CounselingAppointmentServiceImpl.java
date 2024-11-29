@@ -122,6 +122,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
                 .meetingType(request.getMeetingType())
                 .student(request.getStudent())
                 .counselor(request.getCounselor())
+                .reason(request.getReason())
                 .build();
 
         logger.info("Creating online appointment for requestId: {} with meet URL: {}", requestId, dto.getMeetUrl());
@@ -231,6 +232,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
                 .meetingType(request.getMeetingType())
                 .student(request.getStudent())
                 .counselor(request.getCounselor())
+                .reason(request.getReason())
                 .build();
 
         request.setStatus(CounselingAppointmentRequestStatus.APPROVED);
@@ -649,6 +651,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
 
         if (appointment.getStatus().equals(CounselingAppointmentStatus.WAITING)) {
             appointment.setStatus(CounselingAppointmentStatus.CANCELED);
+            appointment.setCancelReason("STUDENT: " + reason);
             CounselingAppointment counselingAppointment = appointmentRepository.save(appointment);
 
             sendAppointmentCancelNotificationOnStudentSide(appointment, reason);
@@ -687,6 +690,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
 
         if (appointment.getStatus().equals(CounselingAppointmentStatus.WAITING)) {
             appointment.setStatus(CounselingAppointmentStatus.CANCELED);
+            appointment.setCancelReason("COUNSELOR: " + reason);
             CounselingAppointment counselingAppointment = appointmentRepository.save(appointment);
 
             sendAppointmentCancelNotificationOnCounselorSide(appointment, reason);
@@ -753,6 +757,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
                     .meetingType(MeetingType.OFFLINE)
                     .student(student)
                     .counselor(counselor)
+                    .reason(requestDTO.getReason())
                     .build();
 
             counselingAppointment = appointmentRepository.save(appointment);
@@ -834,6 +839,17 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
         return appointmentDTO;
     }
 
+    @Override
+    public List<CounselingAppointmentDTO> getAllAppointment(LocalDate from, LocalDate to) {
+        LocalDateTime fromDateTime = (from != null) ? from.atStartOfDay() : null;
+        LocalDateTime toDateTime = (to != null) ? to.atTime(LocalTime.MAX) : null;
+        List<CounselingAppointment> appointments = appointmentRepository.findAllByStartDateTimeBetween(fromDateTime, toDateTime);
+
+        return appointments.stream()
+                .map(CounselingAppointmentMapper::toCounselingAppointmentDTO)
+                .collect(Collectors.toList());
+    }
+
     private void sendAppointmentCreationNotification(CounselingAppointment counselingAppointment) {
         Counselor counselor = counselingAppointment.getCounselor();
         Student student = counselingAppointment.getStudent();
@@ -880,7 +896,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
         notificationService.sendNotification(NotificationDTO.builder()
                 .receiverId(student.getId())
                 .message(String.format("You have marked the appointment on %s as %s.", appointmentDateTime, CounselingAppointmentStatus.CANCELED))
-                .title("Appointment Attendance Updated")
+                .title("Appointment Canceled")
                 .sender("Counseling System")
                 .readStatus(false)
                 .build());
@@ -889,7 +905,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
         notificationService.sendNotification(NotificationDTO.builder()
                 .receiverId(counselor.getId())
                 .message(String.format("Your appointment scheduled on %s has been marked as %s.\nWith reason %s", appointmentDateTime, CounselingAppointmentStatus.CANCELED, reason))
-                .title("Appointment Attendance Notification")
+                .title("Appointment Canceled")
                 .sender("Student: " + student.getFullName())
                 .readStatus(false)
                 .build());
@@ -929,7 +945,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
     private Pageable createPageable(AppointmentFilterDTO filterDTO) {
         Sort sort = Sort.by(filterDTO.getSortBy());
         sort = filterDTO.getSortDirection() == SortDirection.ASC ? sort.ascending() : sort.descending();
-        return PageRequest.of(filterDTO.getPage() - 1, 10, sort);
+        return PageRequest.of(filterDTO.getPage() - 1, filterDTO.getSize(), sort);
     }
 
     private void sendAttendanceNotification(CounselingAppointment appointment, CounselingAppointmentStatus status) {
@@ -942,7 +958,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
         notificationService.sendNotification(NotificationDTO.builder()
                 .receiverId(counselor.getId())
                 .message(String.format("You have marked the appointment on %s as %s.", appointmentDateTime, status))
-                .title("Appointment Canceled")
+                .title("Appointment " + status)
                 .sender("Counseling System")
                 .readStatus(false)
                 .build());
@@ -951,7 +967,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
         notificationService.sendNotification(NotificationDTO.builder()
                 .receiverId(student.getId())
                 .message(String.format("Your appointment scheduled on %s has been marked as %s.", appointmentDateTime, status))
-                .title("Appointment Canceled")
+                .title("Appointment " + status)
                 .sender("Counselor: " + counselor.getFullName())
                 .readStatus(false)
                 .build());

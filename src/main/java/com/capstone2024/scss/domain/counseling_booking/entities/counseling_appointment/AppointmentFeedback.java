@@ -21,7 +21,7 @@ public class AppointmentFeedback extends BaseEntity {
     @Column(name = "rating", nullable = false)
     private BigDecimal rating;
 
-    @Column(name = "comment")
+    @Column(name = "comment", columnDefinition = "TEXT")
     private String comment;
 
     @OneToOne(optional = true) // Made nullable

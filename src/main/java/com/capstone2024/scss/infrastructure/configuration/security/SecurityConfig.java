@@ -172,7 +172,7 @@ public class SecurityConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 //        config.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000"));
-        config.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // Replace with your frontend URL
+        config.setAllowedOrigins(Arrays.asList("http://localhost:3000, https://scss-fe.azurewebsites.net", "http://scss-fe.azurewebsites.net")); // Replace with your frontend URL
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setAllowCredentials(true);

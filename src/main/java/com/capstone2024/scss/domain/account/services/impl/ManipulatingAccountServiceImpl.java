@@ -10,6 +10,7 @@ import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.account.enums.Status;
 import com.capstone2024.scss.domain.account.services.ManipulatingAccountService;
 import com.capstone2024.scss.domain.account.services.ProfileService;
+import com.capstone2024.scss.domain.common.mapper.account.CounselorProfileMapper;
 import com.capstone2024.scss.domain.counselor.entities.*;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
 import com.capstone2024.scss.domain.student.entities.Department;
@@ -35,6 +36,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -169,6 +171,15 @@ public class ManipulatingAccountServiceImpl implements ManipulatingAccountServic
                     .department(department)
                     .status(CounselorStatus.AVAILABLE)
                     .academicDegree("Thạc sĩ")
+
+                    .specializedSkills(dto.getSpecializedSkills())
+                    .otherSkills(dto.getOtherSkills())
+                    .workHistory(dto.getWorkHistory())
+                    .achievements(dto.getAchievements())
+
+                    .qualifications(dto.getQualifications() != null ? dto.getQualifications().stream().map(CounselorProfileMapper::toQualification).toList() : new ArrayList<>())
+                    .certifications(dto.getCertifications() != null ? dto.getCertifications().stream().map(CounselorProfileMapper::toCertification).toList() : new ArrayList<>())
+
                     .build();
 
             AvailableDateRange availableDateRange = createAvailableDateRangeFromTodayToTwoMonths(counselorProfile);
@@ -219,6 +230,15 @@ public class ManipulatingAccountServiceImpl implements ManipulatingAccountServic
                     .expertise(expertise)
                     .industryExperience(5)
                     .status(CounselorStatus.AVAILABLE)
+
+                    .specializedSkills(dto.getSpecializedSkills())
+                    .otherSkills(dto.getOtherSkills())
+                    .workHistory(dto.getWorkHistory())
+                    .achievements(dto.getAchievements())
+
+                    .qualifications(dto.getQualifications() != null ? dto.getQualifications().stream().map(CounselorProfileMapper::toQualification).toList() : new ArrayList<>())
+                    .certifications(dto.getCertifications() != null ? dto.getCertifications().stream().map(CounselorProfileMapper::toCertification).toList() : new ArrayList<>())
+
                     .build();
 
             AvailableDateRange availableDateRange = createAvailableDateRangeFromTodayToTwoMonths(counselorProfile);

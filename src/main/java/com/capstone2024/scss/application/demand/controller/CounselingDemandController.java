@@ -3,9 +3,11 @@ package com.capstone2024.scss.application.demand.controller;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
 import com.capstone2024.scss.application.demand.dto.CounselingDemandDTO;
+import com.capstone2024.scss.application.demand.dto.request.CounselingDemandCreateRequestDTO;
 import com.capstone2024.scss.application.demand.dto.request.CounselingDemandFilterRequestDTO;
 import com.capstone2024.scss.application.demand.dto.request.CounselingDemandSolveRequestDTO;
 import com.capstone2024.scss.application.demand.dto.request.CounselingDemandUpdateRequestDTO;
+import com.capstone2024.scss.application.q_and_a.dto.QuestionCardResponseDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.demand.entities.CounselingDemand;
 import com.capstone2024.scss.domain.demand.service.CounselingDemandService;
@@ -15,11 +17,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -33,9 +37,10 @@ public class CounselingDemandController {
     @PostMapping("/create/{studentId}")
     public ResponseEntity<Object> createCounselingDemand(
             @PathVariable Long studentId,
+            @RequestBody CounselingDemandCreateRequestDTO counselingDemandDTO,
             @NotNull @AuthenticationPrincipal Account principle) {
         Long supportStaffId = principle.getProfile().getId();
-        CounselingDemandDTO counselingDemand = counselingDemandService.createCounselingDemand(studentId, supportStaffId);
+        CounselingDemandDTO counselingDemand = counselingDemandService.createCounselingDemand(studentId, supportStaffId, counselingDemandDTO);
         return ResponseUtil.getResponse(counselingDemand ,HttpStatus.OK);
     }
 
@@ -132,5 +137,14 @@ public class CounselingDemandController {
     ) {
         CounselingDemandDTO solvedDemand = counselingDemandService.solveCounselingDemand(counselingDemandId, solveRequestDTO.getSummarizeNote());
         return ResponseUtil.getResponse(solvedDemand ,HttpStatus.OK);
+    }
+
+    @GetMapping("/manage/find-all")
+    public ResponseEntity<Object> getAllDemand(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        List<CounselingDemandDTO> responseDTO = counselingDemandService.getAll(from, to);
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }
 }

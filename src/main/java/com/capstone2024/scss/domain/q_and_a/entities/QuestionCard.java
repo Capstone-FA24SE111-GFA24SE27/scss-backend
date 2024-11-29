@@ -25,6 +25,9 @@ public class QuestionCard extends BaseEntity {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content; // Nội dung câu hỏi
 
+    @Column(name = "review_reason", nullable = true, columnDefinition = "TEXT")
+    private String reviewReason; // Nội dung câu hỏi
+
 //    @Column(name = "content", nullable = true, columnDefinition = "TEXT")
 //    private String reviewReason;
 

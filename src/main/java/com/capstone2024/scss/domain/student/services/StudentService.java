@@ -31,4 +31,6 @@ public interface StudentService {
     PaginationDTO<List<StudentDetailForFilterDTO>> getStudentsWithRecommend(StudentFilterRequestDTO filterRequest);
 
     void excludeAllDemandProblemTagsByStudentId(Long studentId);
+
+    String getGeneralAssessment(Long studentId, String semesterName);
 }

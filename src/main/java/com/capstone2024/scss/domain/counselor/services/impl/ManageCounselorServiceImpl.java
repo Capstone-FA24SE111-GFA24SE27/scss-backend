@@ -12,7 +12,7 @@ import com.capstone2024.scss.application.counseling_appointment.dto.request.coun
 import com.capstone2024.scss.application.counselor.dto.CounselingSlotDTO;
 import com.capstone2024.scss.application.counselor.dto.ManageCounselorDTO;
 import com.capstone2024.scss.application.counselor.dto.request.*;
-import com.capstone2024.scss.domain.counselor.entities.NonAcademicCounselor;
+import com.capstone2024.scss.domain.counselor.entities.*;
 import com.capstone2024.scss.domain.counselor.services.CounselorService;
 import com.capstone2024.scss.domain.counselor.services.ManageCounselorService;
 import com.capstone2024.scss.domain.common.mapper.account.CounselorProfileMapper;
@@ -22,14 +22,12 @@ import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.AppointmentFeedback;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentRequestService;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
-import com.capstone2024.scss.domain.counselor.entities.AcademicCounselor;
-import com.capstone2024.scss.domain.counselor.entities.AvailableDateRange;
-import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.AppointmentFeedbackRepository;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingSlotRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.AvailableDateRangeRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
+import com.capstone2024.scss.infrastructure.repositories.counselor.SlotOfCounselorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,6 +36,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -56,7 +55,7 @@ public class ManageCounselorServiceImpl implements ManageCounselorService {
     private final CounselingSlotRepository counselingSlotRepository;
     private final AppointmentFeedbackRepository appointmentFeedbackRepository;
 
-    public PaginationDTO<List<CounselingAppointmentRequestDTO>> getAppointmentsRequest (Long counselorId, AppointmentRequestFilterDTO filterDTO) {
+    public PaginationDTO<List<CounselingAppointmentRequestDTO>> getAppointmentsRequestOfCounselorForManage(Long counselorId, AppointmentRequestFilterDTO filterDTO) {
         Counselor counselor = checkForCounselor(counselorId);
 
         return counselingAppointmentRequestService.getAppointmentsRequest(counselor.getAccount(), filterDTO);
@@ -137,30 +136,43 @@ public class ManageCounselorServiceImpl implements ManageCounselorService {
     }
 
     @Override
-    public List<CounselingSlot> getCounselingSlotsByCounselorId(Long counselorId) {
+    public List<SlotOfCounselor> getCounselingSlotsByCounselorId(Long counselorId) {
         Counselor counselor = counselorRepository.findById(counselorId)
                 .orElseThrow(() -> new NotFoundException("Counselor not found"));
 
-        return counselor.getCounselingSlots();
+        return counselor.getSlotOfCounselors();
     }
 
     @Override
     @Transactional
-    public void assignSlotToCounselor(Long counselorId, Long slotId) {
+    public void assignSlotToCounselor(Long counselorId, Long slotId, DayOfWeek dayOfWeek) {
         Counselor counselor = counselorRepository.findById(counselorId)
                 .orElseThrow(() -> new NotFoundException("Counselor không tồn tại với ID: " + counselorId));
 
         CounselingSlot slot = counselingSlotRepository.findById(slotId)
                 .orElseThrow(() -> new NotFoundException("CounselingSlot không tồn tại với ID: " + slotId));
 
-        if (counselor.getCounselingSlots().contains(slot)) {
-            throw new BadRequestException("Counselor đã được gán CounselingSlot này");
-        }
+//        if (counselor.getCounselingSlots().contains(slot)) {
+//            throw new BadRequestException("Counselor đã được gán CounselingSlot này");
+//        }
 
-        counselor.getCounselingSlots().add(slot);
-        counselingSlotRepository.save(slot); // Lưu thay đổi nếu cần
+        SlotOfCounselor slotOfCounselor = SlotOfCounselor.builder()
+                .counselor(counselor)
+                .counselingSlot(slot)
+                .dayOfWeek(dayOfWeek)
+                .build();
+
+        boolean isHaving = counselor.getSlotOfCounselors().stream().anyMatch(slotOfCounselor1 -> slotOfCounselor1.getCounselingSlot().getId().equals(slotId) && slotOfCounselor1.getDayOfWeek().equals(dayOfWeek));
+        if (isHaving) {
+            throw new BadRequestException("Counselor already have this slot");
+        }
+        slotOfCounselorRepository.save(slotOfCounselor);
+
+        counselor.getSlotOfCounselors().add(slotOfCounselor);
         counselorRepository.save(counselor); // Lưu Counselor với danh sách slots cập nhật
     }
+
+    private final SlotOfCounselorRepository slotOfCounselorRepository;
 
     @Override
     @Transactional
@@ -168,15 +180,17 @@ public class ManageCounselorServiceImpl implements ManageCounselorService {
         Counselor counselor = counselorRepository.findById(counselorId)
                 .orElseThrow(() -> new NotFoundException("Counselor không tồn tại với ID: " + counselorId));
 
-        CounselingSlot slot = counselingSlotRepository.findById(slotId)
+//        CounselingSlot slot = counselingSlotRepository.findById(slotId)
+//                .orElseThrow(() -> new NotFoundException("CounselingSlot không tồn tại với ID: " + slotId));
+
+        SlotOfCounselor slotOfCounselor = slotOfCounselorRepository.findById(slotId)
                 .orElseThrow(() -> new NotFoundException("CounselingSlot không tồn tại với ID: " + slotId));
 
-        if (!counselor.getCounselingSlots().contains(slot)) {
-            throw new BadRequestException("Counselor không có CounselingSlot này để gỡ gán");
-        }
+//        if (!counselor.getCounselingSlots().contains(slot)) {
+//            throw new BadRequestException("Counselor không có CounselingSlot này để gỡ gán");
+//        }
 
-        counselor.getCounselingSlots().remove(slot);
-        counselingSlotRepository.save(slot); // Lưu thay đổi nếu cần
+        counselor.getSlotOfCounselors().remove(slotOfCounselor);
         counselorRepository.save(counselor); // Lưu Counselor với danh sách slots cập nhật
     }
 

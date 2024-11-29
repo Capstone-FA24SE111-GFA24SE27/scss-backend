@@ -19,12 +19,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -78,6 +80,23 @@ public class QuestionCardController {
         return ResponseUtil.getResponse("Successfully answer QuestionCard", HttpStatus.OK);
     }
 
+    @PostMapping("/student/chat-session/create/{questionCardId}")
+    public ResponseEntity<Object> createChatSessionForQuestionCard(
+            @AuthenticationPrincipal @NotNull Account principal,
+            @PathVariable Long questionCardId) {
+
+
+        logger.info("Received request to create chat session QuestionCard for Account ID: {}", principal.getId());
+
+        Long studentId = principal.getProfile().getId();
+
+        questionCardService.createChatSessionForQuestionCard(studentId, questionCardId);
+
+        logger.info("Successfully answer QuestionCard");
+
+        return ResponseUtil.getResponse("Successfully answer QuestionCard", HttpStatus.OK);
+    }
+
     @PutMapping("/answer/edit/{questionCardId}")
     public ResponseEntity<Object> editQuestionCard(
             @Valid @RequestBody AnswerQuestionCardRequestDTO dto,
@@ -103,13 +122,12 @@ public class QuestionCardController {
     public ResponseEntity<Object> getQuestionCardsWithFilter(
             @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
             @RequestParam(name = "status", required = false) QuestionCardStatus status,
-            @RequestParam(name = "isTaken", required = false) Boolean isTaken,
             @RequestParam(name = "isClosed", required = false) Boolean isClosed,
-            @RequestParam(name = "isChatSessionClosed", required = false) Boolean isChatSessionClosed,
             @RequestParam(name = "type", required = false) QuestionType type,
             @RequestParam(name = "sortBy", defaultValue = "createdDate") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
             @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size,
             @RequestParam(name = "topicId", required = false) Long topicId,
             @NotNull @AuthenticationPrincipal Account principle) {
 
@@ -121,12 +139,10 @@ public class QuestionCardController {
         QuestionCardFilterRequestDTO filterRequest = QuestionCardFilterRequestDTO.builder()
                 .keyword(keyword.isEmpty() ? null : keyword.trim())
                 .status(status)
-                .isTaken(isTaken)
                 .isClosed(isClosed)
-                .isChatSessionClosed(isChatSessionClosed)
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
-                .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
+                .pagination(PageRequest.of(page - 1, size, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .type(type)
                 .topicId(topicId)
                 .build();
@@ -135,16 +151,48 @@ public class QuestionCardController {
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }
 
+    @GetMapping("/manage/student/filter/{studentId}")
+    public ResponseEntity<Object> getQuestionCardsWithFilter(
+            @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
+            @RequestParam(name = "status", required = false) QuestionCardStatus status,
+            @RequestParam(name = "isClosed", required = false) Boolean isClosed,
+            @RequestParam(name = "type", required = false) QuestionType type,
+            @RequestParam(name = "sortBy", defaultValue = "createdDate") String sortBy,
+            @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
+            @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @PathVariable Long studentId) {
+
+        if (page < 1) {
+            logger.error("Invalid page number: {}", page);
+            throw new IllegalArgumentException("Page must be positive (page > 0)");
+        }
+
+        QuestionCardFilterRequestDTO filterRequest = QuestionCardFilterRequestDTO.builder()
+                .keyword(keyword.isEmpty() ? null : keyword.trim())
+                .status(status)
+                .isClosed(isClosed)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
+                .type(type)
+                .build();
+
+        PaginationDTO<List<QuestionCardResponseDTO>> responseDTO = questionCardService.getQuestionCardsWithFilterForStudent(filterRequest, studentId);
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
     @GetMapping("/counselor/filter")
     public ResponseEntity<Object> getQuestionCardsForCounselor(
             @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
             @RequestParam(name = "isClosed", required = false) Boolean isClosed,
-            @RequestParam(name = "isChatSessionClosed", required = false) Boolean isChatSessionClosed,
+            @RequestParam(name = "status", required = false) QuestionCardStatus status,
             @RequestParam(name = "sortBy", defaultValue = "createdDate") String sortBy,
             @RequestParam(name = "studentCode", required = false) String studentCode,
             @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
             @RequestParam(name = "page", defaultValue = "1") Integer page,
-            @RequestParam(name = "topicId", required = false) Long topicId,
+            @RequestParam(name = "size", defaultValue = "10") Integer size,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @NotNull @AuthenticationPrincipal Account principle) {
 
         if (page < 1) {
@@ -155,15 +203,53 @@ public class QuestionCardController {
         QuestionCardFilterRequestDTO filterRequest = QuestionCardFilterRequestDTO.builder()
                 .keyword(keyword.isEmpty() ? null : keyword.trim())
                 .isClosed(isClosed)
-                .isChatSessionClosed(isChatSessionClosed)
+                .status(status)
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
-                .pagination(PageRequest.of(page - 1, 10, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
+                .pagination(PageRequest.of(page - 1, size, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .studentCode(studentCode)
-                .topicId(topicId)
+                .from(from)
+                .to(to)
                 .build();
 
         PaginationDTO<List<QuestionCardResponseDTO>> responseDTO = questionCardService.getQuestionCardsWithFilterForCounselor(filterRequest, principle.getProfile().getId());
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/manage/counselor/filter/{counselorId}")
+    public ResponseEntity<Object> getQuestionCardsForCounselorForManage(
+            @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
+            @RequestParam(name = "isClosed", required = false) Boolean isClosed,
+            @RequestParam(name = "status", required = false) QuestionCardStatus status,
+            @RequestParam(name = "sortBy", defaultValue = "createdDate") String sortBy,
+            @RequestParam(name = "studentCode", required = false) String studentCode,
+            @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
+            @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size,
+            @RequestParam(name = "topicId", required = false) Long topicId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @PathVariable long counselorId) {
+
+        if (page < 1) {
+            logger.error("Invalid page number: {}", page);
+            throw new IllegalArgumentException("Page must be positive (page > 0)");
+        }
+
+        QuestionCardFilterRequestDTO filterRequest = QuestionCardFilterRequestDTO.builder()
+                .keyword(keyword.isEmpty() ? null : keyword.trim())
+                .isClosed(isClosed)
+                .status(status)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .pagination(PageRequest.of(page - 1, size, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
+                .studentCode(studentCode)
+                .topicId(topicId)
+                .from(from)
+                .to(to)
+                .build();
+
+        PaginationDTO<List<QuestionCardResponseDTO>> responseDTO = questionCardService.getQuestionCardsWithFilterForCounselorForManage(filterRequest, counselorId);
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }
 
@@ -210,6 +296,15 @@ public class QuestionCardController {
             @NotNull @AuthenticationPrincipal Account principle) {
 
         QuestionCardResponseDTO responseDTO = questionCardService.getOneQuestionCardsForCounselor(questionCardId, principle.getProfile().getId());
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/manage/find-all")
+    public ResponseEntity<Object> getAllQuestionCard(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        List<QuestionCardResponseDTO> responseDTO = questionCardService.getAll(from, to);
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }
 
@@ -323,6 +418,7 @@ public class QuestionCardController {
             @NotNull @AuthenticationPrincipal Account principle
     ) {
         questionCardService.sendMessage(sessionId, createMessageDTO.getContent(), principle);
+        System.out.println("hello");
         return ResponseEntity.ok("Message sent successfully");
     }
 
@@ -383,9 +479,10 @@ public class QuestionCardController {
     @PostMapping("/review/{questionCardId}/{questionCardStatus}")
     public ResponseEntity<Object> reviewQC(
             @PathVariable Long questionCardId,
-            @PathVariable QuestionCardStatus questionCardStatus) {
+            @PathVariable QuestionCardStatus questionCardStatus,
+            @RequestParam(name = "reviewReason", defaultValue = "") String reviewReason) {
 
-        questionCardService.reviewQuestionCard(questionCardId, questionCardStatus);
+        questionCardService.reviewQuestionCard(questionCardId, questionCardStatus, reviewReason);
         return ResponseUtil.getResponse("Question card is review successfully" ,HttpStatus.OK);
     }
 

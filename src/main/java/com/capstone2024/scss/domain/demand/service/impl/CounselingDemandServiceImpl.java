@@ -1,9 +1,9 @@
 package com.capstone2024.scss.domain.demand.service.impl;
 
-import com.capstone2024.scss.application.advice.exeptions.ForbiddenException;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.demand.dto.CounselingDemandDTO;
+import com.capstone2024.scss.application.demand.dto.request.CounselingDemandCreateRequestDTO;
 import com.capstone2024.scss.application.demand.dto.request.CounselingDemandFilterRequestDTO;
 import com.capstone2024.scss.application.demand.dto.request.CounselingDemandUpdateRequestDTO;
 import com.capstone2024.scss.domain.common.mapper.demand.DemandMapper;
@@ -20,8 +20,11 @@ import com.capstone2024.scss.infrastructure.repositories.student.StudentReposito
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,7 +38,7 @@ public class CounselingDemandServiceImpl implements CounselingDemandService {
     private final CounselorRepository counselorRepository;
     private final StudentService studentService;
 
-    public CounselingDemandDTO createCounselingDemand(Long studentId, Long supportStaffId) {
+    public CounselingDemandDTO createCounselingDemand(Long studentId, Long supportStaffId, CounselingDemandCreateRequestDTO counselingDemandDTO) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new NotFoundException("Student not found"));
 
@@ -43,12 +46,24 @@ public class CounselingDemandServiceImpl implements CounselingDemandService {
                 .orElseThrow(() -> new NotFoundException("Support staff not found"));
 
         CounselingDemand counselingDemand = CounselingDemand.builder()
-                .status(CounselingDemand.Status.WAITING)
                 .student(student)
                 .supportStaff(supportStaff)
+                .issueDescription(counselingDemandDTO.getIssueDescription())
+                .causeDescription(counselingDemandDTO.getCauseDescription())
+                .priorityLevel(counselingDemandDTO.getPriorityLevel())
+                .additionalInformation(counselingDemandDTO.getAdditionalInformation())
+                .contactNote(counselingDemandDTO.getContactNote())
+                .demandType(counselingDemandDTO.getDemandType())
                 .build();
 
+        Counselor counselor = counselorRepository.findById(counselingDemandDTO.getCounselorId())
+                .orElseThrow(() -> new NotFoundException("Counselor not found"));
+        counselingDemand.setCounselor(counselor);
+        counselingDemand.setStatus(CounselingDemand.Status.PROCESSING);
+        counselingDemand.setStartDateTime(LocalDateTime.now());
+
         CounselingDemand savedDemand = counselingDemandRepository.save(counselingDemand);
+        studentService.excludeAllDemandProblemTagsByStudentId(counselingDemand.getStudent().getId());
         return DemandMapper.toCounselingDemandDTO(savedDemand);
     }
 
@@ -85,18 +100,12 @@ public class CounselingDemandServiceImpl implements CounselingDemandService {
         CounselingDemand counselingDemand = counselingDemandRepository.findById(counselingDemandId)
                 .orElseThrow(() -> new NotFoundException("Counseling Demand not found"));
 
-        if (updateRequestDTO.getCounselorId() != null) {
-            Counselor counselor = counselorRepository.findById(updateRequestDTO.getCounselorId())
-                    .orElseThrow(() -> new NotFoundException("Counselor not found"));
-            counselingDemand.setCounselor(counselor);
-            counselingDemand.setStatus(CounselingDemand.Status.PROCESSING);
-            if(counselingDemand.getStartDateTime() == null) {
-                counselingDemand.setStartDateTime(LocalDateTime.now());
-            }
-        }
-
         counselingDemand.setSummarizeNote(updateRequestDTO.getSummarizeNote());
         counselingDemand.setContactNote(updateRequestDTO.getContactNote());
+        counselingDemand.setPriorityLevel(updateRequestDTO.getPriorityLevel());
+        counselingDemand.setIssueDescription(updateRequestDTO.getIssueDescription());
+        counselingDemand.setCauseDescription(updateRequestDTO.getCauseDescription());
+        counselingDemand.setAdditionalInformation(updateRequestDTO.getAdditionalInformation());
 
         counselingDemand = counselingDemandRepository.save(counselingDemand);
 
@@ -107,15 +116,10 @@ public class CounselingDemandServiceImpl implements CounselingDemandService {
     public void deleteCounselingDemandIfWaiting(Long counselingDemandId) {
         CounselingDemand counselingDemand = counselingDemandRepository.findById(counselingDemandId)
                 .orElseThrow(() -> new NotFoundException("Counseling Demand not found"));
-
-        if (counselingDemand.getStatus() == CounselingDemand.Status.WAITING) {
-            counselingDemandRepository.delete(counselingDemand);
-        } else {
-            throw new ForbiddenException("Counseling Demand can only be deleted if its status is WAITING");
-        }
     }
 
     @Override
+    @Transactional
     public PaginationDTO<List<CounselingDemandDTO>> filterCounselingDemandsForCounselor(CounselingDemandFilterRequestDTO filterRequest, Long counselorId) {
         Page<CounselingDemand> counselingDemandsPage = counselingDemandRepository.findCounselingDemandsWithFilterForCounselor(
                 filterRequest.getKeyword(),
@@ -140,13 +144,25 @@ public class CounselingDemandServiceImpl implements CounselingDemandService {
         CounselingDemand counselingDemand = counselingDemandRepository.findById(counselingDemandId)
                 .orElseThrow(() -> new NotFoundException("Counseling demand not found with ID: " + counselingDemandId));
 
-        studentService.excludeAllDemandProblemTagsByStudentId(counselingDemand.getStudent().getId());
+//        studentService.excludeAllDemandProblemTagsByStudentId(counselingDemand.getStudent().getId());
         counselingDemand.setEndDateTime(LocalDateTime.now());
-        counselingDemand.setStatus(CounselingDemand.Status.SOLVE);
+        counselingDemand.setStatus(CounselingDemand.Status.DONE);
         counselingDemand.setSummarizeNote(summarizeNote);
         CounselingDemand updatedDemand = counselingDemandRepository.save(counselingDemand);
 
         return DemandMapper.toCounselingDemandDTO(updatedDemand);
+    }
+
+    @Override
+    public List<CounselingDemandDTO> getAll(LocalDate from, LocalDate to) {
+        LocalDateTime fromDateTime = (from != null) ? from.atStartOfDay() : null;
+        LocalDateTime toDateTime = (to != null) ? to.atTime(LocalTime.MAX) : null;
+
+        List<CounselingDemand> counselingDemands = counselingDemandRepository.findAllByStartDateTimeBetween(fromDateTime, toDateTime);
+
+        return counselingDemands.stream()
+                .map(DemandMapper::toCounselingDemandDTO)
+                .collect(Collectors.toList());
     }
 
 }

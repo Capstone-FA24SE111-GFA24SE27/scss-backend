@@ -21,6 +21,8 @@ public class CounselingAppointmentMapper {
                 .endDateTime(appointment.getEndDateTime())
                 .status(appointment.getStatus())
                 .meetingType(appointment.getMeetingType())
+                .reason(appointment.getReason())
+                .cancelReason(appointment.getCancelReason())
                 .isHavingReport(appointment.getReport() != null ? true : false);
 
         // Xử lý theo kiểu họp mặt

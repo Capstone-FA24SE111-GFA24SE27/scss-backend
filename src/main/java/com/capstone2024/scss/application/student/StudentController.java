@@ -7,14 +7,11 @@ import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
 import com.capstone2024.scss.application.counseling_appointment.dto.request.counseling_appointment.AppointmentFilterDTO;
 import com.capstone2024.scss.application.student.dto.*;
+import com.capstone2024.scss.application.student.dto.enums.TypeOfAttendanceFilter;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
-import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.student.services.StudentService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +27,10 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/students")
@@ -102,23 +102,44 @@ public class StudentController {
             @RequestParam(name = "minGPA", required = false) BigDecimal minGPA,
             @RequestParam(name = "maxGPA", required = false) BigDecimal maxGPA,
 
-            @RequestParam(name = "isIncludeBehavior", required = true, defaultValue = "false") boolean isIncludeBehavior,
+            @RequestParam(name = "isUsingPrompt", required = true, defaultValue = "true") boolean isUsingPrompt,
             @RequestParam(name = "semesterIdForBehavior", required = false) Long semesterIdForBehavior,
             @RequestParam(name = "promptForBehavior", required = false) String promptForBehavior,
+            @RequestParam(name = "behaviorList", required = false) String behaviorList,
+
+            @RequestParam(name = "typeOfAttendanceFilter", required = false) TypeOfAttendanceFilter typeOfAttendanceFilter,
+            @RequestParam(name = "semesterIdForAttendance", required = false) Long semesterIdForAttendance,
+            @RequestParam(name = "minSubjectForAttendance", required = false) Integer minSubjectForAttendance,
+
+            @RequestParam(name = "fromForAttendanceCount", required = false) Integer fromForAttendanceCount,
+            @RequestParam(name = "toForAttendanceCount", required = false) Integer toForAttendanceCount,
+
+            @RequestParam(name = "fromForAttendancePercentage", required = false) Double fromForAttendancePercentage,
+            @RequestParam(name = "toForAttendancePercentage", required = false) Double toForAttendancePercentage,
 
             @RequestParam(name = "sortBy", defaultValue = "createdDate") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
-            @RequestParam(name = "page", defaultValue = "1") Integer page) {
+            @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size) {
 
         if (page < 1) {
             throw new IllegalArgumentException("Page must be positive (page > 0)");
         }
 
+        List<String> behaviorListString = null;
+        if(behaviorList != null) {
+            if(!behaviorList.isBlank()) {
+                behaviorListString = Arrays.asList(behaviorList.split(","));
+            }
+        }
+
         StudentFilterRequestDTO filterRequest = StudentFilterRequestDTO.builder()
+                .page(page)
+                .size(size)
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
                 .keyword(keyword != null && !keyword.isEmpty() ? keyword.trim() : null)
-                .pagination(PageRequest.of(page - 1, 10, Sort.by(
+                .pagination(PageRequest.of(0, 99999, Sort.by(
                         sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .academicOption(StudentAcademicFilterDTO.builder()
                         .specializationId(specializationId)
@@ -131,12 +152,34 @@ public class StudentController {
                         .min(minGPA)
                         .max(maxGPA)
                         .build())
-                .isIncludeBehavior(isIncludeBehavior)
+                .isUsingPrompt(isUsingPrompt)
                 .behaviorOption(StudentBehaviorFilterDTO.builder()
                         .semesterId(semesterIdForBehavior)
-                        .prompt(promptForBehavior != null ? promptForBehavior : "Creative Thinking, Good Time Management Skills")
+                        .prompt(promptForBehavior)
+                        .behaviorList(behaviorListString)
                         .build())
                 .build();
+
+        if(typeOfAttendanceFilter != null) {
+            switch (typeOfAttendanceFilter) {
+                case COUNT -> {
+                    filterRequest.setAttendanceAsCountOption(StudentAttendanceAsCountFilterDTO.builder()
+                                    .semesterId(semesterIdForAttendance)
+                                    .minSubject(minSubjectForAttendance)
+                                    .from(fromForAttendanceCount)
+                                    .to(toForAttendanceCount)
+                            .build());
+                }
+                case PERCENTAGE -> {
+                    filterRequest.setAttendanceAsPercentOption(StudentAttendanceAsPercentFilterDTO.builder()
+                                    .semesterId(semesterIdForAttendance)
+                                    .minSubject(minSubjectForAttendance)
+                                    .from(fromForAttendancePercentage)
+                                    .to(toForAttendancePercentage)
+                            .build());
+                }
+            }
+        }
 
         PaginationDTO<List<StudentDetailForFilterDTO>> responseDTO = studentService.getStudents(filterRequest);
         return ResponseEntity.ok(responseDTO);
@@ -158,6 +201,7 @@ public class StudentController {
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
                 .page(page)
+                .size(10)
                 .build();
 
         PaginationDTO<List<CounselingAppointmentDTO>> responseDTO = appointmentService.getAppointmentsWithFilterForStudent(filterDTO, studentId);
@@ -180,6 +224,19 @@ public class StudentController {
         return ResponseUtil.getResponse(attendances, HttpStatus.OK);
     }
 
+    @GetMapping("/mark-report/{studentId}/semester/{semesterName}")
+    public ResponseEntity<Object> getMarkReportByStudentCodeAndSemesterName(
+            @PathVariable Long studentId,
+            @PathVariable String semesterName) {
+
+        List<AttendanceDTO> attendances = studentService.getAttendanceByStudentCodeAndSemesterName(studentId, semesterName);
+        attendances = attendances.stream().map(attendanceDTO -> {
+            attendanceDTO.setDetais(null);
+            return attendanceDTO;
+        }).collect(Collectors.toList());
+        return ResponseUtil.getResponse(attendances, HttpStatus.OK);
+    }
+
     @GetMapping("/{studentId}/attendance/{attendanceId}")
     public ResponseEntity<Object> getAttendanceDetailsByStudentCodeAndAttendanceId(
             @PathVariable Long studentId,
@@ -198,6 +255,14 @@ public class StudentController {
         return ResponseUtil.getResponse(studentService.getDemandProblemTagDetailByStudentAndSemester(studentId, semesterName), HttpStatus.OK);
     }
 
+    @GetMapping("/{studentId}/behavior/general-assessment/semester/{semesterName}")
+    public ResponseEntity<Object> getGeneralAssessment(
+            @PathVariable Long studentId,
+            @PathVariable String semesterName) {
+
+        return ResponseUtil.getResponse(studentService.getGeneralAssessment(studentId, semesterName), HttpStatus.OK);
+    }
+
     @GetMapping("/recommendation/filter")
     public ResponseEntity<Object> getStudentsWithRecommendation(
             @RequestParam(name = "keyword", required = false) String keyword,
@@ -205,44 +270,99 @@ public class StudentController {
             @RequestParam(name = "specializationId", required = false) Long specializationId,
             @RequestParam(name = "departmentId", required = false) Long departmentId,
             @RequestParam(name = "majorId", required = false) Long majorId,
+            @RequestParam(name = "currentTerm", required = false) Integer currentTerm,
 
+//            @RequestParam(name = "semesterIdForGPA", required = false) Long semesterIdForGPA,
+//            @RequestParam(name = "minGPA", required = false) BigDecimal minGPA,
+//            @RequestParam(name = "maxGPA", required = false) BigDecimal maxGPA,
+
+            @RequestParam(name = "isUsingPrompt", required = true, defaultValue = "true") boolean isUsingPrompt,
             @RequestParam(name = "semesterIdForBehavior", required = false) Long semesterIdForBehavior,
             @RequestParam(name = "promptForBehavior", required = false) String promptForBehavior,
+            @RequestParam(name = "behaviorList", required = false) String behaviorList,
+
+//            @RequestParam(name = "typeOfAttendanceFilter", required = false) TypeOfAttendanceFilter typeOfAttendanceFilter,
+//            @RequestParam(name = "semesterIdForAttendance", required = false) Long semesterIdForAttendance,
+//            @RequestParam(name = "minSubjectForAttendance", required = false) Integer minSubjectForAttendance,
+//
+//            @RequestParam(name = "fromForAttendanceCount", required = false) Integer fromForAttendanceCount,
+//            @RequestParam(name = "toForAttendanceCount", required = false) Integer toForAttendanceCount,
+//
+//            @RequestParam(name = "fromForAttendancePercentage", required = false) Double fromForAttendancePercentage,
+//            @RequestParam(name = "toForAttendancePercentage", required = false) Double toForAttendancePercentage,
 
             @RequestParam(name = "sortBy", defaultValue = "createdDate") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
-            @RequestParam(name = "page", defaultValue = "1") Integer page) {
+            @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size) {
 
         if (page < 1) {
             throw new IllegalArgumentException("Page must be positive (page > 0)");
         }
 
+        List<String> behaviorListString = null;
+        if(behaviorList != null) {
+            if(!behaviorList.isBlank()) {
+                behaviorListString = Arrays.asList(behaviorList.split(","));
+            }
+        }
+
         StudentFilterRequestDTO filterRequest = StudentFilterRequestDTO.builder()
+                .page(page)
+                .size(size)
                 .sortBy(sortBy)
                 .sortDirection(sortDirection)
                 .keyword(keyword != null && !keyword.isEmpty() ? keyword.trim() : null)
-                .pagination(PageRequest.of(page - 1, 10, Sort.by(
+                .pagination(PageRequest.of(0, 99999, Sort.by(
                         sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
                 .academicOption(StudentAcademicFilterDTO.builder()
                         .specializationId(specializationId)
                         .departmentId(departmentId)
                         .majorId(majorId)
+                        .currentTerm(currentTerm)
                         .build())
-                .isIncludeBehavior(true)
+//                .gpaOption(StudentGPAFilterDTO.builder()
+//                        .semesterId(21L)
+//                        .min(BigDecimal.valueOf(0))
+//                        .max(BigDecimal.valueOf(5).subtract(BigDecimal.valueOf(0.001)))
+//                        .build())
+                .isUsingPrompt(isUsingPrompt)
                 .behaviorOption(StudentBehaviorFilterDTO.builder()
                         .semesterId(semesterIdForBehavior)
                         .prompt(promptForBehavior)
+                        .behaviorList(behaviorListString)
                         .build())
                 .build();
+
+//        if(typeOfAttendanceFilter != null) {
+//            switch (typeOfAttendanceFilter) {
+//                case COUNT -> {
+//                    filterRequest.setAttendanceAsCountOption(StudentAttendanceAsCountFilterDTO.builder()
+//                            .semesterId(semesterIdForAttendance)
+//                            .minSubject(minSubjectForAttendance)
+//                            .from(fromForAttendanceCount)
+//                            .to(toForAttendanceCount)
+//                            .build());
+//                }
+//                case PERCENTAGE -> {
+//                    filterRequest.setAttendanceAsPercentOption(StudentAttendanceAsPercentFilterDTO.builder()
+//                            .semesterId(21L)
+//                            .minSubject(1)
+//                            .from(20.0)
+//                            .to(20.0)
+//                            .build());
+//                }
+//            }
+//        }
 
         PaginationDTO<List<StudentDetailForFilterDTO>> responseDTO = studentService.getStudentsWithRecommend(filterRequest);
         return ResponseEntity.ok(responseDTO);
     }
 
     @PutMapping("/problem-tag/exclude-all/{studentId}")
-    public ResponseEntity<String> excludeAllTagsForStudent(@PathVariable Long studentId) {
+    public ResponseEntity<Object> excludeAllTagsForStudent(@PathVariable Long studentId) {
         studentService.excludeAllDemandProblemTagsByStudentId(studentId);
-        return ResponseEntity.ok("All DemandProblemTags for student " + studentId + " have been excluded.");
+        return ResponseUtil.getResponse(ResponseEntity.ok("All DemandProblemTags for student " + studentId + " have been excluded."), HttpStatus.OK);
     }
 }
 

@@ -6,6 +6,8 @@ import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
 import lombok.*;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
+
 @Getter
 @Setter
 @Builder
@@ -23,4 +25,6 @@ public class QuestionCardFilterRequestDTO {
     private QuestionType type;
     private String studentCode;
     private Long topicId;
+    private LocalDate from;
+    private LocalDate to;
 }

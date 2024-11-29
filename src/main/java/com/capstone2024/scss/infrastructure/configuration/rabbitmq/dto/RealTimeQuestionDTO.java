@@ -13,7 +13,13 @@ public class RealTimeQuestionDTO {
     public enum Type {
         STUDENT_CREATE_NEW,
         COUNSELOR_ANSWER,
+        COUNSELOR_EDIT_ANSWER,
         COUNSELOR_CLOSE,
-        STUDENT_DELETE, STUDENT_UPDATE, FLAG, REVIEW, STUDENT_CLOSE
+        STUDENT_DELETE,
+        STUDENT_UPDATE,
+        FLAG,
+        REVIEW,
+        STUDENT_CLOSE,
+        STUDENT_CREATE_CHAT_SESSION
     }
 }

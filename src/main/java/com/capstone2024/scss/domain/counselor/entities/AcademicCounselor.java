@@ -19,8 +19,8 @@ import lombok.experimental.SuperBuilder;
 @PrimaryKeyJoinColumn(name = "counselor_id")
 public class AcademicCounselor extends Counselor {
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "specialization_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "specialization_id")
     private Specialization specialization;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)

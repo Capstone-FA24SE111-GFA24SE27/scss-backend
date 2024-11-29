@@ -156,6 +156,14 @@ public class AuthenticationController {
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }
 
+    @GetMapping("/refresh-token/{refreshToken}")
+    public ResponseEntity<Object> getNewAccessToken(HttpServletResponse response, HttpServletRequest request, @PathVariable String refreshToken) {
+        logger.info("Refreshing access token.");
+        JwtTokenDTO responseDTO = authenticationService.refreshAccessTokenOnPath(response, refreshToken);
+        logger.info("Access token successfully refreshed.");
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletResponse response) {
         // Xóa refresh token bằng cách đặt thời gian sống của cookie thành 0

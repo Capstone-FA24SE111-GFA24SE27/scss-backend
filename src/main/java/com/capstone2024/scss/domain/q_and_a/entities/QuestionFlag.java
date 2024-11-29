@@ -28,9 +28,6 @@ public class QuestionFlag extends BaseEntity {
     @JoinColumn(name = "question_card_id", nullable = false)
     private QuestionCard questionCard; // Thẻ câu hỏi liên quan đến cờ này
 
-    @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
-    private String reason; // Lý do gắn cờ
-
     @Column(name = "flag_date", nullable = false)
     private LocalDateTime flagDate = LocalDateTime.now();
 

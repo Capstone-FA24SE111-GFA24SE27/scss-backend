@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -30,4 +31,11 @@ public interface CounselingDemandRepository extends JpaRepository<CounselingDema
                                                                        @Param("status") CounselingDemand.Status status,
                                                                        @Param("counselorId") Long counselorId,
                                                                        Pageable pageable);
+
+    @Query("SELECT d FROM CounselingDemand d " +
+            "WHERE (:from IS NULL OR d.startDateTime >= :from) " +
+            "AND (:to IS NULL OR d.startDateTime <= :to)")
+    List<CounselingDemand> findAllByStartDateTimeBetween(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
 }

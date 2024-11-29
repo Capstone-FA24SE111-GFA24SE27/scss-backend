@@ -12,13 +12,15 @@ import com.capstone2024.scss.application.counselor.dto.ManageCounselorDTO;
 import com.capstone2024.scss.application.counselor.dto.request.*;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counselor.entities.AvailableDateRange;
+import com.capstone2024.scss.domain.counselor.entities.SlotOfCounselor;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 
 public interface ManageCounselorService {
-    PaginationDTO<List<CounselingAppointmentRequestDTO>> getAppointmentsRequest (Long counselorId, AppointmentRequestFilterDTO filterRequest);
+    PaginationDTO<List<CounselingAppointmentRequestDTO>> getAppointmentsRequestOfCounselorForManage(Long counselorId, AppointmentRequestFilterDTO filterRequest);
     List<CounselingAppointmentDTO> getAppointmentsForCounselor(LocalDate fromDate, LocalDate toDate, Long counselorId);
     PaginationDTO<List<CounselingAppointmentDTO>> getAppointmentsWithFilterForCounselor(AppointmentFilterDTO filterDTO, Long counselorId);
     AppointmentReportResponse getAppointmentReportByAppointmentId(Long appointmentId, Long counselorId);
@@ -31,9 +33,9 @@ public interface ManageCounselorService {
 
     List<CounselingSlot> getAllCounselingSlots();
 
-    List<CounselingSlot> getCounselingSlotsByCounselorId(Long counselorId);
+    List<SlotOfCounselor> getCounselingSlotsByCounselorId(Long counselorId);
 
-    void assignSlotToCounselor(Long counselorId, Long slotId);
+    void assignSlotToCounselor(Long counselorId, Long slotId, DayOfWeek dayOfWeek);
 
     void unassignSlotFromCounselor(Long counselorId, Long slotId);
 

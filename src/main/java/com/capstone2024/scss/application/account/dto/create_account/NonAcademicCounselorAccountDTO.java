@@ -1,5 +1,7 @@
 package com.capstone2024.scss.application.account.dto.create_account;
 
+import com.capstone2024.scss.application.counselor.dto.CertificationDTO;
+import com.capstone2024.scss.application.counselor.dto.QualificationDTO;
 import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
@@ -7,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class NonAcademicCounselorAccountDTO {
@@ -31,4 +34,16 @@ public class NonAcademicCounselorAccountDTO {
 
     @NotNull(message = "Expertise ID is required")
     private Long expertiseId;
+
+    private String specializedSkills;
+
+    private String otherSkills;
+
+    private String workHistory;
+
+    private String achievements;
+
+    private List<QualificationDTO> qualifications;
+
+    private List<CertificationDTO> certifications;
 }

@@ -7,6 +7,7 @@ import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface QuestionCardService {
@@ -14,6 +15,8 @@ public interface QuestionCardService {
     PaginationDTO<List<QuestionCardResponseDTO>> getQuestionCardsWithFilterForStudent(QuestionCardFilterRequestDTO filterRequest, Long studentId);
 
     PaginationDTO<List<QuestionCardResponseDTO>> getQuestionCardsWithFilterForCounselor(QuestionCardFilterRequestDTO filterRequest, Long counselor);
+
+    PaginationDTO<List<QuestionCardResponseDTO>> getQuestionCardsWithFilterForCounselorForManage(QuestionCardFilterRequestDTO filterRequest, Long counselor);
 
     void takeQuestionCard(Long questionCardId, Long counselorId);
 
@@ -35,7 +38,7 @@ public interface QuestionCardService {
 
     PaginationDTO<List<QuestionCardResponseDTO>> getQuestionCardsforSupportStaff(QuestionCardFilterRequestDTO filterRequest);
 
-    void reviewQuestionCard(Long questionCardId, QuestionCardStatus questionCardStatus);
+    void reviewQuestionCard(Long questionCardId, QuestionCardStatus questionCardStatus, String reviewReason);
 
     QuestionCardResponseDTO getOneQuestionCardsForReview(Long questionCardId);
 
@@ -54,4 +57,8 @@ public interface QuestionCardService {
     ChatSessionDTO getMessageByChatSessionForcounselor(Long questionCardId, Long counselorId);
 
     ChatSessionDTO getMessageByChatSession(Long questionCardId, Long id, Role role);
+
+    void createChatSessionForQuestionCard(Long studentId, Long questionCardId);
+
+    List<QuestionCardResponseDTO> getAll(LocalDate from, LocalDate to);
 }

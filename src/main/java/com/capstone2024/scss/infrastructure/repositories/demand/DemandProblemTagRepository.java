@@ -3,8 +3,10 @@ package com.capstone2024.scss.infrastructure.repositories.demand;
 import com.capstone2024.scss.domain.demand.entities.DemandProblemTag;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -18,6 +20,11 @@ public interface DemandProblemTagRepository extends JpaRepository<DemandProblemT
             @Param("semesterId") Long semesterId
     );
 
-    @Query("SELECT dpt FROM DemandProblemTag dpt WHERE dpt.student.id = :studentId AND dpt.isExcluded = false")
-    List<DemandProblemTag> findByStudentIdAndIsExcludedFalse(@Param("studentId") Long studentId);
+    @Query("SELECT dpt FROM DemandProblemTag dpt WHERE dpt.student.id = :studentId AND dpt.isExcluded = :isExcluded")
+    List<DemandProblemTag> findByStudentIdAndIsExcludedFalse(@Param("studentId") Long studentId, @Param("isExcluded") boolean isExcluded);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE DemandProblemTag dpt SET dpt.isExcluded = true WHERE dpt.isExcluded = false")
+    int updateIsExcludedForAllTags(boolean isExcluded);
 }

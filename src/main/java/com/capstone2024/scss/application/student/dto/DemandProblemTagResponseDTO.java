@@ -14,6 +14,7 @@ public class DemandProblemTagResponseDTO {
     private String problemTagName;     // ID của ProblemTag
     private int number;            // Số lượng
     private String semesterName;
+    private String category;
     private boolean isContained;
     private boolean isExcluded;
 }

@@ -17,14 +17,14 @@ public class CreateQuestionCardRequestDTO {
 
     @NotNull(message = "Question type must not be null")
     private QuestionType questionType;
-
-    private Long topicId;
-
-    private Long specializationId;
-
-    private Long departmentId;
-
-    private Long majorId;
-
-    private Long expertiseId;
+//
+//    private Long topicId;
+//
+//    private Long specializationId;
+//
+//    private Long departmentId;
+//
+//    private Long majorId;
+//
+//    private Long expertiseId;
 }

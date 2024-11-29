@@ -13,6 +13,7 @@ public class ProfileMapper {
         return ProfileDTO.builder()
                 .id(profile.getId()) // Assuming `BaseEntity` has a getId() method
                 .fullName(profile.getFullName())
+                .email(profile.getAccount().getEmail())
                 .phoneNumber(profile.getPhoneNumber())
                 .dateOfBirth(profile.getDateOfBirth())
                 .avatarLink(profile.getAvatarLink())

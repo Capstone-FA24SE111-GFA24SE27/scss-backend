@@ -5,6 +5,7 @@ import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.notification.dtos.NotificationDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
+import com.capstone2024.scss.domain.common.helpers.DateTimeHelper;
 import com.capstone2024.scss.domain.notification.entities.Notification;
 import com.capstone2024.scss.domain.notification.services.NotificationService;
 import com.capstone2024.scss.infrastructure.configuration.rabbitmq.RabbitMQConfig;
@@ -66,7 +67,7 @@ public class NotificationServiceImpl implements NotificationService {
                         .title(notification.getTitle())
                         .readStatus(notification.isReadStatus())
                         .sender(notification.getSender())
-                        .createdDate(notification.getCreatedDate())
+                        .createdDate(DateTimeHelper.toMilliseconds(notification.getCreatedDate()))
                         .build()
                 )
                 .collect(Collectors.toList());
@@ -126,7 +127,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .readStatus(notification.isReadStatus())
                 .title(notification.getTitle())
                 .sender(notification.getSender())
-                .createdDate(notification.getCreatedDate())
+                .createdDate(DateTimeHelper.toMilliseconds(notification.getCreatedDate()))
                 .build();
     }
 

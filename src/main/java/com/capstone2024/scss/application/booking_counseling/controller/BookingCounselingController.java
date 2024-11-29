@@ -3,6 +3,7 @@ package com.capstone2024.scss.application.booking_counseling.controller;
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
 import com.capstone2024.scss.application.advice.exeptions.ForbiddenException;
+import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.booking_counseling.dto.CounselingAppointmentDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.counseling_appointment_request.CounselingAppointmentRequestDTO;
 import com.capstone2024.scss.application.booking_counseling.dto.request.AppointmentRequestFilterDTO;
@@ -19,10 +20,12 @@ import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselingRequestMapper;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentRequestService;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
+import com.capstone2024.scss.infrastructure.repositories.student.StudentRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -105,7 +108,9 @@ public class BookingCounselingController {
             @RequestParam(name = "meetingType", required = false) MeetingType meetingType,
             @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
             @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
-            @RequestParam(name = "page", defaultValue = "1") Integer page) {
+            @RequestParam(name = "status", required = false) CounselingAppointmentRequestStatus status,
+            @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size) {
 
         logger.info("Received getAppointmentsRequest - User: {}, Date From: {}, Date To: {}",
                 principal.getUsername(), dateFrom, dateTo);
@@ -120,12 +125,66 @@ public class BookingCounselingController {
                 .dateTo(dateTo)
                 .meetingType(meetingType)
                 .sortBy(sortBy)
+                .status(status)
+                .sortDirection(sortDirection)
+                .pagination(PageRequest.of(page - 1, size))
+                .build();
+
+        PaginationDTO<List<CounselingAppointmentRequestDTO>> responseDTO = counselingAppointmentRequestService.getAppointmentsRequest(principal, filterDTO);
+
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    private final StudentRepository studentRepository;
+
+    @GetMapping("/manage/student/appointment-request/{studentId}")
+    @io.swagger.v3.oas.annotations.Operation(
+            summary = "Get appointment requests",
+            description = "Retrieve appointment requests filtered by date range, meeting type, and sorted by various fields."
+    )
+    public ResponseEntity<Object> getAppointmentsRequestOfStudentForManage(
+            @PathVariable Long studentId,
+            @RequestParam(name = "dateFrom", required = false) LocalDate dateFrom,
+            @RequestParam(name = "dateTo", required = false) LocalDate dateTo,
+            @RequestParam(name = "meetingType", required = false) MeetingType meetingType,
+            @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
+            @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
+            @RequestParam(name = "status", required = false) CounselingAppointmentRequestStatus status,
+            @RequestParam(name = "page", defaultValue = "1") Integer page) {
+
+        Student student = studentRepository.findById(studentId).orElseThrow(() -> new NotFoundException("Student not found"));
+
+        Account principal = student.getAccount();
+
+        logger.info("Received getAppointmentsRequest - User: {}, Date From: {}, Date To: {}",
+                principal.getUsername(), dateFrom, dateTo);
+
+        if (page < 1) {
+            logger.error("Invalid page number: {}", page);
+            throw new BadRequestException("Page number must be greater than 0", HttpStatus.BAD_REQUEST);
+        }
+
+        AppointmentRequestFilterDTO filterDTO = AppointmentRequestFilterDTO.builder()
+                .dateFrom(dateFrom)
+                .dateTo(dateTo)
+                .meetingType(meetingType)
+                .sortBy(sortBy)
+                .status(status)
                 .sortDirection(sortDirection)
                 .pagination(PageRequest.of(page - 1, 10))
                 .build();
 
         PaginationDTO<List<CounselingAppointmentRequestDTO>> responseDTO = counselingAppointmentRequestService.getAppointmentsRequest(principal, filterDTO);
 
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/manage/appointment-request/find-all")
+    public ResponseEntity<Object> findAllAppointmentRequest(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        List<CounselingAppointmentRequestDTO> responseDTO = counselingAppointmentRequestService.findAll(from, to);
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }
 

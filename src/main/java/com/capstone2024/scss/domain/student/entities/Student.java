@@ -2,6 +2,7 @@ package com.capstone2024.scss.domain.student.entities;
 
 import com.capstone2024.scss.domain.account.entities.Profile;
 import com.capstone2024.scss.domain.counselor.entities.Specialization;
+import com.capstone2024.scss.domain.demand.entities.StudentFollowing;
 import com.capstone2024.scss.domain.q_and_a.entities.QuestionBan;
 import com.capstone2024.scss.domain.q_and_a.entities.QuestionFlag;
 import jakarta.persistence.*;
@@ -51,6 +52,9 @@ public class Student extends Profile {
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "counseling_profile_id", referencedColumnName = "id")
     private StudentCounselingProfile counselingProfile;
+
+//    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<StudentFollowing> followings;
 
 //    public boolean checkQuestionBan() {
 //        // Lấy lệnh "ban" gần đây nhất (nếu có)

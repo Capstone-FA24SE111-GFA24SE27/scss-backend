@@ -23,11 +23,14 @@ import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counselor.entities.*;
+import com.capstone2024.scss.domain.student.entities.Student;
+import com.capstone2024.scss.infrastructure.configuration.openai.OpenAIService;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingAppointmentRequestRepository;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingSlotRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.ExpertiseRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.SpecializationRepository;
+import com.capstone2024.scss.infrastructure.repositories.student.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -49,6 +52,8 @@ public class CounselorServiceImpl implements CounselorService {
     private final CounselingSlotRepository slotRepository;
     private final CounselingAppointmentRequestRepository requestRepository;
     private final SpecializationRepository specializationRepository;
+    private final StudentRepository studentRepository;
+    private final OpenAIService openAIService;
 
     @Override
     public PaginationDTO<List<CounselorProfileDTO>> getCounselorsWithFilter(CounselorFilterRequestDTO filterRequest) {
@@ -94,15 +99,18 @@ public class CounselorServiceImpl implements CounselorService {
     }
 
     @Override
-    public CounselorProfileDTO findBestAvailableCounselorForNonAcademic(Long slotId, LocalDate date, Gender gender, Long expertiseId) {
+    public CounselorProfileDTO findBestAvailableCounselorForNonAcademic(Long slotId, LocalDate date, Gender gender, String reason) {
         CounselingSlot slot = counselingSlotRepository.findById(slotId)
                 .orElseThrow(() -> new NotFoundException("Slot not found with ID: " + slotId));
 
-        Expertise expertise = null;
-        if(expertiseId != null) {
-            expertise = expertiseRepository.findById(expertiseId)
-                    .orElseThrow(() -> new NotFoundException("Expertise not found with ID: " + expertiseId));
-        }
+        String prompt = openAIService.generatePromptToOpenAIForBestExpertiseMatching(reason);
+        String expertiseName = openAIService.callOpenAPIForBestExpertiseMatching(prompt);
+
+//        Expertise expertise = null;
+//        if(expertiseId != null) {
+        Expertise expertise = expertiseRepository.findByName(expertiseName)
+                    .orElseThrow(() -> new NotFoundException("Expertise not found with name: " + expertiseName));
+//        }
 
         // Kết hợp date với startTime và endTime từ slot
 //        LocalDateTime startDateTime = LocalDateTime.of(date, slot.getStartTime());
@@ -115,6 +123,18 @@ public class CounselorServiceImpl implements CounselorService {
         List<NonAcademicCounselor> counselors = counselorRepository.findAvailableCounselorsByGenderAndExpertiseOrderedForNonAcademic(
                 gender, expertise, date, slot.getStartTime(), slot.getEndTime(), pageable);
 
+        counselors = counselors
+                .stream()
+                .filter((counselor) ->
+                        counselor.getSlotOfCounselors()
+                                .stream()
+                                .filter(slotOfCounselor -> slotOfCounselor.getDayOfWeek().equals(date.getDayOfWeek()))
+                                .anyMatch((slotOfCounselor) ->
+                                        slotOfCounselor
+                                                .getCounselingSlot()
+                                                .getId().equals(slot.getId())))
+                .collect(Collectors.toList());
+
         if (counselors.isEmpty()) {
             throw new NotFoundException("Không tìm thấy counselor nào khả dụng vào thời gian này với yêu cầu giới tính và chuyên môn.");
         }
@@ -123,6 +143,28 @@ public class CounselorServiceImpl implements CounselorService {
 //        re.put("counselor", counselors.isEmpty() ? null : counselors.getFirst());
 //        re.put("recommend", counselorRepository.findAvailableCounselors(date));
 
+
+        return CounselorProfileMapper.toNonAcademicCounselorProfileDTO(counselors.getFirst());
+    }
+
+    @Override
+    public CounselorProfileDTO findBestAvailableCounselorForNonAcademicWithLowestDemandInMonth(Gender gender, String reason) {
+        String prompt = openAIService.generatePromptToOpenAIForBestExpertiseMatching(reason);
+        String expertiseName = openAIService.callOpenAPIForBestExpertiseMatching(prompt);
+
+        Expertise expertise = expertiseRepository.findByName(expertiseName)
+                .orElseThrow(() -> new NotFoundException("Expertise not found with name: " + expertiseName));
+
+        // Tạo Pageable để giới hạn kết quả trả về chỉ 1 bản ghi
+        PageRequest pageable = PageRequest.of(0, 1);
+
+        // Thực hiện truy vấn
+        List<NonAcademicCounselor> counselors = counselorRepository.findBestAvailableCounselorForNonAcademicWithLowestDemandInMonth(
+                gender, expertise, pageable);
+
+        if (counselors.isEmpty()) {
+            throw new NotFoundException("Không tìm thấy counselor nào khả dụng vào thời gian này với yêu cầu giới tính và chuyên môn.");
+        }
 
         return CounselorProfileMapper.toNonAcademicCounselorProfileDTO(counselors.getFirst());
     }
@@ -209,7 +251,7 @@ public class CounselorServiceImpl implements CounselorService {
                 filterRequest.getRatingTo(),
                 filterRequest.getAvailableFrom(),
                 filterRequest.getAvailableTo(),
-                filterRequest.getSpecializationId(),
+//                null,
                 filterRequest.getDepartmentId(),
                 filterRequest.getMajorId(),
                 filterRequest.getGender(),
@@ -258,15 +300,12 @@ public class CounselorServiceImpl implements CounselorService {
     }
 
     @Override
-    public CounselorProfileDTO findBestAvailableCounselorForAcademic(Long slotId, LocalDate date, Gender gender, Long specializationId, Long departmentId, Long majorId) {
+    public CounselorProfileDTO findBestAvailableCounselorForAcademic(Long slotId, LocalDate date, Gender gender, Long studentId, String reason) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new NotFoundException("Student not found"));
+
         CounselingSlot slot = counselingSlotRepository.findById(slotId)
                 .orElseThrow(() -> new NotFoundException("Slot not found with ID: " + slotId));
-
-        Specialization specialization = null;
-        if(specializationId != null) {
-            specialization = specializationRepository.findById(specializationId)
-                    .orElseThrow(() -> new NotFoundException("specialization not found with ID: " + specializationId));
-        }
 
         // Kết hợp date với startTime và endTime từ slot
 //        LocalDateTime startDateTime = LocalDateTime.of(date, slot.getStartTime());
@@ -277,7 +316,19 @@ public class CounselorServiceImpl implements CounselorService {
 
         // Thực hiện truy vấn
         List<AcademicCounselor> counselors = counselorRepository.findAvailableCounselorsByGenderAndExpertiseOrderedForAcademic(
-                gender, specialization, departmentId, majorId, date, slot.getStartTime(), slot.getEndTime(), pageable);
+                gender, null, student.getDepartment().getId(), student.getMajor().getId(), date, slot.getStartTime(), slot.getEndTime(), pageable);
+
+        counselors = counselors
+                .stream()
+                .filter((counselor) ->
+                        counselor.getSlotOfCounselors()
+                                .stream()
+                                .filter(slotOfCounselor -> slotOfCounselor.getDayOfWeek().equals(date.getDayOfWeek()))
+                                .anyMatch((slotOfCounselor) ->
+                                        slotOfCounselor
+                                                .getCounselingSlot()
+                                                .getId().equals(slot.getId())))
+                .collect(Collectors.toList());
 
         if (counselors.isEmpty()) {
             throw new NotFoundException("Không tìm thấy counselor nào khả dụng vào thời gian này với yêu cầu giới tính và chuyên môn.");
@@ -289,5 +340,32 @@ public class CounselorServiceImpl implements CounselorService {
 
 
         return CounselorProfileMapper.toAcademicCounselorProfileDTO(counselors.getFirst());
+    }
+
+    @Override
+    public CounselorProfileDTO findBestAvailableCounselorForAcademicWithLowestDemand(Gender gender, Long studentId, String reason) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new NotFoundException("Student not found"));
+
+        // Tạo Pageable để giới hạn kết quả trả về chỉ 1 bản ghi
+        PageRequest pageable = PageRequest.of(0, 1);
+
+        // Thực hiện truy vấn
+        List<AcademicCounselor> counselors = counselorRepository.findBestAvailableCounselorForAcademicWithLowestDemand(
+                gender, null, student.getDepartment().getId(), student.getMajor().getId(), pageable);
+
+        if (counselors.isEmpty()) {
+            throw new NotFoundException("Không tìm thấy counselor nào khả dụng vào thời gian này với yêu cầu giới tính và chuyên môn.");
+        }
+
+        return CounselorProfileMapper.toAcademicCounselorProfileDTO(counselors.getFirst());
+    }
+
+    @Override
+    public String getReasonMeaning(String reason, Long studentId) {
+        Student student = studentRepository.findById(studentId).orElseThrow(() -> new NotFoundException("No student match this ID"));
+        String prompt = openAIService.generatePromptToOpenAIForDefineReasonMeaning(reason, student);
+
+        return openAIService.callOpenAPIForDefineReasonMeaning(prompt);
     }
 }
