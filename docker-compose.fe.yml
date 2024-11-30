@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  elastic:
+  elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.6.1
     container_name: elastic
     environment:
@@ -59,7 +59,7 @@ services:
 #      - redis
       - rabbitmq
       - fap-server
-      - elastic
+      - elasticsearch
   fap-server:
     image: trinhvinhphat2003/fap-system-server:latest
     container_name: fap_server
