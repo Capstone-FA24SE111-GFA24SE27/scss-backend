@@ -10,6 +10,7 @@ import com.capstone2024.scss.application.counseling_appointment.dto.request.coun
 import com.capstone2024.scss.application.counselor.dto.CounselingSlotDTO;
 import com.capstone2024.scss.application.counselor.dto.ManageCounselorDTO;
 import com.capstone2024.scss.application.counselor.dto.request.*;
+import com.capstone2024.scss.application.q_and_a.dto.QuestionCardFeedbackDTO;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
 import com.capstone2024.scss.domain.counselor.entities.AvailableDateRange;
 import com.capstone2024.scss.domain.counselor.entities.SlotOfCounselor;
@@ -50,4 +51,6 @@ public interface ManageCounselorService {
     PaginationDTO<List<ManageCounselorDTO>> getNonAcademicCounselorsWithFilter(NonAcademicCounselorFilterRequestDTO filterRequest);
 
     CounselingSlotDTO createCounselingSlot(CreateCounselingSlotRequestDTO createCounselingSlotDTO);
+
+    PaginationDTO<List<QuestionCardFeedbackDTO>> getQCFeedbackWithFilterForCounselor(FeedbackFilterDTO filterDTO, Long counselorId);
 }

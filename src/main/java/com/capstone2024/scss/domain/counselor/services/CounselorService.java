@@ -22,7 +22,7 @@ public interface CounselorService {
 
     List<ExpertiseDTO> getAllExpertises();
 
-    CounselorProfileDTO findBestAvailableCounselorForNonAcademic(Long slotId, LocalDate date, Gender gender, String reason);
+    List<CounselorProfileDTO> findBestAvailableCounselorForNonAcademic(Long slotId, LocalDate date, Gender gender, String reason, String expertise);
 
     List<SlotDTO> getAllCounselingSlots(LocalDate date, Long studentId);
 
@@ -36,7 +36,9 @@ public interface CounselorService {
 
     AcademicCounselorProfileDTO getAcademicCounselorById(Long id);
 
-    CounselorProfileDTO findBestAvailableCounselorForAcademic(Long slotId, LocalDate date, Gender gender, Long studentId, String reason);
+    List<CounselorProfileDTO> findBestAvailableCounselorForAcademic(Long slotId, LocalDate date, Gender gender, Long studentId, String reason, Long departmentId, Long majorId, String majorName);
+
+    List<CounselorProfileDTO> findBestAvailableCounselor(Long slotId, LocalDate date, Gender gender, String reason);
 
     CounselorProfileDTO findBestAvailableCounselorForNonAcademicWithLowestDemandInMonth(Gender gender, String reason);
 

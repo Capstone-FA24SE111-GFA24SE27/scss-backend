@@ -21,6 +21,6 @@ public class NonAcademicCounselor extends Counselor {
     @JoinColumn(name = "expertise_id", nullable = false)
     private Expertise expertise;
 
-    @Column(name = "industry_experience", nullable = false)
+    @Column(name = "industry_experience", nullable = true)
     private Integer industryExperience;
 }

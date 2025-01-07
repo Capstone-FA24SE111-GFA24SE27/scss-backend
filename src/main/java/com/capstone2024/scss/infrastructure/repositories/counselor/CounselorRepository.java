@@ -24,18 +24,21 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
             "WHERE (:keyword IS NULL OR " +
             "LOWER(c.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(a.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(c.phoneNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-            "AND (:ratingFrom IS NULL OR :ratingTo IS NULL OR (c.rating BETWEEN :ratingFrom AND :ratingTo))")
+            "LOWER(c.phoneNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))) "
+//            +
+//            "AND (:ratingFrom IS NULL OR :ratingTo IS NULL OR (c.rating BETWEEN :ratingFrom AND :ratingTo))"
+    )
     Page<Counselor> findByKeywordAndRatingRange(@Param("keyword") String keyword,
-                                                @Param("ratingFrom") BigDecimal ratingFrom,
-                                                @Param("ratingTo") BigDecimal ratingTo,
+//                                                @Param("ratingFrom") BigDecimal ratingFrom,
+//                                                @Param("ratingTo") BigDecimal ratingTo,
                                                 Pageable pageable);
 
     @Query("SELECT DISTINCT c FROM NonAcademicCounselor c " +
-            "JOIN c.counselingSlots cs " +
+//            "JOIN c.slotOfCounselors soc " +
+//            "JOIN soc.counselingSlot cs " +
             "WHERE (:gender IS NULL OR c.gender = :gender) " +
-            "  AND cs.startTime <= :startTime " +
-            "  AND cs.endTime >= :endTime " +
+//            "  AND cs.startTime <= :startTime " +
+//            "  AND cs.endTime >= :endTime " +
             "  AND c.availableDateRange.startDate <= :date " +
             "  AND c.availableDateRange.endDate >= :date " +
             "  AND c.status = com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus.AVAILABLE " +
@@ -53,14 +56,24 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
             "    JOIN ca.appointmentRequest cr " +
             "    WHERE cr.counselor = c " +
             "      AND (cr.status <> 'CANCELED' AND cr.status <> 'EXPIRED' )" +
-            ") ASC, " +
-            "c.rating DESC")
+            ") ASC"
+    )
     List<NonAcademicCounselor> findAvailableCounselorsByGenderAndExpertiseOrderedForNonAcademic(
             @Param("gender") Gender gender,
             @Param("expertise") Expertise expertise,
             @Param("date") LocalDate date,
             @Param("startTime") LocalTime startTime,
             @Param("endTime") LocalTime endTime,
+            Pageable pageable);
+
+    @Query("SELECT DISTINCT c FROM NonAcademicCounselor c " +
+            "WHERE (:gender IS NULL OR c.gender = :gender) " +
+            "  AND c.status = com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus.AVAILABLE " +
+            "  AND (:expertise IS NULL OR c.expertise = :expertise) "
+    )
+    List<NonAcademicCounselor> findAvailableCounselorsByGenderAndExpertiseOrderedForNonAcademicWithoutDate(
+            @Param("gender") Gender gender,
+            @Param("expertise") Expertise expertise,
             Pageable pageable);
 
     @Query("SELECT c FROM Counselor c " +
@@ -72,31 +85,19 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
             "AND (ar.status = 'WAITING' OR ar.status = 'APPROVED')))")
     List<Counselor> findAvailableCounselors(@Param("date") LocalDate date);
 
-//    @Query("SELECT c FROM Counselor c " +
-//            "JOIN c.account a " +
-//            "WHERE (:keyword IS NULL OR " +
-//            "LOWER(c.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-//            "LOWER(a.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-//            "LOWER(c.phoneNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-//            "AND (:ratingFrom IS NULL OR :ratingTo IS NULL OR c.rating BETWEEN :ratingFrom AND :ratingTo)")
-//    Page<Counselor> findByKeywordAndRatingRange(@Param("keyword") String keyword,
-//                                                @Param("ratingFrom") BigDecimal ratingFrom,
-//                                                @Param("ratingTo") BigDecimal ratingTo,
-//                                                Pageable pageable);
-
     @Query("SELECT c FROM NonAcademicCounselor c " +
-            "JOIN c.expertise e " +
+            "LEFT JOIN c.expertise e " +
             "WHERE (:search IS NULL OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :search, '%'))) " +
-            "AND (:ratingFrom IS NULL OR c.rating >= :ratingFrom) " +
-            "AND (:ratingTo IS NULL OR c.rating <= :ratingTo) " +
+//            "AND (:ratingFrom IS NULL OR c.rating >= :ratingFrom) " +
+//            "AND (:ratingTo IS NULL OR c.rating <= :ratingTo) " +
             "AND (:expertiseId IS NULL OR e.id = :expertiseId) " + // Filter by expertise ID
             "AND c.status = com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus.AVAILABLE " +
             "AND (:gender IS NULL OR c.gender = :gender) " +
             "AND (:availableTo IS NULL OR :availableFrom IS NULL OR c.id IN (SELECT ad.counselor.id FROM AvailableDateRange ad WHERE ad.startDate <= :availableTo AND ad.endDate >= :availableFrom))")
     Page<NonAcademicCounselor> findNonAcademicCounselorsWithFilter(
             @Param("search") String search,
-            @Param("ratingFrom") BigDecimal ratingFrom,
-            @Param("ratingTo") BigDecimal ratingTo,
+//            @Param("ratingFrom") BigDecimal ratingFrom,
+//            @Param("ratingTo") BigDecimal ratingTo,
             @Param("availableFrom") LocalDate availableFrom,
             @Param("availableTo") LocalDate availableTo,
             @Param("expertiseId") Long expertiseId,
@@ -104,18 +105,18 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
             Pageable pageable);
 
     @Query("SELECT c FROM NonAcademicCounselor c " +
-            "JOIN c.expertise e " +
+//            "LEFT JOIN c.expertise e " +
             "WHERE (:search IS NULL OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :search, '%'))) " +
-            "AND (:ratingFrom IS NULL OR c.rating >= :ratingFrom) " +
-            "AND (:ratingTo IS NULL OR c.rating <= :ratingTo) " +
-            "AND (:expertiseId IS NULL OR e.id = :expertiseId) " + // Filter by expertise ID
+//            "AND (:ratingFrom IS NULL OR c.rating >= :ratingFrom) " +
+//            "AND (:ratingTo IS NULL OR c.rating <= :ratingTo) " +
+            "AND (:expertiseId IS NULL OR c.expertise.id = :expertiseId) " + // Filter by expertise ID
             "AND (:status IS NULL OR c.status = :status) " +
             "AND (:gender IS NULL OR c.gender = :gender) " +
             "AND (:availableTo IS NULL OR :availableFrom IS NULL OR c.id IN (SELECT ad.counselor.id FROM AvailableDateRange ad WHERE ad.startDate <= :availableTo AND ad.endDate >= :availableFrom))")
     Page<NonAcademicCounselor> findNonAcademicCounselorsWithFilterForManaging(
             @Param("search") String search,
-            @Param("ratingFrom") BigDecimal ratingFrom,
-            @Param("ratingTo") BigDecimal ratingTo,
+//            @Param("ratingFrom") BigDecimal ratingFrom,
+//            @Param("ratingTo") BigDecimal ratingTo,
             @Param("availableFrom") LocalDate availableFrom,
             @Param("availableTo") LocalDate availableTo,
             @Param("expertiseId") Long expertiseId,
@@ -128,8 +129,8 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
             "JOIN c.department d " +
             "JOIN c.major m " +
             "WHERE (:search IS NULL OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :search, '%'))) " +
-            "AND (:ratingFrom IS NULL OR c.rating >= :ratingFrom) " +
-            "AND (:ratingTo IS NULL OR c.rating <= :ratingTo) " +
+//            "AND (:ratingFrom IS NULL OR c.rating >= :ratingFrom) " +
+//            "AND (:ratingTo IS NULL OR c.rating <= :ratingTo) " +
 //            "AND (:specializationId IS NULL OR s.id = :specializationId) " +
             "AND (:departmentId IS NULL OR d.id = :departmentId) " +
             "AND (:majorId IS NULL OR m.id = :majorId) " +
@@ -138,8 +139,8 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
             "AND (:availableTo IS NULL OR :availableFrom IS NULL OR c.id IN (SELECT ad.counselor.id FROM AvailableDateRange ad WHERE ad.startDate <= :availableTo AND ad.endDate >= :availableFrom))")
     Page<AcademicCounselor> findAcademicCounselorsWithFilter(
             @Param("search") String search,
-            @Param("ratingFrom") BigDecimal ratingFrom,
-            @Param("ratingTo") BigDecimal ratingTo,
+//            @Param("ratingFrom") BigDecimal ratingFrom,
+//            @Param("ratingTo") BigDecimal ratingTo,
             @Param("availableFrom") LocalDate availableFrom,
             @Param("availableTo") LocalDate availableTo,
 //            @Param("specializationId") Long specializationId,
@@ -149,13 +150,13 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
             Pageable pageable);
 
     @Query("SELECT c FROM AcademicCounselor c " +
-            "JOIN c.specialization s " +
+//            "JOIN c.specialization s " +
             "JOIN c.department d " +
             "JOIN c.major m " +
             "WHERE (:search IS NULL OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :search, '%'))) " +
-            "AND (:ratingFrom IS NULL OR c.rating >= :ratingFrom) " +
-            "AND (:ratingTo IS NULL OR c.rating <= :ratingTo) " +
-            "AND (:specializationId IS NULL OR s.id = :specializationId) " +
+//            "AND (:ratingFrom IS NULL OR c.rating >= :ratingFrom) " +
+//            "AND (:ratingTo IS NULL OR c.rating <= :ratingTo) " +
+//            "AND (:specializationId IS NULL OR s.id = :specializationId) " +
             "AND (:departmentId IS NULL OR d.id = :departmentId) " +
             "AND (:majorId IS NULL OR m.id = :majorId) " +
             "AND (:status IS NULL OR c.status = :status) " +
@@ -163,11 +164,11 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
             "AND (:availableTo IS NULL OR :availableFrom IS NULL OR c.id IN (SELECT ad.counselor.id FROM AvailableDateRange ad WHERE ad.startDate <= :availableTo AND ad.endDate >= :availableFrom))")
     Page<AcademicCounselor> findAcademicCounselorsWithFilterForManaging(
             @Param("search") String search,
-            @Param("ratingFrom") BigDecimal ratingFrom,
-            @Param("ratingTo") BigDecimal ratingTo,
+//            @Param("ratingFrom") BigDecimal ratingFrom,
+//            @Param("ratingTo") BigDecimal ratingTo,
             @Param("availableFrom") LocalDate availableFrom,
             @Param("availableTo") LocalDate availableTo,
-            @Param("specializationId") Long specializationId,
+//            @Param("specializationId") Long specializationId,
             @Param("departmentId") Long departmentId,
             @Param("majorId") Long majorId,
             @Param("status") CounselorStatus status,
@@ -175,16 +176,17 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
             Pageable pageable);
 
     @Query("SELECT DISTINCT c FROM AcademicCounselor c " +
-            "JOIN c.counselingSlots cs " +
+//            "JOIN c.slotOfCounselors soc " +
+//            "JOIN soc.counselingSlot cs " +
             "JOIN c.department d " +
             "JOIN c.major m " +
             "WHERE (:gender IS NULL OR c.gender = :gender) " +
-            "  AND cs.startTime <= :startTime " +
-            "  AND cs.endTime >= :endTime " +
+//            "  AND cs.startTime <= :startTime " +
+//            "  AND cs.endTime >= :endTime " +
             "  AND c.availableDateRange.startDate <= :date " +
             "  AND c.availableDateRange.endDate >= :date " +
             "  AND c.status = com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus.AVAILABLE " +
-            "  AND (:specialization IS NULL OR c.specialization = :specialization) " +
+//            "  AND (:specialization IS NULL OR c.specialization = :specialization) " +
             "  AND (:departmentId IS NULL OR d.id = :departmentId) " +
             "  AND (:majorId IS NULL OR m.id = :majorId) " +
             "  AND NOT EXISTS (" +
@@ -200,10 +202,9 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
             "    JOIN ca.appointmentRequest cr " +
             "    WHERE cr.counselor = c " +
             "      AND (cr.status <> 'CANCELED' AND cr.status <> 'EXPIRED' )" +
-            ") ASC, " +
-            "c.rating DESC")
+            ") ASC")
     List<AcademicCounselor> findAvailableCounselorsByGenderAndExpertiseOrderedForAcademic(@Param("gender") Gender gender,
-                                                                                          @Param("specialization") Specialization specialization,
+//                                                                                          @Param("specialization") Specialization specialization,
                                                                                           @Param("departmentId") Long departmentId,
                                                                                           @Param("majorId") Long majorId,
                                                                                           @Param("date") LocalDate date,
@@ -214,12 +215,25 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
     @Query("SELECT DISTINCT c FROM AcademicCounselor c " +
             "JOIN c.department d " +
             "JOIN c.major m " +
+            "WHERE (:gender IS NULL OR c.gender = :gender) " +
+            "  AND c.status = com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus.AVAILABLE " +
+            "  AND (:departmentId IS NULL OR d.id = :departmentId) " +
+            "  AND (:majorId IS NULL OR m.id = :majorId) "
+    )
+    List<AcademicCounselor> findAvailableCounselorsByGenderAndExpertiseOrderedForAcademicWithoutDate(@Param("gender") Gender gender,
+                                                                                          @Param("departmentId") Long departmentId,
+                                                                                          @Param("majorId") Long majorId,
+                                                                                          Pageable pageable);
+
+    @Query("SELECT DISTINCT c FROM AcademicCounselor c " +
+            "JOIN c.department d " +
+            "JOIN c.major m " +
             "LEFT JOIN CounselingDemand cd ON c.id = cd.counselor.id " +
             "WHERE (:gender IS NULL OR c.gender = :gender) " +
 //            "  AND c.availableDateRange.startDate <= :date " +
 //            "  AND c.availableDateRange.endDate >= :date " +
             "  AND c.status = com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus.AVAILABLE " +
-            "  AND (:specialization IS NULL OR c.specialization = :specialization) " +
+//            "  AND (:specialization IS NULL OR c.specialization = :specialization) " +
             "  AND (:departmentId IS NULL OR d.id = :departmentId) " +
             "  AND (:majorId IS NULL OR m.id = :majorId) " +
             "AND (cd.startDateTime IS NULL OR " +
@@ -227,7 +241,7 @@ public interface CounselorRepository extends JpaRepository<Counselor, Long> {
             "GROUP BY c.id " +
             "ORDER BY COUNT(cd.id) ASC")
     List<AcademicCounselor> findBestAvailableCounselorForAcademicWithLowestDemand(@Param("gender") Gender gender,
-                                                                                  @Param("specialization") Specialization specialization,
+//                                                                                  @Param("specialization") Specialization specialization,
                                                                                   @Param("departmentId") Long departmentId,
                                                                                   @Param("majorId") Long majorId,
                                                                                   Pageable pageable);

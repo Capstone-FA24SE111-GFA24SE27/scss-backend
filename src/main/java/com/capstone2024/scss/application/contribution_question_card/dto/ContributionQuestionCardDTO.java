@@ -9,6 +9,7 @@ import lombok.Setter;
 public class ContributionQuestionCardDTO {
 
     private String question;
+    private String title;
     private String answer;
     private Long categoryId;
     private Long counselorId;

@@ -159,7 +159,19 @@ public class CounselorController {
 //            @RequestParam(name = "expertiseId", required = false) Long expertiseId,
             @RequestParam(name = "reason", required = false) String reason) {
 
-        CounselorProfileDTO counselor = counselorService.findBestAvailableCounselorForNonAcademic(slotId, date, gender, reason);
+        List<CounselorProfileDTO> counselor = counselorService.findBestAvailableCounselorForNonAcademic(slotId, date, gender, reason, null);
+        return ResponseUtil.getResponse(counselor, HttpStatus.OK);
+    }
+
+    @GetMapping("/random/match")
+    public ResponseEntity<Object> findBestCounselor(
+            @RequestParam(name = "slotId", required = false) Long slotId,
+            @RequestParam(name = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(name = "gender", required = false) Gender gender,
+            @RequestParam(name = "reason", required = true) String reason
+    ) {
+
+        List<CounselorProfileDTO> counselor = counselorService.findBestAvailableCounselor(slotId, date, gender, reason);
         return ResponseUtil.getResponse(counselor, HttpStatus.OK);
     }
 
@@ -169,13 +181,13 @@ public class CounselorController {
             @RequestParam(name = "date", required = true) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(name = "gender", required = false) Gender gender,
             @PathVariable Long studentId,
-            @RequestParam(name = "reason", required = true) String reason
+            @RequestParam(name = "reason", required = true) String reason,
 //            @RequestParam(name = "specializationId", required = false) Long specializationId,
-//            @RequestParam(name = "departmentId", required = false) Long departmentId,
-//            @RequestParam(name = "majorId", required = false) Long majorId
+            @RequestParam(name = "departmentId", required = false) Long departmentId,
+            @RequestParam(name = "majorId", required = false) Long majorId
             ) {
 
-        CounselorProfileDTO counselor = counselorService.findBestAvailableCounselorForAcademic(slotId, date, gender, studentId, reason);
+        List<CounselorProfileDTO> counselor = counselorService.findBestAvailableCounselorForAcademic(slotId, date, gender, studentId, reason, departmentId, majorId, null);
         return ResponseUtil.getResponse(counselor, HttpStatus.OK);
     }
 

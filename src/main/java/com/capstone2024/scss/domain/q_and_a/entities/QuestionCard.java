@@ -1,6 +1,8 @@
 package com.capstone2024.scss.domain.q_and_a.entities;
 
 import com.capstone2024.scss.domain.common.entity.BaseEntity;
+import com.capstone2024.scss.domain.contribution_question_card.entities.ContributionQuestionCard;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.AppointmentFeedback;
 import com.capstone2024.scss.domain.counselor.entities.Counselor;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
@@ -19,10 +21,13 @@ import java.time.LocalDateTime;
 @Table(name = "question_card")
 public class QuestionCard extends BaseEntity {
 
-    @Column(name = "answer", nullable = true)
+    @Column(name = "answer", nullable = true, columnDefinition = "TEXT")
     private String answer; // Tiêu đề của câu hỏi
 
-    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "question", nullable = false, columnDefinition = "TEXT")
+    private String title; // Nội dung câu hỏi
+
+    @Column(name = "detail", nullable = false, columnDefinition = "TEXT")
     private String content; // Nội dung câu hỏi
 
     @Column(name = "review_reason", nullable = true, columnDefinition = "TEXT")
@@ -41,6 +46,13 @@ public class QuestionCard extends BaseEntity {
     @Column(name = "is_closed", nullable = false)
     private boolean isClosed = false;
 
+    @Column(name = "is_accepted", nullable = false)
+    private boolean isAccepted = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "public_status", nullable = false)
+    private PublicStatus publicStatus;  // Thêm status
+
     @Column(name = "closed_date")
     private LocalDateTime closedDate;
 
@@ -48,11 +60,15 @@ public class QuestionCard extends BaseEntity {
     @Column(name = "status", nullable = false)
     private QuestionCardStatus status = QuestionCardStatus.PENDING;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "difficulty_level", nullable = false)
+    private QuestionCarDifficultyLevel difficultyLevel;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "counselor_id", nullable = true)
     private Counselor counselor;
 //
@@ -65,4 +81,19 @@ public class QuestionCard extends BaseEntity {
 
     @OneToOne(mappedBy = "questionCard", cascade = CascadeType.ALL, orphanRemoval = true)
     private QuestionFlag questionFlag;
+
+    @OneToOne(mappedBy = "questionCard", cascade = CascadeType.ALL, optional = true)
+    private QuestionCardFeedback feedback;
+
+    public enum QuestionCarDifficultyLevel {
+        Easy,
+        Medium,
+        Hard
+    }
+
+    public enum PublicStatus {
+        PENDING,
+        HIDE,
+        VISIBLE
+    }
 }

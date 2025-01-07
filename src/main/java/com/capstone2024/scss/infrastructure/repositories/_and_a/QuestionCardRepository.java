@@ -3,6 +3,7 @@ package com.capstone2024.scss.infrastructure.repositories._and_a;
 import com.capstone2024.scss.domain.q_and_a.entities.QuestionCard;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
+import com.capstone2024.scss.domain.student.entities.Student;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +20,9 @@ public interface QuestionCardRepository extends JpaRepository<QuestionCard, Long
     @Query("SELECT q FROM QuestionCard q " +
             "LEFT JOIN FETCH q.counselor " +
             "LEFT JOIN q.chatSession cs " +
-            "WHERE (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "WHERE (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
+            "OR LOWER(q.title) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
+            ") " +
             "AND q.student.id = :studentId " +
             "AND (:status IS NULL OR q.status = :status) " +
             "AND (:questionType IS NULL OR q.questionType = :questionType) " +
@@ -41,14 +44,15 @@ public interface QuestionCardRepository extends JpaRepository<QuestionCard, Long
 
     @Query("SELECT q FROM QuestionCard q " +
             "LEFT JOIN q.chatSession cs " +
-            "WHERE (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "WHERE (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
+            "OR LOWER(q.title) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
             "OR LOWER(q.student.studentCode) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
             "AND q.counselor.id = :counselorId " +
             "AND (:status IS NULL OR q.status = :status) " +
             "AND (:from IS NULL OR q.createdDate >= :from) " +
             "AND (:to IS NULL OR q.createdDate <= :to) " +
             "AND (:questionType IS NULL OR q.questionType = :questionType) " +
-            "AND q.status <> com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus.PENDING " +
+//            "AND q.status <> com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus.PENDING " +
             "AND (:isClosed IS NULL OR (q.isClosed IS NULL OR q.isClosed = :isClosed))"
 //            "AND (:isChatSessionClosed IS NULL OR cs.isClosed = :isChatSessionClosed) "
 //            +
@@ -69,6 +73,7 @@ public interface QuestionCardRepository extends JpaRepository<QuestionCard, Long
     @Query("SELECT q FROM QuestionCard q " +
             "LEFT JOIN q.chatSession cs " +
             "WHERE (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(q.title) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
             "OR LOWER(q.student.studentCode) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
             "AND q.counselor.id = :counselorId " +
             "AND (:from IS NULL OR q.createdDate >= :from) " +
@@ -89,7 +94,9 @@ public interface QuestionCardRepository extends JpaRepository<QuestionCard, Long
 
     @Query("SELECT q FROM QuestionCard q " +
             "LEFT JOIN q.chatSession cs " +
-            "WHERE (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "WHERE (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
+            "OR LOWER(q.title) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
+            ") " +
             "AND (:studentCode IS NULL OR q.student.studentCode = :studentCode) " +
             "AND q.status = com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus.VERIFIED " +
             "AND (:questionType IS NULL OR q.questionType = :questionType) " +
@@ -112,7 +119,9 @@ public interface QuestionCardRepository extends JpaRepository<QuestionCard, Long
 
     @Query("SELECT q FROM QuestionCard q " +
             "LEFT JOIN q.chatSession cs " +
-            "WHERE (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "WHERE (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
+            "OR LOWER(q.title) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
+            ") " +
             "AND (:studentCode IS NULL OR q.student.studentCode = :studentCode) " +
             "AND (:questionType IS NULL OR q.questionType = :questionType) " +
             "AND q.status = com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus.PENDING")
@@ -129,4 +138,28 @@ public interface QuestionCardRepository extends JpaRepository<QuestionCard, Long
     List<QuestionCard> findAllByCreatedDateBetween(
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to);
+
+    @Query("SELECT q FROM QuestionCard q " +
+            "LEFT JOIN FETCH q.counselor " +
+            "LEFT JOIN q.chatSession cs " +
+            "WHERE (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
+            "OR LOWER(q.title) LIKE LOWER(CONCAT('%', :keyword, '%'))" +
+            ") " +
+            "AND (:status IS NULL OR q.status = :status) " +
+            "AND (:publicStatus IS NULL OR q.publicStatus = :publicStatus) " +
+            "AND (:questionType IS NULL OR q.questionType = :questionType) " +
+            "AND (:isClosed IS NULL OR q.isClosed = :isClosed)"
+    )
+    Page<QuestionCard> findPublicQuestionCardsWithFilterForStudent(
+            @Param("keyword") String keyword,
+            @Param("status") QuestionCardStatus status,
+            @Param("publicStatus") QuestionCard.PublicStatus publicStatus,
+            @Param("isClosed") Boolean isClosed,
+            @Param("questionType") QuestionType questionType,
+            Pageable pageable);
+
+    @Query("SELECT COUNT(q) FROM QuestionCard q WHERE q.student = :student AND q.isClosed = false")
+    long countNotClosedQuestionCardsByStudent(@Param("student") Student student);
+
+    List<QuestionCard> findAllByIsClosedFalseAndCreatedDateBefore(LocalDateTime twoDaysAgo);
 }

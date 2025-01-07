@@ -34,13 +34,13 @@ public class CounselingSlotService {
                 .orElseThrow(() -> new NotFoundException("Counseling slot not found"));
 
         // Only allow update if no counselors are assigned
-        if (counselingSlot.getCounselors() == null || counselingSlot.getCounselors().isEmpty()) {
+//        if (counselingSlot.getCounselors() == null || counselingSlot.getCounselors().isEmpty()) {
             CounselingSlotMapper.updateEntity(counselingSlot, updateDTO);
             counselingSlot = counselingSlotRepository.save(counselingSlot);
             return CounselingSlotMapper.toDTO(counselingSlot);
-        } else {
-            throw new BadRequestException("Cannot update slot with assigned counselors");
-        }
+//        } else {
+//            throw new BadRequestException("Cannot update slot with assigned counselors");
+//        }
     }
 
     public void delete(Long id) {
@@ -48,11 +48,11 @@ public class CounselingSlotService {
                 .orElseThrow(() -> new NotFoundException("Counseling slot not found"));
 
         // Only allow delete if no counselors are assigned
-        if (counselingSlot.getCounselors() == null || counselingSlot.getCounselors().isEmpty()) {
+//        if (counselingSlot.getCounselors() == null || counselingSlot.getCounselors().isEmpty()) {
             counselingSlotRepository.deleteById(id);
-        } else {
-            throw new BadRequestException("Cannot delete slot with assigned counselors");
-        }
+//        } else {
+//            throw new BadRequestException("Cannot delete slot with assigned counselors");
+//        }
     }
 }
 

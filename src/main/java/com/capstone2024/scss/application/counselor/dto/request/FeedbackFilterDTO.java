@@ -19,5 +19,6 @@ public class FeedbackFilterDTO {
     private String sortBy;
     private String sortDirection;
     private Integer page;
+    private Integer size;
 }
 

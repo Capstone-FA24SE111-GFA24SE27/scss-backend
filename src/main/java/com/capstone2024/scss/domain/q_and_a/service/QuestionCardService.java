@@ -1,5 +1,6 @@
 package com.capstone2024.scss.domain.q_and_a.service;
 
+import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.AppointmentFeedbackDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.q_and_a.dto.*;
 import com.capstone2024.scss.domain.account.entities.Account;
@@ -61,4 +62,12 @@ public interface QuestionCardService {
     void createChatSessionForQuestionCard(Long studentId, Long questionCardId);
 
     List<QuestionCardResponseDTO> getAll(LocalDate from, LocalDate to);
+
+    PaginationDTO<List<QuestionCardResponseDTO>> getPublicQuestionCardsWithFilterForStudent(QuestionCardFilterRequestDTO filterRequest, boolean isSuggestion);
+
+    void submitFeedback(Long appointmentId, AppointmentFeedbackDTO feedbackDTO, Long studentId);
+
+    void acceptQuestionCard(Long questionCardId);
+
+    long countOpenQuestionCardsByStudent(Long studentId);
 }

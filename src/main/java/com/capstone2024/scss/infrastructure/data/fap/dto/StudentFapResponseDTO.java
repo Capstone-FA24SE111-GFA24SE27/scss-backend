@@ -18,4 +18,8 @@ public class StudentFapResponseDTO {
     private String departmentName;
     private String specializationName;
     private Gender gender;
+    private String avatarLink;
+    private String phoneNumber;
+    private String address;
+    private Long dateOfBirth;
 }

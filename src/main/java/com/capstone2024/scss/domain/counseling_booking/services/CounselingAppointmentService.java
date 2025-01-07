@@ -38,7 +38,7 @@ public interface CounselingAppointmentService {
 
     AppointmentReportResponse createAppointmentReport(AppointmentReportRequest request, Long appointmentId, Counselor counselor);
 
-    AppointmentReportResponse getAppointmentReportByAppointmentId(Long appointmentId, Counselor profile);
+    AppointmentReportResponse getAppointmentReportByAppointmentId(Long appointmentId);
 
     CounselingAppointmentDTO getOneAppointment(Long appointmentId);
 
@@ -51,4 +51,6 @@ public interface CounselingAppointmentService {
     CounselingAppointmentDTO createAppointmentForDemand(CreateCounselingAppointmentDTO requestDTO, Long counselorId, Long studentId, Long demandId);
 
     List<CounselingAppointmentDTO> getAllAppointment(LocalDate from, LocalDate to);
+
+    long countOpenAppointment(Long studentId);
 }

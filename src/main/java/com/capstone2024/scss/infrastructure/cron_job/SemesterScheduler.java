@@ -22,26 +22,26 @@ public class SemesterScheduler {
     @Scheduled(cron = "0 0 0 1 1,5,9 ?") // Chạy vào đầu tháng 1, 5, 9
     @Transactional
     public void fetchAndAddNewSemester() {
-        try {
-            // Gọi server ngoài để lấy tên học kỳ
-            String semesterName = restTemplate.getForObject(fapServerUrl + "/api/semester/new", String.class);
-
-            if (semesterName != null && !semesterName.isEmpty()) {
-                // Tạo đối tượng Semester mới
-                Semester newSemester = Semester.builder()
-                        .name(semesterName)
-                        .softDelete(false) // Trạng thái mặc định
-                        .build();
-
-                // Lưu vào cơ sở dữ liệu
-                semesterRepository.save(newSemester);
-                System.out.println("New semester added: " + semesterName);
-            } else {
-                System.err.println("Failed to fetch semester name from API.");
-            }
-        } catch (Exception e) {
-            System.err.println("Error occurred while fetching or saving semester: " + e.getMessage());
-        }
+//        try {
+//            // Gọi server ngoài để lấy tên học kỳ
+//            String semesterName = restTemplate.getForObject(fapServerUrl + "/api/semester/new", String.class);
+//
+//            if (semesterName != null && !semesterName.isEmpty()) {
+//                // Tạo đối tượng Semester mới
+//                Semester newSemester = Semester.builder()
+//                        .name(semesterName)
+//                        .softDelete(false) // Trạng thái mặc định
+//                        .build();
+//
+//                // Lưu vào cơ sở dữ liệu
+//                semesterRepository.save(newSemester);
+//                System.out.println("New semester added: " + semesterName);
+//            } else {
+//                System.err.println("Failed to fetch semester name from API.");
+//            }
+//        } catch (Exception e) {
+//            System.err.println("Error occurred while fetching or saving semester: " + e.getMessage());
+//        }
     }
 }
 

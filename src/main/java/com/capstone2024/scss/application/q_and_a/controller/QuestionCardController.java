@@ -2,6 +2,7 @@ package com.capstone2024.scss.application.q_and_a.controller;
 
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
 import com.capstone2024.scss.application.advice.exeptions.BadRequestException;
+import com.capstone2024.scss.application.booking_counseling.dto.request.counceling_appointment.AppointmentFeedbackDTO;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.common.utils.ResponseUtil;
 import com.capstone2024.scss.application.q_and_a.dto.*;
@@ -85,7 +86,6 @@ public class QuestionCardController {
             @AuthenticationPrincipal @NotNull Account principal,
             @PathVariable Long questionCardId) {
 
-
         logger.info("Received request to create chat session QuestionCard for Account ID: {}", principal.getId());
 
         Long studentId = principal.getProfile().getId();
@@ -116,6 +116,35 @@ public class QuestionCardController {
         logger.info("Successfully answer QuestionCard");
 
         return ResponseUtil.getResponse("Successfully answer QuestionCard", HttpStatus.OK);
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<Object> getPublicQuestionCardsWithFilter(
+            @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
+            @RequestParam(name = "type", required = false) QuestionType type,
+            @RequestParam(name = "sortBy", defaultValue = "createdDate") String sortBy,
+            @RequestParam(name = "sortDirection", defaultValue = "DESC") SortDirection sortDirection,
+            @RequestParam(required = false, defaultValue = "false") boolean isSuggestion,
+            @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size) {
+
+        if (page < 1) {
+            logger.error("Invalid page number: {}", page);
+            throw new IllegalArgumentException("Page must be positive (page > 0)");
+        }
+
+        QuestionCardFilterRequestDTO filterRequest = QuestionCardFilterRequestDTO.builder()
+                .keyword(keyword.isEmpty() ? null : keyword.trim())
+                .status(QuestionCardStatus.VERIFIED)
+                .isClosed(true)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .pagination(PageRequest.of(page - 1, size, Sort.by(sortDirection == SortDirection.ASC ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)))
+                .type(type)
+                .build();
+
+        PaginationDTO<List<QuestionCardResponseDTO>> responseDTO = questionCardService.getPublicQuestionCardsWithFilterForStudent(filterRequest, isSuggestion);
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }
 
     @GetMapping("/student/filter")
@@ -513,5 +542,36 @@ public class QuestionCardController {
     public ResponseEntity<BanInformationResponseDTO> getBanInformation(@AuthenticationPrincipal @NotNull Account principal) {
         BanInformationResponseDTO response = questionCardService.getBanInformation(principal.getProfile().getId());
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @PostMapping("/feedback/{questionCardId}")
+    @io.swagger.v3.oas.annotations.Operation(
+            summary = "Submit feedback for an appointment",
+            description = "Submit feedback for an appointment"
+    )
+    public ResponseEntity<Object> submitFeedback(@PathVariable Long questionCardId,
+                                                 @Valid @RequestBody AppointmentFeedbackDTO feedbackDTO,
+                                                 BindingResult bindingResult,
+                                                 @AuthenticationPrincipal @NotNull Account principal) {
+        if (bindingResult.hasErrors()) {
+            throw new BadRequestException("Invalid data", bindingResult, HttpStatus.BAD_REQUEST);
+        }
+
+        questionCardService.submitFeedback(questionCardId, feedbackDTO, principal.getProfile().getId());
+
+        return ResponseUtil.getResponse("Feedback submitted successfully", HttpStatus.OK);
+    }
+
+    @PostMapping("/accept/{questionCardId}")
+    public ResponseEntity<Object> acceptQC(
+            @PathVariable Long questionCardId) {
+        questionCardService.acceptQuestionCard(questionCardId);
+        return ResponseUtil.getResponse("Question card is review successfully" ,HttpStatus.OK);
+    }
+
+    @GetMapping("/count-open/{studentId}")
+    public ResponseEntity<Object> countOpenQuestionCards(@PathVariable Long studentId) {
+        long count = questionCardService.countOpenQuestionCardsByStudent(studentId);
+        return ResponseUtil.getResponse(count, HttpStatus.OK);
     }
 }

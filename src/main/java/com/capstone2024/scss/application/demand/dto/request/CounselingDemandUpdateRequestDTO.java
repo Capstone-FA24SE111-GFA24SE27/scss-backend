@@ -14,9 +14,9 @@ import lombok.Builder;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CounselingDemandUpdateRequestDTO {
+    private Long counselorId;
     private String summarizeNote;
     private String contactNote;
-
     @NotNull
     private CounselingDemand.PriorityLevel priorityLevel;
     private String additionalInformation;

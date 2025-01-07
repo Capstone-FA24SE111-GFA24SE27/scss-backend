@@ -9,11 +9,16 @@ import java.time.LocalDate;
 
 @Data
 public class SupportStaffAccountDTO {
-    @NotEmpty(message = "Email is required")
-    @Email(message = "Invalid email format")
+
+    private Long id;
+
+    private String avatarLink;
+
+//    @NotEmpty(message = "Email is required")
+//    @Email(message = "Invalid email format")
     private String email;
 
-    @NotEmpty(message = "Password is required")
+//    @NotEmpty(message = "Password is required")
     private String password;
 
     @NotEmpty(message = "Full name is required")

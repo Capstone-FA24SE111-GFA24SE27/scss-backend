@@ -2,6 +2,7 @@ package com.capstone2024.scss.domain.demand.service;
 
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.demand.dto.CounselingDemandDTO;
+import com.capstone2024.scss.application.demand.dto.ProblemTagCountResponse;
 import com.capstone2024.scss.application.demand.dto.request.CounselingDemandCreateRequestDTO;
 import com.capstone2024.scss.application.demand.dto.request.CounselingDemandFilterRequestDTO;
 import com.capstone2024.scss.application.demand.dto.request.CounselingDemandUpdateRequestDTO;
@@ -25,4 +26,6 @@ public interface CounselingDemandService {
     CounselingDemandDTO solveCounselingDemand(Long counselingDemandId, String summarizeNote);
 
     List<CounselingDemandDTO> getAll(LocalDate from, LocalDate to);
+
+    List<ProblemTagCountResponse> getProblemTagsAndCountBySemester(String semesterName);
 }

@@ -38,4 +38,13 @@ public interface CounselingDemandRepository extends JpaRepository<CounselingDema
     List<CounselingDemand> findAllByStartDateTimeBetween(
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to);
+
+    @Query("SELECT pt.name, COUNT(dpt.id) " +
+            "FROM DemandProblemTag dpt " +
+            "JOIN dpt.problemTag pt " +
+            "JOIN dpt.semester s " +
+            "WHERE s.name = :semesterName " +
+            "GROUP BY pt.name " +
+            "ORDER BY COUNT(dpt.id) DESC")
+    List<Object[]> findProblemTagsWithCountBySemester(@Param("semesterName") String semesterName);
 }

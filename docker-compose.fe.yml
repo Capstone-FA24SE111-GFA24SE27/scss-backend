@@ -40,7 +40,7 @@ services:
     container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: admin
-      MYSQL_DATABASE: gym_management_system
+      MYSQL_DATABASE: scss
       MYSQL_USER: admin
       MYSQL_PASSWORD: 112233
     ports:
@@ -67,6 +67,7 @@ services:
       - "8085:8081"  # Cổng của ứng dụng server
     depends_on:
       - mysql
+
 #  mobile_socket_server:
 #    image: trinhvinhphat2003/mobile-socket-capstone-server
 #    container_name: mobile_socket_capstone_server

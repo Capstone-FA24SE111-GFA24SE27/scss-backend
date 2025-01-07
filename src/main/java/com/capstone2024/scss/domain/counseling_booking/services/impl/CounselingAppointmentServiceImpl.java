@@ -117,7 +117,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
                 .startDateTime(LocalDateTime.of(request.getRequireDate(), request.getStartTime()))
                 .endDateTime(LocalDateTime.of(request.getRequireDate(), request.getEndTime()))
                 .status(CounselingAppointmentStatus.WAITING)
-                .appointmentRequest(request)
+//                .appointmentRequest(request)
                 .meetUrl(dto.getMeetUrl())
                 .meetingType(request.getMeetingType())
                 .student(request.getStudent())
@@ -227,7 +227,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
                 .startDateTime(LocalDateTime.of(request.getRequireDate(), request.getStartTime()))
                 .endDateTime(LocalDateTime.of(request.getRequireDate(), request.getEndTime()))
                 .status(CounselingAppointmentStatus.WAITING)
-                .appointmentRequest(request)
+//                .appointmentRequest(request)
                 .address(dto.getAddress())
                 .meetingType(request.getMeetingType())
                 .student(request.getStudent())
@@ -425,8 +425,8 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
 
         // Update counselor rating
         Counselor counselor = appointment.getCounselor(); // Assuming Counselor is linked to Appointment
-        counselor.setRating(calculateNewRating(counselor, feedbackDTO.getRating()));
-        counselorRepository.save(counselor);
+//        counselor.setRating(calculateNewRating(counselor, feedbackDTO.getRating()));
+//        counselorRepository.save(counselor);
 
         // Create feedback entity
         AppointmentFeedback feedback = AppointmentFeedback.builder()
@@ -615,15 +615,15 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
     }
 
     @Override
-    public AppointmentReportResponse getAppointmentReportByAppointmentId(Long appointmentId, Counselor counselor) {
+    public AppointmentReportResponse getAppointmentReportByAppointmentId(Long appointmentId) {
         // Kiểm tra xem Appointment có thuộc về Counselor không
         CounselingAppointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new NotFoundException("Appointment not found"));
 
         // Kiểm tra Counselor có phải là người phụ trách Appointment này không
-        if (!appointment.getCounselor().getId().equals(counselor.getId())) {
-            throw new ForbiddenException("Counselor does not have access to this appointment report");
-        }
+//        if (!appointment.getCounselor().getId().equals(counselor.getId())) {
+//            throw new ForbiddenException("Counselor does not have access to this appointment report");
+//        }
 
         // Lấy AppointmentReport tương ứng
         AppointmentReport report = appointment.getReport();
@@ -848,6 +848,13 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
         return appointments.stream()
                 .map(CounselingAppointmentMapper::toCounselingAppointmentDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public long countOpenAppointment(Long studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new NotFoundException("Student not found"));
+        return appointmentRepository.countByStatusAndStudentId(CounselingAppointmentStatus.WAITING, studentId);
     }
 
     private void sendAppointmentCreationNotification(CounselingAppointment counselingAppointment) {

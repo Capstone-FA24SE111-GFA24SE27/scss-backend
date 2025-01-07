@@ -27,8 +27,8 @@ import java.util.List;
 @PrimaryKeyJoinColumn(name = "profile_id")
 public class Counselor extends Profile {
 
-    @Column(name = "rating")
-    private BigDecimal rating;
+//    @Column(name = "rating")
+//    private BigDecimal rating;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -46,21 +46,21 @@ public class Counselor extends Profile {
     @Column(name = "achievements", columnDefinition = "TEXT")
     private String achievements;
 
-    @OneToMany(mappedBy = "counselor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "counselor", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Qualification> qualifications;
 
-    @OneToMany(mappedBy = "counselor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "counselor", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<Certification> certifications;
 
-    @ManyToMany
-    @JoinTable(
-            name = "counselor_slot",
-            joinColumns = @JoinColumn(name = "counselor_id"),
-            inverseJoinColumns = @JoinColumn(name = "slot_id")
-    )
-    private List<CounselingSlot> counselingSlots;
+//    @ManyToMany
+//    @JoinTable(
+//            name = "counselor_slot",
+//            joinColumns = @JoinColumn(name = "counselor_id"),
+//            inverseJoinColumns = @JoinColumn(name = "slot_id")
+//    )
+//    private List<CounselingSlot> counselingSlots;
 
-    @OneToMany(mappedBy = "counselor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "counselor", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<SlotOfCounselor> slotOfCounselors;
 
     @OneToOne(mappedBy = "counselor", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

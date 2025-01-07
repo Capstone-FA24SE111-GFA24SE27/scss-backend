@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @SuperBuilder
@@ -26,5 +29,8 @@ public class ProblemTag extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private ProblemCategory category;
+
+    @OneToMany(mappedBy = "problemTag", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DemandProblemTag> demandProblemTags = new ArrayList<>();
 }
 

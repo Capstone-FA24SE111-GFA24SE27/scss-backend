@@ -15,6 +15,9 @@ public class CreateQuestionCardRequestDTO {
     @NotBlank(message = "Content must not be blank")
     private String content; // Nội dung câu hỏi
 
+    @NotBlank(message = "Title must not be blank")
+    private String title;
+
     @NotNull(message = "Question type must not be null")
     private QuestionType questionType;
 //
@@ -22,9 +25,9 @@ public class CreateQuestionCardRequestDTO {
 //
 //    private Long specializationId;
 //
-//    private Long departmentId;
-//
-//    private Long majorId;
-//
-//    private Long expertiseId;
+    private Long departmentId;
+
+    private Long majorId;
+
+    private Long expertiseId;
 }

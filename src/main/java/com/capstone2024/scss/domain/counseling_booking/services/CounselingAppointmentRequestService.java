@@ -23,4 +23,6 @@ public interface CounselingAppointmentRequestService {
     void updateAppointmentDetails(Long appointmentId, UpdateAppointmentRequestDTO updateRequest, Long counselorId);
 
     List<CounselingAppointmentRequestDTO> findAll(LocalDate from, LocalDate to);
+
+    long countOpenRequest(Long studentId);
 }

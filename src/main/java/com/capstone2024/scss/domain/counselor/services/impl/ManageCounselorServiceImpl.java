@@ -12,6 +12,8 @@ import com.capstone2024.scss.application.counseling_appointment.dto.request.coun
 import com.capstone2024.scss.application.counselor.dto.CounselingSlotDTO;
 import com.capstone2024.scss.application.counselor.dto.ManageCounselorDTO;
 import com.capstone2024.scss.application.counselor.dto.request.*;
+import com.capstone2024.scss.application.q_and_a.dto.QuestionCardFeedbackDTO;
+import com.capstone2024.scss.domain.common.mapper.q_and_a.QuestionCardFeedbackMapper;
 import com.capstone2024.scss.domain.counselor.entities.*;
 import com.capstone2024.scss.domain.counselor.services.CounselorService;
 import com.capstone2024.scss.domain.counselor.services.ManageCounselorService;
@@ -23,6 +25,8 @@ import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appoi
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentRequestService;
 import com.capstone2024.scss.domain.counseling_booking.services.CounselingAppointmentService;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
+import com.capstone2024.scss.domain.q_and_a.entities.QuestionCardFeedback;
+import com.capstone2024.scss.infrastructure.repositories._and_a.QuestionCardFeedbackRepository;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.AppointmentFeedbackRepository;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingSlotRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.AvailableDateRangeRepository;
@@ -54,6 +58,7 @@ public class ManageCounselorServiceImpl implements ManageCounselorService {
     private final AvailableDateRangeRepository availableDateRangeRepository;
     private final CounselingSlotRepository counselingSlotRepository;
     private final AppointmentFeedbackRepository appointmentFeedbackRepository;
+    private final QuestionCardFeedbackRepository questionCardFeedbackRepository;
 
     public PaginationDTO<List<CounselingAppointmentRequestDTO>> getAppointmentsRequestOfCounselorForManage(Long counselorId, AppointmentRequestFilterDTO filterDTO) {
         Counselor counselor = checkForCounselor(counselorId);
@@ -81,7 +86,7 @@ public class ManageCounselorServiceImpl implements ManageCounselorService {
     public AppointmentReportResponse getAppointmentReportByAppointmentId(Long appointmentId, Long counselorId) {
         Counselor counselor = checkForCounselor(counselorId);
 
-        return appointmentService.getAppointmentReportByAppointmentId(appointmentId, counselor);
+        return appointmentService.getAppointmentReportByAppointmentId(appointmentId);
     }
 
     @Override
@@ -226,8 +231,8 @@ public class ManageCounselorServiceImpl implements ManageCounselorService {
     public PaginationDTO<List<ManageCounselorDTO>> getCounselorsWithFilter(CounselorFilterRequestDTO filterRequest) {
         Page<Counselor> counselorsPage = counselorRepository.findByKeywordAndRatingRange(
                 filterRequest.getSearch(),
-                filterRequest.getRatingFrom(),
-                filterRequest.getRatingTo(),
+//                filterRequest.getRatingFrom(),
+//                filterRequest.getRatingTo(),
                 filterRequest.getPagination()
         );
 
@@ -261,11 +266,11 @@ public class ManageCounselorServiceImpl implements ManageCounselorService {
     public PaginationDTO<List<ManageCounselorDTO>> getAcademicCounselorsWithFilter(AcademicCounselorFilterRequestDTO filterRequest) {
         Page<AcademicCounselor> counselorsPage = counselorRepository.findAcademicCounselorsWithFilterForManaging(
                 filterRequest.getSearch(),
-                filterRequest.getRatingFrom(),
-                filterRequest.getRatingTo(),
+//                filterRequest.getRatingFrom(),
+//                filterRequest.getRatingTo(),
                 filterRequest.getAvailableFrom(),
                 filterRequest.getAvailableTo(),
-                filterRequest.getSpecializationId(),
+//                filterRequest.getSpecializationId(),
                 filterRequest.getDepartmentId(),
                 filterRequest.getMajorId(),
                 filterRequest.getStatus(),
@@ -287,8 +292,8 @@ public class ManageCounselorServiceImpl implements ManageCounselorService {
     public PaginationDTO<List<ManageCounselorDTO>> getNonAcademicCounselorsWithFilter(NonAcademicCounselorFilterRequestDTO filterRequest) {
         Page<NonAcademicCounselor> counselorsPage = counselorRepository.findNonAcademicCounselorsWithFilterForManaging(
                 filterRequest.getSearch(),
-                filterRequest.getRatingFrom(),
-                filterRequest.getRatingTo(),
+//                filterRequest.getRatingFrom(),
+//                filterRequest.getRatingTo(),
                 filterRequest.getAvailableFrom(),
                 filterRequest.getAvailableTo(),
                 filterRequest.getExpertiseId(),
@@ -321,6 +326,35 @@ public class ManageCounselorServiceImpl implements ManageCounselorService {
     private Pageable createPageable(FeedbackFilterDTO filterDTO) {
         Sort.Direction direction = Sort.Direction.fromString(filterDTO.getSortDirection());
         return PageRequest.of(filterDTO.getPage() - 1, 10, Sort.by(direction, filterDTO.getSortBy()));
+    }
+
+    @Override
+    public PaginationDTO<List<QuestionCardFeedbackDTO>> getQCFeedbackWithFilterForCounselor(FeedbackFilterDTO filterDTO, Long counselorId) {
+        Sort.Direction direction = Sort.Direction.fromString(filterDTO.getSortDirection());
+        Pageable pageable = PageRequest.of(filterDTO.getPage() - 1, filterDTO.getSize(), Sort.by(direction, filterDTO.getSortBy()));
+
+        LocalDateTime fromDateTime = filterDTO.getDateFrom() != null ? filterDTO.getDateFrom().atStartOfDay() : null;
+        LocalDateTime toDateTime = filterDTO.getDateTo() != null ? filterDTO.getDateTo().atTime(LocalTime.MAX) : null;
+
+        Page<QuestionCardFeedback> feedbackPage = questionCardFeedbackRepository.findFeedbackForCounselorWithFilter(
+                filterDTO.getKeyword(),
+                fromDateTime,
+                toDateTime,
+                filterDTO.getRatingFrom(),
+                filterDTO.getRatingTo(),
+                counselorId,
+                pageable);
+
+        List<QuestionCardFeedbackDTO> feedbackDTOs = feedbackPage.getContent()
+                .stream()
+                .map(QuestionCardFeedbackMapper::toNormalDTO)
+                .collect(Collectors.toList());
+
+        return PaginationDTO.<List<QuestionCardFeedbackDTO>>builder()
+                .data(feedbackDTOs)
+                .totalPages(feedbackPage.getTotalPages())
+                .totalElements((int) feedbackPage.getTotalElements())
+                .build();
     }
 
 }

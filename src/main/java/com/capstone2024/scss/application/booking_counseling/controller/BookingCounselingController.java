@@ -329,4 +329,16 @@ public class BookingCounselingController {
         counselingAppointmentService.cancelAppointmentforCounselor(appointmentId, counselorId, requestBody.getReason());
         return ResponseUtil.getResponse("Appointment cancel successfully", HttpStatus.OK);
     }
+
+    @GetMapping("/appointment/count-open/{studentId}")
+    public ResponseEntity<Object> countOpenAppointment(@PathVariable Long studentId) {
+        long count = counselingAppointmentService.countOpenAppointment(studentId);
+        return ResponseUtil.getResponse(count, HttpStatus.OK);
+    }
+
+    @GetMapping("/request/count-open/{studentId}")
+    public ResponseEntity<Object> countOpenRequest(@PathVariable Long studentId) {
+        long count = counselingAppointmentRequestService.countOpenRequest(studentId);
+        return ResponseUtil.getResponse(count, HttpStatus.OK);
+    }
 }

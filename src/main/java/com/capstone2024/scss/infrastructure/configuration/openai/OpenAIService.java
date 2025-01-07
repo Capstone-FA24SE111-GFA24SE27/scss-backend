@@ -21,8 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -37,6 +36,10 @@ public class OpenAIService {
     private final String REDIS_PREFIX_ASSESSMENT_PROMPT = "assessment:";
     private final String REDIS_PREFIX_REASON_MEANING_PROMPT = "reason_meaning:";
     private final String REDIS_PREFIX_EXPERTISE_PROMPT = "expertise:";
+    private final String REDIS_PREFIX_DIFFICULTY_PROMPT = "difficulty:";
+    private final String  REDIS_PREFIX_EMBEDDING = "embedding_vector:";
+    private final String REDIS_PREFIX_COUNSELOR_PROMPT = "suitable_counselor:";
+    private final String REDIS_PREFIX_COUNSELING_FIELD_PROMPT = "counseling_field:";
     private final int CACHE_EXPIRATION_HOURS = 6; // Cache expiration time in hours
     private final ProblemTagRepository problemTagRepository;
     private final ExpertiseRepository expertiseRepository;
@@ -67,23 +70,64 @@ public class OpenAIService {
         return promptCommand;
     }
 
+    public String generatePromptToOpenAIForAdjustDifficultyLevel(String question) {
+        String promptCommand = """
+        You are an advanced AI assistant tasked with evaluating the difficulty level of questions. 
+        Your job is to classify each question into one of three categories: Easy, Medium, or Hard. 
+        Use the following criteria to make your decision:
+
+        1. **Easy**:  
+           - The question is straightforward and requires general knowledge or basic steps to answer.  
+           - Examples include: "What is the capital of France?" or "How do I install software X?"
+
+        2. **Medium**:  
+           - The question involves a moderate level of understanding, explanation, or problem-solving.  
+           - It may require some specific knowledge or step-by-step guidance.  
+           - Examples include: "How do I analyze a basic financial statement?" or "How do I set up a database connection in Java?"
+
+        3. **Hard**:  
+           - The question is complex, abstract, or technical, requiring deep knowledge, specialized expertise, or advanced problem-solving skills.  
+           - Examples include: "What is the impact of quantum mechanics on modern encryption?" or "How do I optimize a machine learning model for production?"
+
+        Now, classify the following question based on these criteria:
+
+        Question: %s
+
+        Your response should only include one word: Easy, Medium, or Hard.
+    """.formatted(question);
+
+        return promptCommand;
+    }
+
     public String generatePromptToOpenAIForDefineReasonMeaning(String reason, Student student) {
         if(student == null || reason == null || reason.isEmpty()) {
             return "NOT_DETAIL_ENOUGH";
         }
 
-        String promptCommand = "You are a student counseling system. Below is the information about a student:\n" +
-                "- Department: " + (student.getDepartment() != null ? student.getDepartment().getName() : "N/A") + "\n" +
-                "- Major: " + (student.getMajor() != null ? student.getMajor().getName() : "N/A") + "\n" +
-                "- Reason for Counseling: " + reason + "\n\n" +
-                "Please determine whether the student’s reason for counseling is related to academic or non-academic issues. " +
+        String promptCommand =
+//                "You are a student counseling system. Below is the information about a student:\n" +
+                "You are a student counseling system designed to evaluate the appropriateness and completeness of a student's sentence:\n" +
+//                "- Department: " + (student.getDepartment() != null ? student.getDepartment().getName() : "N/A") + "\n" +
+//                "- Major: " + (student.getMajor() != null ? student.getMajor().getName() : "N/A") + "\n" +
+//                "- Reason for Counseling: " + reason + "\n\n" +
+                  "- Student's Sentence: " + reason + "\n\n" +
+//                "Please determine whether the student’s reason for counseling is related to academic or non-academic issues. " +
+                "Please analyze the provided Student's Sentence determine the appropriateness and completeness of the statement. The response should include:\n" +
                 "The response should be one of the following values:\n" +
-                "1. ACADEMIC: If the reason is related to academic issues, research, or academic activities.\n" +
-                "2. NON_ACADEMIC: If the reason is related to non-academic issues (e.g., mental health, social issues, career).\n" +
-                "3. NOT_DETAIL_ENOUGH: If the provided information is not sufficient to determine the counseling reason.\n" +
-                "4. ACADEMIC_BUT_OUT_OF_YOUR_ACADEMIC_SCOPE: If the reason is academic but outside the scope of your department’s academic scope.\n\n" +
+//                "1. ACADEMIC: If the reason is related to academic issues, research, or academic activities.\n" +
+//                "2. NON_ACADEMIC: If the reason is related to non-academic issues (e.g., mental health, social issues, career).\n" +
+//                "3. NOT_DETAIL_ENOUGH: If the provided information is not sufficient to determine the counseling reason.\n" +
+//                "4. ACADEMIC_BUT_OUT_OF_YOUR_ACADEMIC_SCOPE: If the reason is academic but outside the scope of your department’s academic scope.\n\n" +
+                "1. OK: If the reason is appropriate and detailed enough for counseling.\n" +
+//                "2. NOT_DETAIL_ENOUGH: If the reason lacks sufficient detail to determine the counseling purpose.\n" +
+                "2. INAPPROPRIATE_SENTENCE[...]: If the reason contains inappropriate language.\n\n" +
+//                "Based on the provided information, please return the appropriate result.\n" +
+//                "The result is always one of the following four values (ACADEMIC, NON_ACADEMIC, NOT_DETAIL_ENOUGH, ACADEMIC_BUT_OUT_OF_YOUR_ACADEMIC_SCOPE).\n";
+                "If the statement is inappropriate, return the words or phrases identified as inappropriate in the following format:\n" +
+                "INAPPROPRIATE: [list of inappropriate words/phrases]\n\n" +
+                "Examples of inappropriate words include but are not limited to: fucking, địt mẹ, etc.\n" +
                 "Based on the provided information, please return the appropriate result.\n" +
-                "The result is always one of the following four values (ACADEMIC, NON_ACADEMIC, NOT_DETAIL_ENOUGH, ACADEMIC_BUT_OUT_OF_YOUR_ACADEMIC_SCOPE).\n";
+                "The result is always only one of the following three values (OK, INAPPROPRIATE_SENTENCE[...]) without any redundant word.\n";
 
         return promptCommand;
     }
@@ -104,7 +148,7 @@ public class OpenAIService {
         String promptCommand = String.format(
                 "You are a system that helps determine the most suitable expertise based on the student's counseling request. Below is a list of available expertise areas:\n\n%s" +
                         "Student Reason for Counseling:\n%s\n\nPlease analyze the student's counseling reason and determine which expertise area would be most suitable for addressing the student's needs. " +
-                        "Please return the expertise that matches best. The result should only be one of the above available expertise, without any redundant words.",
+                        "Please return the expertise that matches best. The result should only be one of the above available expertise, if there is no expertise that is suitable to solve, return only word: none, without any redundant words.",
                 expertiseOptions.toString(), reason
         );
 
@@ -513,5 +557,370 @@ public class OpenAIService {
             log.error("Error parsing OpenAI response for prompt: {}", prompt, e);
             throw new RuntimeException("Error parsing OpenAI response", e);
         }
+    }
+
+    public String callOpenAPIForAdjustDifficultyLevel(String prompt) {
+        if (prompt == null || prompt.isBlank()) {
+            log.warn("Empty prompt received, returning an empty string.");
+            return "";
+        }
+
+        // Generate a unique Redis key based on the prompt's hash
+        String redisKey = REDIS_PREFIX_DIFFICULTY_PROMPT + prompt.hashCode();
+        log.info("Redis key: {}", redisKey);
+
+        // Check if the result for this prompt already exists in Redis
+        if (redisService.exists(redisKey)) {
+            log.info("Cache hit for prompt: {}", prompt);
+
+            log.info("Cache result: {}", (String) redisService.getData(redisKey));
+            return (String) redisService.getData(redisKey);
+        }
+        log.info("Cache miss for prompt: {}, proceeding to call OpenAI API", prompt);
+
+        // Create the request content, message, and response format objects
+        OpenAIRequestForGeneralAssessment.Message.Content content = new OpenAIRequestForGeneralAssessment.Message.Content("text", prompt);
+        OpenAIRequestForGeneralAssessment.Message message = new OpenAIRequestForGeneralAssessment.Message("user", List.of(content));
+        OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema.Properties.Assessment assessment = new OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema.Properties.Assessment(
+                "string",
+                "An text for adjust difficulty."
+        );
+        OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema.Properties properties = new OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema.Properties(assessment);
+        OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema schema = new OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema(
+                "object",
+                List.of("assessment"),
+                properties,
+                false
+        );
+        OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema jsonSchema = new OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema("object", true, schema);
+        OpenAIRequestForGeneralAssessment.ResponseFormat responseFormat = new OpenAIRequestForGeneralAssessment.ResponseFormat("json_schema", jsonSchema);
+
+        OpenAIRequestForGeneralAssessment request = new OpenAIRequestForGeneralAssessment(
+                "gpt-4o-mini",
+                List.of(message),
+                0.3,
+                2048,
+                1,
+                0,
+                0,
+                responseFormat
+        );
+
+        // Set up HTTP headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+        headers.set("Authorization", "Bearer " + openAiApiKey);
+
+        String openAiUrl = "https://api.openai.com/v1/chat/completions";
+        HttpEntity<OpenAIRequestForGeneralAssessment> entity = new HttpEntity<>(request, headers);
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        try {
+            // Log the API call
+            log.info("Sending request to OpenAI API for prompt: {}", prompt);
+            ResponseEntity<String> response = restTemplate.exchange(openAiUrl, HttpMethod.POST, entity, String.class);
+
+            // Log successful response
+            log.info("Received response from OpenAI API for prompt: {}", prompt);
+
+            OpenAIResponse openAIResponse = objectMapper.readValue(response.getBody(), OpenAIResponse.class);
+            List<String> contents = openAIResponse.getChoices().stream()
+                    .map(choice -> choice.getMessage().getContent())
+                    .collect(Collectors.toList());
+
+            JsonNode rootNode = objectMapper.readTree(contents.get(0));
+            JsonNode resultNode = rootNode.get("assessment");
+
+            // Convert the result to a comma-separated string
+            String resultString = objectMapper.convertValue(resultNode, String.class);
+
+            // Store the result in Redis with an expiration time
+            redisService.saveDataWithExpiration(redisKey, resultString, CACHE_EXPIRATION_HOURS, TimeUnit.HOURS);
+
+            log.info("Cached OpenAI response in Redis with key: {}", redisKey);
+            return resultString;
+
+        } catch (Exception e) {
+            log.error("Error parsing OpenAI response for prompt: {}", prompt, e);
+            throw new RuntimeException("Error parsing OpenAI response", e);
+        }
+    }
+
+    public List<Double> getEmbeddingFromOpenAPI(String content) {
+        if (content == null || content.isBlank()) {
+            log.warn("Empty content received, returning an empty embedding.");
+            return Collections.emptyList();
+        }
+
+        // Generate a unique Redis key based on the content's hash
+        String redisKey = REDIS_PREFIX_EMBEDDING + content.hashCode();
+        log.info("Redis key for embedding: {}", redisKey);
+
+        // Check if the embedding for this content already exists in Redis
+        if (redisService.exists(redisKey)) {
+            log.info("Cache hit for content: {}", content);
+
+            @SuppressWarnings("unchecked")
+            List<Double> cachedEmbedding = (List<Double>) redisService.getData(redisKey);
+            log.info("Cached embedding: {}", cachedEmbedding);
+            return cachedEmbedding;
+        }
+        log.info("Cache miss for content: {}, proceeding to call OpenAI API", content);
+
+        // Create the request object for OpenAI embedding API
+        OpenAIEmbeddingRequest embeddingRequest = new OpenAIEmbeddingRequest(
+                "text-embedding-ada-002", // Model for embedding
+                content
+        );
+
+        // Set up HTTP headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+        headers.set("Authorization", "Bearer " + openAiApiKey);
+
+        String openAiUrl = "https://api.openai.com/v1/embeddings";
+        HttpEntity<OpenAIEmbeddingRequest> entity = new HttpEntity<>(embeddingRequest, headers);
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        try {
+            // Log the API call
+            log.info("Sending request to OpenAI Embedding API for content: {}", content);
+            ResponseEntity<String> response = restTemplate.exchange(openAiUrl, HttpMethod.POST, entity, String.class);
+
+            // Parse the response
+            log.info("Received response from OpenAI Embedding API for content: {}", content);
+            OpenAIEmbeddingResponse embeddingResponse = objectMapper.readValue(response.getBody(), OpenAIEmbeddingResponse.class);
+
+            List<Double> embeddingVector = embeddingResponse.getData().get(0).getEmbedding();
+
+            // Store the embedding in Redis with an expiration time
+            redisService.saveDataWithExpiration(redisKey, embeddingVector, 720, TimeUnit.HOURS);
+
+            log.info("Cached embedding vector in Redis with key: {}", redisKey);
+            return embeddingVector;
+
+        } catch (Exception e) {
+            log.error("Error retrieving embedding from OpenAI API for content: {}", content, e);
+            throw new RuntimeException("Error retrieving embedding from OpenAI API", e);
+        }
+    }
+
+    public ArrayList<Long> callOpenAPIForSortSuitableCounselor(String prompt) {
+        if (prompt == null || prompt.isBlank()) {
+            log.warn("Empty prompt received, returning an empty string.");
+            return new ArrayList<>();
+        }
+
+        // Generate a unique Redis key based on the prompt's hash
+        String redisKey = REDIS_PREFIX_COUNSELOR_PROMPT + prompt.hashCode();
+        log.info("Redis key: {}", redisKey);
+
+        // Check if the result for this prompt already exists in Redis
+        if (redisService.exists(redisKey)) {
+            log.info("Cache hit for prompt: {}", prompt);
+
+            log.info("Cache result: {}", (String) redisService.getData(redisKey));
+            String redisData = (String) redisService.getData(redisKey);
+
+            return parseIdsFromResponse(redisData);
+        }
+        log.info("Cache miss for prompt: {}, proceeding to call OpenAI API", prompt);
+
+        // Create the request content, message, and response format objects
+        OpenAIRequestForGeneralAssessment.Message.Content content = new OpenAIRequestForGeneralAssessment.Message.Content("text", prompt);
+        OpenAIRequestForGeneralAssessment.Message message = new OpenAIRequestForGeneralAssessment.Message("user", List.of(content));
+        OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema.Properties.Assessment assessment = new OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema.Properties.Assessment(
+                "string",
+                "An text for sorted IDs."
+        );
+        OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema.Properties properties = new OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema.Properties(assessment);
+        OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema schema = new OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema(
+                "object",
+                List.of("assessment"),
+                properties,
+                false
+        );
+        OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema jsonSchema = new OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema("object", true, schema);
+        OpenAIRequestForGeneralAssessment.ResponseFormat responseFormat = new OpenAIRequestForGeneralAssessment.ResponseFormat("json_schema", jsonSchema);
+
+        OpenAIRequestForGeneralAssessment request = new OpenAIRequestForGeneralAssessment(
+                "gpt-4o-mini",
+                List.of(message),
+                0.3,
+                2048,
+                1,
+                0,
+                0,
+                responseFormat
+        );
+
+        // Set up HTTP headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+        headers.set("Authorization", "Bearer " + openAiApiKey);
+
+        String openAiUrl = "https://api.openai.com/v1/chat/completions";
+        HttpEntity<OpenAIRequestForGeneralAssessment> entity = new HttpEntity<>(request, headers);
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        try {
+            // Log the API call
+            log.info("Sending request to OpenAI API for prompt: {}", prompt);
+            ResponseEntity<String> response = restTemplate.exchange(openAiUrl, HttpMethod.POST, entity, String.class);
+
+            // Log successful response
+            log.info("Received response from OpenAI API for prompt: {}", prompt);
+
+            OpenAIResponse openAIResponse = objectMapper.readValue(response.getBody(), OpenAIResponse.class);
+            List<String> contents = openAIResponse.getChoices().stream()
+                    .map(choice -> choice.getMessage().getContent())
+                    .collect(Collectors.toList());
+
+            JsonNode rootNode = objectMapper.readTree(contents.get(0));
+            JsonNode resultNode = rootNode.get("assessment");
+
+            // Convert the result to a comma-separated string
+            String resultString = objectMapper.convertValue(resultNode, String.class);
+
+            ArrayList<Long> returnArraySortedId = parseIdsFromResponse(resultString);
+
+            // Store the result in Redis with an expiration time
+            redisService.saveDataWithExpiration(redisKey, resultString, CACHE_EXPIRATION_HOURS, TimeUnit.HOURS);
+
+            log.info("Cached OpenAI response in Redis with key: {}", redisKey);
+            return returnArraySortedId;
+
+        } catch (Exception e) {
+            log.error("Error parsing OpenAI response for prompt: {}", prompt, e);
+            throw new RuntimeException("Error parsing OpenAI response", e);
+        }
+    }
+
+    /**
+     * Helper method to parse sorted counselor IDs from the OpenAI API response.
+     */
+    private ArrayList<Long> parseIdsFromResponse(String response) {
+        if (response == null || response.isBlank()) {
+            return new ArrayList<>();
+        }
+
+        try {
+            String[] idStrings = response.split(",");
+            return Arrays.stream(idStrings)
+                    .map(String::trim)
+                    .map(Long::valueOf)
+                    .collect(Collectors.toCollection(ArrayList::new));
+        } catch (Exception e) {
+            log.error("Error parsing IDs from response: {}", response, e);
+            throw new RuntimeException("Error parsing IDs from response", e);
+        }
+    }
+
+    public ArrayList<String> callOpenAPIForSuitableCounselingField(String prompt) {
+        if (prompt == null || prompt.isBlank()) {
+            log.warn("Empty prompt received, returning an empty string.");
+            return new ArrayList<>();
+        }
+
+        // Generate a unique Redis key based on the prompt's hash
+        String redisKey = REDIS_PREFIX_COUNSELING_FIELD_PROMPT + prompt.hashCode();
+        log.info("Redis key: {}", redisKey);
+
+        // Check if the result for this prompt already exists in Redis
+        if (redisService.exists(redisKey)) {
+            log.info("Cache hit for prompt: {}", prompt);
+
+            log.info("Cache result: {}", (String) redisService.getData(redisKey));
+            String redisData = (String) redisService.getData(redisKey);
+
+            return parseStringFieldFromResponse(redisData);
+        }
+        log.info("Cache miss for prompt: {}, proceeding to call OpenAI API", prompt);
+
+        // Create the request content, message, and response format objects
+        OpenAIRequestForGeneralAssessment.Message.Content content = new OpenAIRequestForGeneralAssessment.Message.Content("text", prompt);
+        OpenAIRequestForGeneralAssessment.Message message = new OpenAIRequestForGeneralAssessment.Message("user", List.of(content));
+        OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema.Properties.Assessment assessment = new OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema.Properties.Assessment(
+                "string",
+                "An text for counseling field."
+        );
+        OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema.Properties properties = new OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema.Properties(assessment);
+        OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema schema = new OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema.Schema(
+                "object",
+                List.of("assessment"),
+                properties,
+                false
+        );
+        OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema jsonSchema = new OpenAIRequestForGeneralAssessment.ResponseFormat.JsonSchema("object", true, schema);
+        OpenAIRequestForGeneralAssessment.ResponseFormat responseFormat = new OpenAIRequestForGeneralAssessment.ResponseFormat("json_schema", jsonSchema);
+
+        OpenAIRequestForGeneralAssessment request = new OpenAIRequestForGeneralAssessment(
+                "gpt-4o-mini",
+                List.of(message),
+                0.0,
+                2048,
+                1,
+                0,
+                0,
+                responseFormat
+        );
+
+        // Set up HTTP headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+        headers.set("Authorization", "Bearer " + openAiApiKey);
+
+        String openAiUrl = "https://api.openai.com/v1/chat/completions";
+        HttpEntity<OpenAIRequestForGeneralAssessment> entity = new HttpEntity<>(request, headers);
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        try {
+            // Log the API call
+            log.info("Sending request to OpenAI API for prompt: {}", prompt);
+            ResponseEntity<String> response = restTemplate.exchange(openAiUrl, HttpMethod.POST, entity, String.class);
+
+            // Log successful response
+            log.info("Received response from OpenAI API for prompt: {}", prompt);
+
+            OpenAIResponse openAIResponse = objectMapper.readValue(response.getBody(), OpenAIResponse.class);
+            List<String> contents = openAIResponse.getChoices().stream()
+                    .map(choice -> choice.getMessage().getContent())
+                    .collect(Collectors.toList());
+
+            JsonNode rootNode = objectMapper.readTree(contents.get(0));
+            JsonNode resultNode = rootNode.get("assessment");
+
+            // Convert the result to a comma-separated string
+            String resultString = objectMapper.convertValue(resultNode, String.class);
+
+            ArrayList<String> returnArraySortedId = parseStringFieldFromResponse(resultString);
+
+            // Store the result in Redis with an expiration time
+            redisService.saveDataWithExpiration(redisKey, resultString, CACHE_EXPIRATION_HOURS, TimeUnit.HOURS);
+
+            log.info("Cached OpenAI response in Redis with key: {}", redisKey);
+            return returnArraySortedId;
+
+        } catch (Exception e) {
+            log.error("Error parsing OpenAI response for prompt: {}", prompt, e);
+            throw new RuntimeException("Error parsing OpenAI response", e);
+        }
+    }
+
+    public static ArrayList<String> parseStringFieldFromResponse(String input) throws IllegalArgumentException {
+        if (input == null || input.isBlank()) {
+            throw new IllegalArgumentException("Input cannot be null or blank.");
+        }
+
+        // Split the input by comma and trim whitespace
+        ArrayList<String> result = new ArrayList<>(Arrays.asList(input.split(",")));
+        result.replaceAll(String::trim); // Remove extra spaces
+
+        // Validate the array list size
+        if (result.size() != 2) {
+            throw new IllegalArgumentException("Invalid input: expected format 'TYPE, VALUE'.");
+        }
+
+        return result;
     }
 }

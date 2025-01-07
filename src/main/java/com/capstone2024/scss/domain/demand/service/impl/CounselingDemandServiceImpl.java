@@ -3,6 +3,7 @@ package com.capstone2024.scss.domain.demand.service.impl;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.demand.dto.CounselingDemandDTO;
+import com.capstone2024.scss.application.demand.dto.ProblemTagCountResponse;
 import com.capstone2024.scss.application.demand.dto.request.CounselingDemandCreateRequestDTO;
 import com.capstone2024.scss.application.demand.dto.request.CounselingDemandFilterRequestDTO;
 import com.capstone2024.scss.application.demand.dto.request.CounselingDemandUpdateRequestDTO;
@@ -22,9 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -107,6 +106,11 @@ public class CounselingDemandServiceImpl implements CounselingDemandService {
         counselingDemand.setCauseDescription(updateRequestDTO.getCauseDescription());
         counselingDemand.setAdditionalInformation(updateRequestDTO.getAdditionalInformation());
 
+        if(!updateRequestDTO.getCounselorId().equals(counselingDemand.getCounselor().getId())) {
+            Counselor newCounselor = counselorRepository.findById(updateRequestDTO.getCounselorId()).orElseThrow(() -> new NotFoundException("Not found counselor"));
+            counselingDemand.setCounselor(newCounselor);
+        }
+
         counselingDemand = counselingDemandRepository.save(counselingDemand);
 
         return DemandMapper.toCounselingDemandDTO(counselingDemand);
@@ -145,7 +149,12 @@ public class CounselingDemandServiceImpl implements CounselingDemandService {
                 .orElseThrow(() -> new NotFoundException("Counseling demand not found with ID: " + counselingDemandId));
 
 //        studentService.excludeAllDemandProblemTagsByStudentId(counselingDemand.getStudent().getId());
-        counselingDemand.setEndDateTime(LocalDateTime.now());
+        ZoneId vietnam = ZoneId.of("Asia/Ho_Chi_Minh");
+        ZonedDateTime now = ZonedDateTime.now();
+        ZonedDateTime nowVietNam = now.withZoneSameInstant(vietnam);
+        LocalDateTime vietNamDateTime = nowVietNam.toLocalDateTime();
+
+        counselingDemand.setEndDateTime(vietNamDateTime);
         counselingDemand.setStatus(CounselingDemand.Status.DONE);
         counselingDemand.setSummarizeNote(summarizeNote);
         CounselingDemand updatedDemand = counselingDemandRepository.save(counselingDemand);
@@ -162,6 +171,14 @@ public class CounselingDemandServiceImpl implements CounselingDemandService {
 
         return counselingDemands.stream()
                 .map(DemandMapper::toCounselingDemandDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProblemTagCountResponse> getProblemTagsAndCountBySemester(String semesterName) {
+        List<Object[]> results = counselingDemandRepository.findProblemTagsWithCountBySemester(semesterName);
+        return results.stream()
+                .map(result -> new ProblemTagCountResponse((String) result[0], (Long) result[1]))
                 .collect(Collectors.toList());
     }
 

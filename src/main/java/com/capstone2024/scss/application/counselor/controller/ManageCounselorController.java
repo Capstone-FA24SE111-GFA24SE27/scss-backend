@@ -16,6 +16,7 @@ import com.capstone2024.scss.application.counselor.dto.ManageCounselorDTO;
 import com.capstone2024.scss.application.counselor.dto.counseling_slot.CounselingSlotCreateDTO;
 import com.capstone2024.scss.application.counselor.dto.counseling_slot.CounselingSlotUpdateDTO;
 import com.capstone2024.scss.application.counselor.dto.request.*;
+import com.capstone2024.scss.application.q_and_a.dto.QuestionCardFeedbackDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.common.mapper.appointment_counseling.CounselingSlotMapper;
 import com.capstone2024.scss.domain.counseling_booking.entities.CounselingSlot;
@@ -28,6 +29,7 @@ import com.capstone2024.scss.domain.counselor.entities.SlotOfCounselor;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
 import com.capstone2024.scss.domain.counselor.entities.enums.Gender;
 import com.capstone2024.scss.domain.counselor.services.ManageCounselorService;
+import com.capstone2024.scss.domain.q_and_a.entities.QuestionCardFeedback;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -304,6 +306,54 @@ public class ManageCounselorController {
                 .build();
 
         PaginationDTO<List<AppointmentFeedbackDTO>> responseDTO = manageCounselorService.getFeedbackWithFilterForCounselor(filterDTO, counselorId);
+
+        return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/question-card/feedback/filter/{counselorId}")
+    @Operation(
+            summary = "Retrieve feedback for counselor with optional filters",
+            description = "Fetches a list of feedback for a counselor with optional filters for keyword, date range, rating range, and pagination.",
+            parameters = {
+                    @Parameter(name = "keyword", description = "Filter by comment keyword"),
+                    @Parameter(name = "dateFrom", description = "Start date for the date range filter (yyyy-MM-dd)"),
+                    @Parameter(name = "dateTo", description = "End date for the date range filter (yyyy-MM-dd)"),
+                    @Parameter(name = "ratingFrom", description = "Minimum rating"),
+                    @Parameter(name = "ratingTo", description = "Maximum rating"),
+                    @Parameter(name = "sortBy", description = "Field to sort by"),
+                    @Parameter(name = "SortDirection", description = "Sort direction (ASC or DESC)"),
+                    @Parameter(name = "page", description = "Page number for pagination")
+            },
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully fetched feedback with applied filters."),
+                    @ApiResponse(responseCode = "400", description = "Invalid request parameters.")
+            }
+    )
+    public ResponseEntity<Object> getQustionFeedbackForCounselor(
+            @PathVariable("counselorId") Long counselorId,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "dateFrom", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(name = "dateTo", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(name = "ratingFrom", required = false) BigDecimal ratingFrom,
+            @RequestParam(name = "ratingTo", required = false) BigDecimal ratingTo,
+            @RequestParam(name = "sortBy", defaultValue = "id") String sortBy,
+            @RequestParam(name = "sortDirection", defaultValue = "DESC") String sortDirection,
+            @RequestParam(name = "page", defaultValue = "1") Integer page,
+            @RequestParam(name = "size", defaultValue = "10") Integer size) {
+
+        FeedbackFilterDTO filterDTO = FeedbackFilterDTO.builder()
+                .keyword(keyword)
+                .dateFrom(dateFrom)
+                .dateTo(dateTo)
+                .ratingFrom(ratingFrom)
+                .ratingTo(ratingTo)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .page(page)
+                .size(size)
+                .build();
+
+        PaginationDTO<List<QuestionCardFeedbackDTO>> responseDTO = manageCounselorService.getQCFeedbackWithFilterForCounselor(filterDTO, counselorId);
 
         return ResponseUtil.getResponse(responseDTO, HttpStatus.OK);
     }

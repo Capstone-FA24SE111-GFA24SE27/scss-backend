@@ -42,6 +42,7 @@ import com.capstone2024.scss.infrastructure.repositories.booking_counseling.Coun
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingAppointmentRequestRepository;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingSlotRepository;
 import com.capstone2024.scss.infrastructure.repositories.counselor.CounselorRepository;
+import com.capstone2024.scss.infrastructure.repositories.student.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +69,7 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
     private final CounselingAppointmentRepository counselingAppointmentRepository;
     private final RabbitTemplate rabbitTemplate;
     private final NotificationService notificationService;
+    private final StudentRepository studentRepository;
 
     private List<CounselingSlot> getSlotForDay(List<SlotOfCounselor> slotOfCounselors, DayOfWeek dayOfWeek) {
         return slotOfCounselors == null ?
@@ -298,46 +300,46 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
                 .build();
     }
 
-    private CounselingAppointmentRequestDTO convertToDTO(CounselingAppointmentRequest request) {
-        List<CounselingAppointment> appointments = request.getCounselingAppointments();
-        AppointmentDetailsDTO appointmentDetails = null;
-        if(appointments != null && !appointments.isEmpty()) {
-            CounselingAppointment appointment = appointments.getLast();
-
-            if (appointment instanceof OnlineAppointment onlineAppointment) {
-                appointmentDetails = AppointmentDetailsDTO.builder()
-                        .meetUrl(onlineAppointment.getMeetUrl())
-                        .build();
-            } else if (appointment instanceof OfflineAppointment offlineAppointment) {
-                appointmentDetails = AppointmentDetailsDTO.builder()
-                        .address(offlineAppointment.getAddress())
-                        .build();
-            }
-        }
-
-        CounselorProfileDTO counselorDTO = (request.getCounselor() != null) ? (
-                (request.getCounselor() instanceof NonAcademicCounselor) ?
-                    CounselorProfileMapper.toNonAcademicCounselorProfileDTO((NonAcademicCounselor) request.getCounselor()) : CounselorProfileMapper.toAcademicCounselorProfileDTO((AcademicCounselor) request.getCounselor())
-        ) : null;
-
-        StudentProfileDTO studentDTO = request.getStudent() != null
-                ?
-                StudentMapper.toStudentProfileDTO(request.getStudent())
-                : null;
-
-        return CounselingAppointmentRequestDTO.builder()
-                .id(request.getId())
-                .requireDate(request.getRequireDate())
-                .startTime(request.getStartTime())
-                .endTime(request.getEndTime())
-                .status(request.getStatus().name())
-                .meetingType(request.getMeetingType())
-                .reason(request.getReason())
-                .counselor(counselorDTO)
-                .student(studentDTO)
-                .appointmentDetails(appointmentDetails)
-                .build();
-    }
+//    private CounselingAppointmentRequestDTO convertToDTO(CounselingAppointmentRequest request) {
+//        List<CounselingAppointment> appointments = request.getCounselingAppointments();
+//        AppointmentDetailsDTO appointmentDetails = null;
+//        if(appointments != null && !appointments.isEmpty()) {
+//            CounselingAppointment appointment = appointments.getLast();
+//
+//            if (appointment instanceof OnlineAppointment onlineAppointment) {
+//                appointmentDetails = AppointmentDetailsDTO.builder()
+//                        .meetUrl(onlineAppointment.getMeetUrl())
+//                        .build();
+//            } else if (appointment instanceof OfflineAppointment offlineAppointment) {
+//                appointmentDetails = AppointmentDetailsDTO.builder()
+//                        .address(offlineAppointment.getAddress())
+//                        .build();
+//            }
+//        }
+//
+//        CounselorProfileDTO counselorDTO = (request.getCounselor() != null) ? (
+//                (request.getCounselor() instanceof NonAcademicCounselor) ?
+//                    CounselorProfileMapper.toNonAcademicCounselorProfileDTO((NonAcademicCounselor) request.getCounselor()) : CounselorProfileMapper.toAcademicCounselorProfileDTO((AcademicCounselor) request.getCounselor())
+//        ) : null;
+//
+//        StudentProfileDTO studentDTO = request.getStudent() != null
+//                ?
+//                StudentMapper.toStudentProfileDTO(request.getStudent())
+//                : null;
+//
+//        return CounselingAppointmentRequestDTO.builder()
+//                .id(request.getId())
+//                .requireDate(request.getRequireDate())
+//                .startTime(request.getStartTime())
+//                .endTime(request.getEndTime())
+//                .status(request.getStatus().name())
+//                .meetingType(request.getMeetingType())
+//                .reason(request.getReason())
+//                .counselor(counselorDTO)
+//                .student(studentDTO)
+//                .appointmentDetails(appointmentDetails)
+//                .build();
+//    }
 
     @Transactional
     public void updateAppointmentDetails(Long appointmentId, UpdateAppointmentRequestDTO updateRequest, Long counselorId) {
@@ -399,5 +401,12 @@ public class CounselingAppointmentRequestServiceImpl implements CounselingAppoin
         return rs.stream()
                 .map(CounselingRequestMapper::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public long countOpenRequest(Long studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new NotFoundException("Student not found"));
+        return requestRepository.countByStatusAndStudentId(CounselingAppointmentRequestStatus.WAITING, studentId);
     }
 }

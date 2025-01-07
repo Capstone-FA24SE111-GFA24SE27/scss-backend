@@ -18,6 +18,8 @@ public class ManageCounselorDTO {
 
     private CounselorProfileDTO profile;
 
+    private String password;
+
     private AvailableDateRangeDTO availableDateRange;
 
     private List<CounselingSlotDTO> counselingSlot;

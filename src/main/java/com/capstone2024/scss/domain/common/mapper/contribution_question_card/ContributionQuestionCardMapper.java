@@ -2,6 +2,7 @@ package com.capstone2024.scss.domain.common.mapper.contribution_question_card;
 
 import com.capstone2024.scss.application.contribution_question_card.dto.ContributionQuestionCardDTO;
 import com.capstone2024.scss.application.contribution_question_card.dto.ContributionQuestionCardResponseDTO;
+import com.capstone2024.scss.domain.common.mapper.account.CounselorProfileMapper;
 import com.capstone2024.scss.domain.contribution_question_card.entities.ContributionQuestionCard;
 import com.capstone2024.scss.infrastructure.elastic_search.documents.ContributionQuestionCardDocument;
 
@@ -17,27 +18,28 @@ public class ContributionQuestionCardMapper {
                 .id(entity.getId().toString())
                 .question(entity.getQuestion())
                 .answer(entity.getAnswer())
-                .status(entity.getStatus().name())
-                .counselorId(entity.getCounselor().getId().toString())
-                .category(entity.getCategory().getName())
+                .status(entity.getPublicStatus().name())
+                .counselor(CounselorProfileMapper.toCounselorProfileDTO(entity.getCounselor()))
+                .category(ContributedQuestionCardCategoryMapper.toDTO(entity.getCategory()))
+                .title(entity.getTitle())
                 .build();
     }
 
     // Map Document to ResponseDTO
-    public static ContributionQuestionCardResponseDTO toResponseDTO(ContributionQuestionCardDocument document) {
-        if (document == null) {
-            return null;
-        }
-
-        return ContributionQuestionCardResponseDTO.builder()
-                .id(document.getId())
-                .question(document.getQuestion())
-                .answer(document.getAnswer())
-                .status(document.getStatus())
-                .counselorId(document.getCounselorId())
-                .category(document.getCategory())
-                .build();
-    }
+//    public static ContributionQuestionCardResponseDTO toResponseDTO(ContributionQuestionCardDocument document) {
+//        if (document == null) {
+//            return null;
+//        }
+//
+//        return ContributionQuestionCardResponseDTO.builder()
+//                .id(document.getId())
+//                .question(document.getQuestion())
+//                .answer(document.getAnswer())
+//                .status(document.getStatus())
+//                .counselor(CounselorProfileMapper.toCounselorProfileDTO(entity.getCounselor()))
+//                .category(ContributedQuestionCardCategoryMapper.toDTO(entity.getCategory()))
+//                .build();
+//    }
 
     // Map DTO to Entity
     public static ContributionQuestionCard toEntity(ContributionQuestionCardDTO dto) {
@@ -59,11 +61,12 @@ public class ContributionQuestionCardMapper {
 
         ContributionQuestionCardDocument document = new ContributionQuestionCardDocument();
         document.setId(entity.getId().toString());
+        document.setSortingId(entity.getId());
         document.setQuestion(entity.getQuestion());
         document.setAnswer(entity.getAnswer());
-        document.setStatus(entity.getStatus().name());
+        document.setStatus(entity.getPublicStatus().name());
         document.setCounselorId(entity.getCounselor().getId().toString());
-        document.setCategory(entity.getCategory().getName());
+        document.setCategoryId(entity.getCategory().getId());
         return document;
     }
 }

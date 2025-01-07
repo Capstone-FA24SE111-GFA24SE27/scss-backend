@@ -14,11 +14,15 @@ import java.util.List;
 @Data
 public class AcademicCounselorAccountDTO {
 
-    @NotEmpty(message = "Email is required")
-    @Email(message = "Invalid email format")
+    private Long id;
+
+    private String avatarLink;
+
+//    @NotEmpty(message = "Email is required")
+//    @Email(message = "Invalid email format")
     private String email;
 
-    @NotEmpty(message = "Password is required")
+//    @NotEmpty(message = "Password is required")
     private String password;
 
     @NotNull(message = "Gender is required")
@@ -39,8 +43,8 @@ public class AcademicCounselorAccountDTO {
     @NotNull(message = "Major ID is required")
     private Long majorId;
 
-    @NotNull(message = "Specialization ID is required")
-    private Long specializationId;
+//    @NotNull(message = "Specialization ID is required")
+//    private Long specializationId;
 
     private String specializedSkills;
 

@@ -101,4 +101,125 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     );
 
     Optional<Student> findByStudentCode(String studentCode);
+
+    @Query("SELECT sto FROM Student sto " +
+            "WHERE EXISTS (" +
+            "    SELECT st1.studentCode " +
+            "    FROM StudentStudy a1 " +
+            "    JOIN a1.attendanceDetails ad1 " +
+            "    JOIN a1.semester s1 " +
+            "    JOIN a1.student st1 " +
+            "    WHERE s1.name = :semesterIdForAttendance " +
+            "      AND ad1.status = 'ABSENT' " +
+            "      AND st1.studentCode = sto.studentCode " +
+            "    GROUP BY st1.studentCode, a1.subjectCode " +
+            "    HAVING COUNT(ad1.id) BETWEEN :absenceSlotFrom AND :absenceSlotTo" +
+            ") " +
+            "AND (" +
+            "    SELECT COUNT(DISTINCT a2.subjectCode) " +
+            "    FROM StudentStudy a2 " +
+            "    JOIN a2.attendanceDetails ad2 " +
+            "    JOIN a2.semester s2 " +
+            "    JOIN a2.student st2 " +
+            "    WHERE s2.name = :semesterIdForAttendance " +
+            "      AND ad2.status = 'ABSENT' " +
+            "      AND st2.studentCode = sto.studentCode " +
+            "      AND (" +
+            "          SELECT COUNT(*) " +
+            "          FROM StudentStudy a3 " +
+            "          JOIN a3.attendanceDetails ad3 " +
+            "          JOIN a3.semester s3 " +
+            "          JOIN a3.student st3 " +
+            "          WHERE s3.name = :semesterIdForAttendance " +
+            "            AND ad3.status = 'ABSENT' " +
+            "            AND st3.studentCode = st2.studentCode " +
+            "            AND a3.subjectCode = a2.subjectCode" +
+            "      ) BETWEEN :absenceSlotFrom AND :absenceSlotTo" +
+//            ") BETWEEN :subjectcountFrom AND :subjectcountTo")
+            ") >= :subjectcountFrom")
+    List<Student> findStudentsWithAbsenceCountRange(
+            @Param("semesterIdForAttendance") String semesterIdForAttendance,
+            @Param("absenceSlotFrom") Long absenceSlotFrom,
+            @Param("absenceSlotTo") Long absenceSlotTo
+            ,
+            @Param("subjectcountFrom") Long subjectcountFrom
+//            ,
+//            @Param("subjectcountTo") Long subjectcountTo
+    );
+
+    @Query("SELECT sto FROM Student sto " +
+            "WHERE EXISTS (" +
+            "    SELECT st1.studentCode " +
+            "    FROM StudentStudy a1 " +
+            "    JOIN a1.attendanceDetails ad1 " +
+            "    JOIN a1.semester s1 " +
+            "    JOIN a1.student st1 " +
+            "    WHERE s1.name = :semesterIdForAttendance " +
+            "      AND ad1.status = 'ABSENT' " +
+            "      AND st1.studentCode = sto.studentCode " +
+            "    GROUP BY st1.studentCode, a1.subjectCode " +
+            "    HAVING (COUNT(ad1.id) * 100.0) / " +
+            "           (SELECT COUNT(adTotal.id) " +
+            "            FROM AttendanceDetail adTotal " +
+            "            JOIN adTotal.studentStudy aTotal " +
+            "            JOIN aTotal.student stTotal " +
+            "            WHERE aTotal.subjectCode = a1.subjectCode " +
+            "              AND stTotal.studentCode = st1.studentCode " +
+            "              AND aTotal.semester.name = :semesterIdForAttendance) " +
+            "           BETWEEN :absenceSlotFrom AND :absenceSlotTo" +
+            ") " +
+            "AND (" +
+            "    SELECT COUNT(DISTINCT a2.subjectCode) " +
+            "    FROM StudentStudy a2 " +
+            "    JOIN a2.attendanceDetails ad2 " +
+            "    JOIN a2.semester s2 " +
+            "    JOIN a2.student st2 " +
+            "    WHERE s2.name = :semesterIdForAttendance " +
+            "      AND ad2.status = 'ABSENT' " +
+            "      AND st2.studentCode = sto.studentCode " +
+            "      AND (" +
+            "          SELECT (COUNT(ad3.id) * 100.0) / " +
+            "                 (SELECT COUNT(adTotal.id) " +
+            "                  FROM AttendanceDetail adTotal " +
+            "                  JOIN adTotal.studentStudy aTotal " +
+            "                  JOIN aTotal.student stTotal " +
+            "                  WHERE aTotal.subjectCode = a3.subjectCode " +
+            "                    AND stTotal.studentCode = st3.studentCode " +
+            "                    AND aTotal.semester.name = :semesterIdForAttendance) " +
+            "          FROM StudentStudy a3 " +
+            "          JOIN a3.attendanceDetails ad3 " +
+            "          JOIN a3.semester s3 " +
+            "          JOIN a3.student st3 " +
+            "          WHERE s3.name = :semesterIdForAttendance " +
+            "            AND ad3.status = 'ABSENT' " +
+            "            AND st3.studentCode = st2.studentCode " +
+            "            AND a3.subjectCode = a2.subjectCode" +
+            "      ) BETWEEN :absenceSlotFrom AND :absenceSlotTo" +
+//            ") BETWEEN :subjectcountFrom AND :subjectcountTo")
+            ") >= :subjectcountFrom")
+    List<Student> findStudentsWithAbsencePercentageRange(
+            @org.springframework.data.repository.query.Param("semesterIdForAttendance") String semesterIdForAttendance,
+            @org.springframework.data.repository.query.Param("absenceSlotFrom") Double absenceSlotFrom,  // phần trăm tối thiểu
+            @org.springframework.data.repository.query.Param("absenceSlotTo") Double absenceSlotTo,      // phần trăm tối đa
+            @org.springframework.data.repository.query.Param("subjectcountFrom") Long subjectcountFrom
+//            ,
+//            @Param("subjectcountTo") Long subjectcountTo
+    );
+
+    @Query("SELECT sto FROM Student sto " +
+            "WHERE (" +
+            "    SELECT AVG(a1.finalGrade) " +
+            "    FROM StudentStudy a1 " +
+            "    JOIN a1.semester s1 " +
+            "    JOIN a1.student st1 " +
+            "    WHERE s1.name = :semesterIdForGPA " +
+            "      AND st1.studentCode = sto.studentCode " +
+            ") BETWEEN :from AND :to")
+    List<Student> findStudentsWithGPA(
+            @org.springframework.data.repository.query.Param("semesterIdForGPA") String semesterIdForGPA,
+            @org.springframework.data.repository.query.Param("from") Double from,  // phần trăm tối thiểu
+            @org.springframework.data.repository.query.Param("to") Double to
+//            ,
+//            @Param("subjectcountTo") Long subjectcountTo
+    );
 }

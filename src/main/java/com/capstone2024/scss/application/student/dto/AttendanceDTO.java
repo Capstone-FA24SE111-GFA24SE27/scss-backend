@@ -16,8 +16,17 @@ public class AttendanceDTO {
     private LocalDate startDate;
     private int totalSlot;
     private String studentCode;
+    private String subjectCode;
     private String subjectName;
     private String semesterName;
+    private StudyStatus status;
     private BigDecimal grade;
     private List<AttendanceDetailDTO> detais;
+
+    public enum StudyStatus {
+        NOT_STARTED,
+        STUDYING,
+        PASSED,
+        NOT_PASSED
+    }
 }

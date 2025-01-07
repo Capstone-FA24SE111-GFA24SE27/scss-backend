@@ -66,4 +66,7 @@ public interface CounselingAppointmentRepository extends JpaRepository<Counselin
 
     @Query("SELECT ca FROM CounselingAppointment ca WHERE ca.status = 'WAITING' AND ca.startDateTime >= :startOfDay AND ca.startDateTime < :endOfDay")
     List<CounselingAppointment> findWaitingAppointmentsForToday(LocalDateTime startOfDay, LocalDateTime endOfDay);
+
+    @Query("SELECT COUNT(ca) FROM CounselingAppointment ca WHERE ca.status = :status AND ca.student.id = :studentId")
+    long countByStatusAndStudentId(@Param("status") CounselingAppointmentStatus status, @Param("studentId") Long studentId);
 }

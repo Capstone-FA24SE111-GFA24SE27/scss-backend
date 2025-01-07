@@ -63,4 +63,7 @@ public interface CounselingAppointmentRequestRepository extends JpaRepository<Co
 
     @Query("SELECT car FROM CounselingAppointmentRequest car WHERE car.status = 'WAITING' AND car.requireDate = :yesterday")
     List<CounselingAppointmentRequest> findWaitingRequestsForYesterday(LocalDate yesterday);
+
+    @Query("SELECT COUNT(c) FROM CounselingAppointmentRequest c WHERE c.status = :status AND c.student.id = :studentId")
+    long countByStatusAndStudentId(@Param("status") CounselingAppointmentRequestStatus status, @Param("studentId") Long studentId);
 }

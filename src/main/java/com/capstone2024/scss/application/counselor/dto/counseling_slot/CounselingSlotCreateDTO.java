@@ -7,6 +7,8 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import org.springframework.format.annotation.DateTimeFormat;
+
 import java.time.LocalTime;
 
 @Getter
@@ -25,9 +27,11 @@ public class CounselingSlotCreateDTO {
     private String name;
 
     @NotNull
+    @DateTimeFormat(iso = DateTimeFormat.ISO.TIME)
     private LocalTime startTime;
 
     @NotNull
+    @DateTimeFormat(iso = DateTimeFormat.ISO.TIME)
     private LocalTime endTime;
 }
 

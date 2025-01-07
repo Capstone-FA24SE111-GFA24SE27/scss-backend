@@ -33,8 +33,8 @@ public class CounselingSlot extends BaseEntity {
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
-    @ManyToMany(mappedBy = "counselingSlots")
-    private List<Counselor> counselors;
+//    @ManyToMany(mappedBy = "counselingSlots")
+//    private List<Counselor> counselors;
 
     @OneToMany(mappedBy = "counselingSlot")
     private List<SlotOfCounselor> slotOfCounselors;

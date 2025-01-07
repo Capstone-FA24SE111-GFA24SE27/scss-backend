@@ -238,7 +238,7 @@ public class AppointmentController {
     @GetMapping("/report/{appointmentId}")
     public ResponseEntity<Object> getReportByAppointmentId(@PathVariable Long appointmentId,
                                                                               @NotNull @AuthenticationPrincipal Account principle) {
-        AppointmentReportResponse response = appointmentService.getAppointmentReportByAppointmentId(appointmentId, (Counselor) principle.getProfile());
+        AppointmentReportResponse response = appointmentService.getAppointmentReportByAppointmentId(appointmentId);
         return ResponseUtil.getResponse(response, HttpStatus.OK);
     }
 }

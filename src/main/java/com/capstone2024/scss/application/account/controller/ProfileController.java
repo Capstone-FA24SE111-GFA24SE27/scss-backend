@@ -69,27 +69,28 @@ public class ProfileController {
     )
     public ResponseEntity<Object> getProfile(@AuthenticationPrincipal @NotNull Account principal) {
         logger.info("Fetching profile for account ID: {}", principal.getId());
-        switch (principal.getRole()) {
-            case STUDENT -> {
-                Student student = (Student) principal.getProfile();
-                StudentProfileDTO studentProfileDTO = StudentMapper.toStudentProfileDTO(student);
-                return ResponseUtil.getResponse(studentProfileDTO, HttpStatus.OK);
-            }
-            case NON_ACADEMIC_COUNSELOR -> {
-                Counselor counselor = (Counselor) principal.getProfile();
-                NonAcademicCounselorProfileDTO counselorProfileDTO = CounselorProfileMapper.toNonAcademicCounselorProfileDTO((NonAcademicCounselor) counselor);
-                return ResponseUtil.getResponse(counselorProfileDTO, HttpStatus.OK);
-            }
-            case ACADEMIC_COUNSELOR -> {
-                Counselor counselor = (Counselor) principal.getProfile();
-                AcademicCounselorProfileDTO counselorProfileDTO = CounselorProfileMapper.toAcademicCounselorProfileDTO((AcademicCounselor) counselor);
-                return ResponseUtil.getResponse(counselorProfileDTO, HttpStatus.OK);
-            }
-            default -> {
-                ProfileDTO profileDTO = profileService.getProfileByAccountId(principal.getId());
-                return ResponseUtil.getResponse(profileDTO, HttpStatus.OK);
-            }
-        }
+//        switch (principal.getRole()) {
+//            case STUDENT -> {
+//                Student student = (Student) principal.getProfile();
+//                StudentProfileDTO studentProfileDTO = StudentMapper.toStudentProfileDTO(student);
+//                return ResponseUtil.getResponse(studentProfileDTO, HttpStatus.OK);
+//            }
+//            case NON_ACADEMIC_COUNSELOR -> {
+//                Counselor counselor = (Counselor) principal.getProfile();
+//                NonAcademicCounselorProfileDTO counselorProfileDTO = CounselorProfileMapper.toNonAcademicCounselorProfileDTO((NonAcademicCounselor) counselor);
+//                return ResponseUtil.getResponse(counselorProfileDTO, HttpStatus.OK);
+//            }
+//            case ACADEMIC_COUNSELOR -> {
+//                Counselor counselor = (Counselor) principal.getProfile();
+//                AcademicCounselorProfileDTO counselorProfileDTO = CounselorProfileMapper.toAcademicCounselorProfileDTO((AcademicCounselor) counselor);
+//                return ResponseUtil.getResponse(counselorProfileDTO, HttpStatus.OK);
+//            }
+//            default -> {
+//                ProfileDTO profileDTO = profileService.getProfileByAccountId(principal.getId());
+//                return ResponseUtil.getResponse(profileDTO, HttpStatus.OK);
+//            }
+//        }
+        return ResponseUtil.getResponse(profileService.getProfileByAccountIdForEachRole(principal.getId()), HttpStatus.OK);
     }
 
     @GetMapping("/{accountId}")

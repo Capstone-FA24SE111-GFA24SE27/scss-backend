@@ -16,11 +16,14 @@ public interface AcademicCounselorRepository extends JpaRepository<AcademicCouns
             "LEFT JOIN ac.questionCards q " +
             "WHERE (:departmentId IS NULL OR ac.department.id = :departmentId) " +
             "AND (:majorId IS NULL OR ac.major.id = :majorId) " +
-            "AND (:specializationId IS NULL OR ac.specialization.id = :specializationId) " +
+            "AND (q IS NULL OR FUNCTION('MONTH', q.createdDate) = FUNCTION('MONTH', CURRENT_DATE) " +
+            "AND FUNCTION('YEAR', q.createdDate) = FUNCTION('YEAR', CURRENT_DATE)) " +
+//            "AND (:specializationId IS NULL OR ac.specialization.id = :specializationId) " +
             "GROUP BY ac " +
             "ORDER BY COUNT(q) ASC")
     List<AcademicCounselor> findAcademicCounselorWithLeastQuestions(
             @Param("departmentId") Long departmentId,
-            @Param("majorId") Long majorId,
-            @Param("specializationId") Long specializationId);
+            @Param("majorId") Long majorId
+//            @Param("specializationId") Long specializationId
+            );
 }

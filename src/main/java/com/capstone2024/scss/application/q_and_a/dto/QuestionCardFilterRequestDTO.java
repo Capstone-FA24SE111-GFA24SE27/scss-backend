@@ -1,6 +1,7 @@
 package com.capstone2024.scss.application.q_and_a.dto;
 
 import com.capstone2024.scss.application.account.dto.enums.SortDirection;
+import com.capstone2024.scss.domain.q_and_a.entities.QuestionCard;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionCardStatus;
 import com.capstone2024.scss.domain.q_and_a.enums.QuestionType;
 import lombok.*;
@@ -16,6 +17,7 @@ import java.time.LocalDate;
 public class QuestionCardFilterRequestDTO {
     private String keyword; // Từ khóa tìm kiếm trong nội dung hoặc tiêu đề
     private QuestionCardStatus status; // Trạng thái của thẻ câu hỏi
+    private QuestionCard.PublicStatus publicStatus;
     private Boolean isTaken; // Đã được nhận bởi counselor chưa
     private Boolean isClosed; // Thẻ câu hỏi đã bị đóng chưa
     private Boolean isChatSessionClosed; // Session chat có bị đóng chưa

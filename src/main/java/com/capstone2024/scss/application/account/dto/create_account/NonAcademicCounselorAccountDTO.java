@@ -13,11 +13,16 @@ import java.util.List;
 
 @Data
 public class NonAcademicCounselorAccountDTO {
-    @NotEmpty(message = "Email is required")
-    @Email(message = "Invalid email format")
+
+    private Long id;
+
+    private String avatarLink;
+
+//    @NotEmpty(message = "Email is required")
+//    @Email(message = "Invalid email format")
     private String email;
 
-    @NotEmpty(message = "Password is required")
+//    @NotEmpty(message = "Password is required")
     private String password;
 
     @NotNull(message = "Gender is required")

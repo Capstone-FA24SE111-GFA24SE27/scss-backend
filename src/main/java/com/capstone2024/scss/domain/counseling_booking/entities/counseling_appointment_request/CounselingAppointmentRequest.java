@@ -58,7 +58,7 @@ public class CounselingAppointmentRequest extends BaseEntity {
     @OneToMany(mappedBy = "appointmentRequest", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CounselingAppointment> counselingAppointments;
 
-    @ManyToOne
-    @JoinColumn(name = "counseling_demand_id", nullable = true)
-    private CounselingDemand counselingDemand;
+//    @ManyToOne
+//    @JoinColumn(name = "counseling_demand_id", nullable = true)
+//    private CounselingDemand counselingDemand;
 }

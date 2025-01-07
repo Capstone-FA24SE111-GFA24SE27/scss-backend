@@ -4,12 +4,14 @@ import com.capstone2024.scss.application.account.dto.create_account.AcademicCoun
 import com.capstone2024.scss.application.account.dto.create_account.ManagerAccountDTO;
 import com.capstone2024.scss.application.account.dto.create_account.NonAcademicCounselorAccountDTO;
 import com.capstone2024.scss.application.account.dto.create_account.SupportStaffAccountDTO;
+import com.capstone2024.scss.application.advice.exeptions.ForbiddenException;
+import com.capstone2024.scss.application.counselor.dto.CertificationDTO;
+import com.capstone2024.scss.application.counselor.dto.QualificationDTO;
 import com.capstone2024.scss.domain.account.entities.Account;
 import com.capstone2024.scss.domain.account.entities.Profile;
 import com.capstone2024.scss.domain.account.enums.Role;
 import com.capstone2024.scss.domain.account.enums.Status;
 import com.capstone2024.scss.domain.account.services.ManipulatingAccountService;
-import com.capstone2024.scss.domain.account.services.ProfileService;
 import com.capstone2024.scss.domain.common.mapper.account.CounselorProfileMapper;
 import com.capstone2024.scss.domain.counselor.entities.*;
 import com.capstone2024.scss.domain.counselor.entities.enums.CounselorStatus;
@@ -19,20 +21,14 @@ import com.capstone2024.scss.infrastructure.repositories.DepartmentRepository;
 import com.capstone2024.scss.infrastructure.repositories.MajorRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.AccountRepository;
 import com.capstone2024.scss.infrastructure.repositories.account.ProfileRepository;
-import com.capstone2024.scss.infrastructure.repositories.counselor.ExpertiseRepository;
-import com.capstone2024.scss.infrastructure.repositories.counselor.SpecializationRepository;
+import com.capstone2024.scss.infrastructure.repositories.counselor.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
+import org.springframework.data.elasticsearch.ResourceNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -50,6 +46,9 @@ public class ManipulatingAccountServiceImpl implements ManipulatingAccountServic
     private final MajorRepository majorRepository;
     private final SpecializationRepository specializationRepository;
     private final ExpertiseRepository expertiseRepository;
+    private final CounselorRepository counselorRepository;
+    private final QualificationRepository qualificationRepository;
+    private final CertificationRepository certificationRepository;
 
     @Override
     public void createManagerAccount(ManagerAccountDTO managerAccountDTO) {
@@ -72,7 +71,7 @@ public class ManipulatingAccountServiceImpl implements ManipulatingAccountServic
                     .account(manager)
                     .fullName(managerAccountDTO.getFullName())
                     .phoneNumber(managerAccountDTO.getPhoneNumber())
-                    .avatarLink(null)
+                    .avatarLink(managerAccountDTO.getAvatarLink())
                     .dateOfBirth(managerAccountDTO.getDateOfBirth()
                             .atStartOfDay(ZoneId.systemDefault())
                             .toInstant()
@@ -110,7 +109,7 @@ public class ManipulatingAccountServiceImpl implements ManipulatingAccountServic
                     .account(supportStaff)
                     .fullName(supportStaffAccountDTO.getFullName())
                     .phoneNumber(supportStaffAccountDTO.getPhoneNumber())
-                    .avatarLink(null)
+                    .avatarLink(supportStaffAccountDTO.getAvatarLink())
                     .dateOfBirth(supportStaffAccountDTO.getDateOfBirth()
                             .atStartOfDay(ZoneId.systemDefault())
                             .toInstant()
@@ -134,8 +133,8 @@ public class ManipulatingAccountServiceImpl implements ManipulatingAccountServic
                 .orElseThrow(() -> new IllegalArgumentException("Department not found"));
         Major major = majorRepository.findById(dto.getMajorId())
                 .orElseThrow(() -> new IllegalArgumentException("Major not found"));
-        Specialization specialization = specializationRepository.findById(dto.getSpecializationId())
-                .orElseThrow(() -> new IllegalArgumentException("Specialization not found"));
+//        Specialization specialization = specializationRepository.findById(dto.getSpecializationId())
+//                .orElseThrow(() -> new IllegalArgumentException("Specialization not found"));
 
         // Generate unique email
         String counselorEmail = dto.getEmail();
@@ -143,7 +142,7 @@ public class ManipulatingAccountServiceImpl implements ManipulatingAccountServic
 
         // Check if account already exists
         if (accountRepository.findAccountByEmail(counselorEmail).isEmpty()) {
-            logger.info("Academic counselor account does not exist. Creating new account for specialization '{}'.", specialization.getName());
+//            logger.info("Academic counselor account does not exist. Creating new account for specialization '{}'.", specialization.getName());
 
             // Create and save Account
             Account counselor = Account.builder()
@@ -159,18 +158,18 @@ public class ManipulatingAccountServiceImpl implements ManipulatingAccountServic
                     .account(counselor)
                     .fullName(dto.getFullName())
                     .phoneNumber(dto.getPhoneNumber())
-                    .avatarLink(null)
+                    .avatarLink(dto.getAvatarLink())
                     .dateOfBirth(dto.getDateOfBirth()
                             .atStartOfDay(ZoneId.systemDefault())
                             .toInstant()
                             .toEpochMilli())
-                    .rating(BigDecimal.ZERO)
+//                    .rating(BigDecimal.ZERO)
                     .gender(dto.getGender())
-                    .specialization(specialization)
+//                    .specialization(specialization)
                     .major(major)
                     .department(department)
                     .status(CounselorStatus.AVAILABLE)
-                    .academicDegree("Thạc sĩ")
+//                    .academicDegree("Thạc sĩ")
 
                     .specializedSkills(dto.getSpecializedSkills())
                     .otherSkills(dto.getOtherSkills())
@@ -181,6 +180,10 @@ public class ManipulatingAccountServiceImpl implements ManipulatingAccountServic
                     .certifications(dto.getCertifications() != null ? dto.getCertifications().stream().map(CounselorProfileMapper::toCertification).toList() : new ArrayList<>())
 
                     .build();
+
+            counselorProfile.setQualifications(counselorProfile.getQualifications().stream().peek(qualification -> qualification.setCounselor(counselorProfile)).toList());
+
+            counselorProfile.setCertifications(counselorProfile.getCertifications().stream().peek(certification -> certification.setCounselor(counselorProfile)).toList());
 
             AvailableDateRange availableDateRange = createAvailableDateRangeFromTodayToTwoMonths(counselorProfile);
             counselorProfile.setAvailableDateRange(availableDateRange);
@@ -220,15 +223,15 @@ public class ManipulatingAccountServiceImpl implements ManipulatingAccountServic
                     .account(counselor)
                     .fullName(dto.getFullName())
                     .phoneNumber(dto.getPhoneNumber())
-                    .avatarLink(null)
+                    .avatarLink(dto.getAvatarLink())
                     .dateOfBirth(dto.getDateOfBirth()
                             .atStartOfDay(ZoneId.systemDefault())
                             .toInstant()
                             .toEpochMilli())
-                    .rating(BigDecimal.ZERO)
+//                    .rating(BigDecimal.ZERO)
                     .gender(dto.getGender())
                     .expertise(expertise)
-                    .industryExperience(5)
+//                    .industryExperience(5)
                     .status(CounselorStatus.AVAILABLE)
 
                     .specializedSkills(dto.getSpecializedSkills())
@@ -240,6 +243,10 @@ public class ManipulatingAccountServiceImpl implements ManipulatingAccountServic
                     .certifications(dto.getCertifications() != null ? dto.getCertifications().stream().map(CounselorProfileMapper::toCertification).toList() : new ArrayList<>())
 
                     .build();
+
+            counselorProfile.setQualifications(counselorProfile.getQualifications().stream().peek(qualification -> qualification.setCounselor(counselorProfile)).toList());
+
+            counselorProfile.setCertifications(counselorProfile.getCertifications().stream().peek(certification -> certification.setCounselor(counselorProfile)).toList());
 
             AvailableDateRange availableDateRange = createAvailableDateRangeFromTodayToTwoMonths(counselorProfile);
             counselorProfile.setAvailableDateRange(availableDateRange);
@@ -263,5 +270,223 @@ public class ManipulatingAccountServiceImpl implements ManipulatingAccountServic
                 .counselor(counselor)
                 .build();
     }
+
+
+    @Override
+    public void updateManagerAccount(ManagerAccountDTO managerAccountDTO) {
+        logger.info("Updating manager account with email '{}'.", managerAccountDTO.getEmail());
+
+        Account manager = accountRepository.findById(managerAccountDTO.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Manager account not found"));
+
+//        manager.setPassword(passwordEncoder.encode(managerAccountDTO.getPassword()));
+        accountRepository.save(manager);
+
+        Profile managerProfile = profileRepository.findByAccount(manager)
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found for manager account"));
+
+        managerProfile.setFullName(managerAccountDTO.getFullName());
+        managerProfile.setPhoneNumber(managerAccountDTO.getPhoneNumber());
+        managerProfile.setAvatarLink(managerAccountDTO.getAvatarLink());
+        managerProfile.setDateOfBirth(managerAccountDTO.getDateOfBirth()
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli());
+        managerProfile.setGender(managerAccountDTO.getGender());
+        profileRepository.save(managerProfile);
+
+        logger.info("Manager account with email '{}' has been updated.", managerAccountDTO.getEmail());
+    }
+
+    @Override
+    public void updateSupportStaffAccount(SupportStaffAccountDTO supportStaffAccountDTO) {
+        logger.info("Updating support staff account with email '{}'.", supportStaffAccountDTO.getEmail());
+
+        Account supportStaff = accountRepository.findById(supportStaffAccountDTO.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Support staff account not found"));
+
+//        supportStaff.setPassword(passwordEncoder.encode(supportStaffAccountDTO.getPassword()));
+        accountRepository.save(supportStaff);
+
+        Profile supportStaffProfile = profileRepository.findByAccount(supportStaff)
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found for support staff account"));
+
+        supportStaffProfile.setFullName(supportStaffAccountDTO.getFullName());
+        supportStaffProfile.setPhoneNumber(supportStaffAccountDTO.getPhoneNumber());
+        supportStaffProfile.setAvatarLink(supportStaffAccountDTO.getAvatarLink());
+        supportStaffProfile.setDateOfBirth(supportStaffAccountDTO.getDateOfBirth()
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli());
+        supportStaffProfile.setGender(supportStaffAccountDTO.getGender());
+        profileRepository.save(supportStaffProfile);
+
+        logger.info("Support staff account with email '{}' has been updated.", supportStaffAccountDTO.getEmail());
+    }
+
+    @Override
+    public void updateAcademicCounselorAccount(AcademicCounselorAccountDTO dto) {
+        logger.info("Updating academic counselor account with email '{}'.", dto.getEmail());
+
+        Account counselor = accountRepository.findById(dto.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Academic counselor account not found"));
+
+//        counselor.setPassword(passwordEncoder.encode(dto.getPassword()));
+        accountRepository.save(counselor);
+
+        AcademicCounselor counselorProfile = (AcademicCounselor) profileRepository.findByAccount(counselor)
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found for academic counselor account"));
+
+        counselorProfile.setFullName(dto.getFullName());
+        counselorProfile.setPhoneNumber(dto.getPhoneNumber());
+        counselorProfile.setAvatarLink(dto.getAvatarLink());
+        counselorProfile.setDateOfBirth(dto.getDateOfBirth()
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli());
+        counselorProfile.setGender(dto.getGender());
+        counselorProfile.setSpecializedSkills(dto.getSpecializedSkills());
+        counselorProfile.setOtherSkills(dto.getOtherSkills());
+        counselorProfile.setWorkHistory(dto.getWorkHistory());
+        counselorProfile.setAchievements(dto.getAchievements());
+        profileRepository.save(counselorProfile);
+
+        logger.info("Academic counselor account with email '{}' has been updated.", dto.getId());
+    }
+
+    @Override
+    public void updateNonAcademicCounselorAccount(NonAcademicCounselorAccountDTO dto) {
+        logger.info("Updating non-academic counselor account with email '{}'.", dto.getEmail());
+
+        Account counselor = accountRepository.findById(dto.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Non-academic counselor account not found"));
+
+//        counselor.setPassword(passwordEncoder.encode(dto.getPassword()));
+        accountRepository.save(counselor);
+
+        NonAcademicCounselor counselorProfile = (NonAcademicCounselor) profileRepository.findByAccount(counselor)
+                .orElseThrow(() -> new IllegalArgumentException("Profile not found for non-academic counselor account"));
+
+        counselorProfile.setFullName(dto.getFullName());
+        counselorProfile.setPhoneNumber(dto.getPhoneNumber());
+        counselorProfile.setAvatarLink(dto.getAvatarLink());
+        counselorProfile.setDateOfBirth(dto.getDateOfBirth()
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli());
+        counselorProfile.setGender(dto.getGender());
+        counselorProfile.setSpecializedSkills(dto.getSpecializedSkills());
+        counselorProfile.setOtherSkills(dto.getOtherSkills());
+        counselorProfile.setWorkHistory(dto.getWorkHistory());
+        counselorProfile.setAchievements(dto.getAchievements());
+        profileRepository.save(counselorProfile);
+
+        logger.info("Non-academic counselor account with email '{}' has been updated.", dto.getEmail());
+    }
+
+    @Override
+    public void addQualification(Long counselorId, QualificationDTO qualificationDTO) {
+        Counselor counselor = counselorRepository.findById(counselorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Counselor not found with id: " + counselorId));
+
+        Qualification qualification = CounselorProfileMapper.toQualification(qualificationDTO);
+        qualification.setCounselor(counselor);
+
+        qualificationRepository.save(qualification);
+        logger.info("Qualification added for counselor with id: {}", counselorId);
+    }
+
+    @Override
+    public void addCertification(Long counselorId, CertificationDTO certificationDTO) {
+        Counselor counselor = counselorRepository.findById(counselorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Counselor not found with id: " + counselorId));
+
+        Certification certification = CounselorProfileMapper.toCertification(certificationDTO);
+        certification.setCounselor(counselor);
+
+        certificationRepository.save(certification);
+        logger.info("Certification added for counselor with id: {}", counselorId);
+    }
+
+    @Override
+    public void deleteQualification(Long counselorId, Long qualificationId) {
+        Counselor counselor = counselorRepository.findById(counselorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Counselor not found with id: " + counselorId));
+
+        Qualification qualification = qualificationRepository.findById(qualificationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Qualification not found with id: " + qualificationId));
+
+        // Kiểm tra nếu Qualification thuộc về Counselor này
+        if (!qualification.getCounselor().equals(counselor)) {
+            throw new ForbiddenException("This qualification does not belong to the counselor.");
+        }
+
+        qualificationRepository.delete(qualification);
+        logger.info("Qualification with id: {} deleted for counselor with id: {}", qualificationId, counselorId);
+    }
+
+    @Override
+    public void deleteCertification(Long counselorId, Long certificationId) {
+        Counselor counselor = counselorRepository.findById(counselorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Counselor not found with id: " + counselorId));
+
+        Certification certification = certificationRepository.findById(certificationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Certification not found with id: " + certificationId));
+
+        // Kiểm tra nếu Certification thuộc về Counselor này
+        if (!certification.getCounselor().equals(counselor)) {
+            throw new ForbiddenException("This certification does not belong to the counselor.");
+        }
+
+        certificationRepository.delete(certification);
+        logger.info("Certification with id: {} deleted for counselor with id: {}", certificationId, counselorId);
+    }
+
+    @Override
+    public void updateQualification(Long counselorId, Long qualificationId, QualificationDTO qualificationDTO) {
+        Counselor counselor = counselorRepository.findById(counselorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Counselor not found with id: " + counselorId));
+
+        Qualification qualification = qualificationRepository.findById(qualificationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Qualification not found with id: " + qualificationId));
+
+        // Kiểm tra nếu Qualification thuộc về Counselor này
+        if (!qualification.getCounselor().equals(counselor)) {
+            throw new ForbiddenException("This qualification does not belong to the counselor.");
+        }
+
+        // Cập nhật thông tin qualification từ DTO
+        qualification.setDegree(qualificationDTO.getDegree());  // Bằng cấp
+        qualification.setFieldOfStudy(qualificationDTO.getFieldOfStudy());  // Ngành học
+        qualification.setInstitution(qualificationDTO.getInstitution());  // Cơ sở đào tạo
+        qualification.setYearOfGraduation(qualificationDTO.getYearOfGraduation());  // Năm tốt nghiệp
+        qualification.setImageUrl(qualificationDTO.getImageUrl());
+
+        qualificationRepository.save(qualification);
+        logger.info("Qualification with id: {} updated for counselor with id: {}", qualificationId, counselorId);
+    }
+
+    @Override
+    public void updateCertification(Long counselorId, Long certificationId, CertificationDTO certificationDTO) {
+        Counselor counselor = counselorRepository.findById(counselorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Counselor not found with id: " + counselorId));
+
+        Certification certification = certificationRepository.findById(certificationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Certification not found with id: " + certificationId));
+
+        // Kiểm tra nếu Certification thuộc về Counselor này
+        if (!certification.getCounselor().equals(counselor)) {
+            throw new ForbiddenException("This certification does not belong to the counselor.");
+        }
+
+        // Cập nhật thông tin certification từ DTO
+        certification.setName(certificationDTO.getName());  // Tên chứng chỉ
+        certification.setOrganization(certificationDTO.getOrganization());  // Tổ chức cấp chứng chỉ
+        certification.setImageUrl(certificationDTO.getImageUrl());
+
+        certificationRepository.save(certification);
+        logger.info("Certification with id: {} updated for counselor with id: {}", certificationId, counselorId);
+    }
+
 }
 

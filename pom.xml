@@ -29,9 +29,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.capstone2024</groupId>
-	<artifactId>gym-management-system</artifactId>
+	<artifactId>scss</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>gym-management-system</name>
+	<name>scss</name>
 	<description>A Spring Boot project for managing gyms branches along with associated roles.</description>
 	<url/>
 	<licenses>
@@ -97,11 +97,19 @@
 			<scope>runtime</scope>
 			<optional>true</optional>
 		</dependency>
+
 		<dependency>
 			<groupId>com.mysql</groupId>
 			<artifactId>mysql-connector-j</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+
+<!--		<dependency>-->
+<!--			<groupId>com.microsoft.sqlserver</groupId>-->
+<!--			<artifactId>mssql-jdbc</artifactId>-->
+<!--			<scope>runtime</scope>-->
+<!--		</dependency>-->
+
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

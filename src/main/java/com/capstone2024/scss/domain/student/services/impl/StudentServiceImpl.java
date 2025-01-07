@@ -4,6 +4,7 @@ import com.capstone2024.scss.application.account.dto.StudentProfileDTO;
 import com.capstone2024.scss.application.advice.exeptions.NotFoundException;
 import com.capstone2024.scss.application.common.dto.PaginationDTO;
 import com.capstone2024.scss.application.student.dto.*;
+import com.capstone2024.scss.application.student.dto.enums.AttendanceStatus;
 import com.capstone2024.scss.domain.common.entity.Semester;
 import com.capstone2024.scss.domain.common.helpers.StudentFilterHelper;
 import com.capstone2024.scss.domain.common.mapper.account.AcademicDepartmentDetailMapper;
@@ -12,6 +13,10 @@ import com.capstone2024.scss.domain.demand.entities.DemandProblemTag;
 import com.capstone2024.scss.domain.demand.entities.ProblemTag;
 import com.capstone2024.scss.domain.student.entities.Student;
 import com.capstone2024.scss.domain.student.entities.StudentCounselingProfile;
+import com.capstone2024.scss.domain.student.entities.academic.AcademicTranscript;
+import com.capstone2024.scss.domain.student.entities.academic.AttendanceDetail;
+import com.capstone2024.scss.domain.student.entities.academic.StudentStudy;
+import com.capstone2024.scss.domain.student.entities.academic.enums.StudyStatus;
 import com.capstone2024.scss.domain.student.enums.CounselingProfileStatus;
 import com.capstone2024.scss.domain.student.services.StudentService;
 import com.capstone2024.scss.domain.common.mapper.student.StudentMapper;
@@ -25,6 +30,9 @@ import com.capstone2024.scss.infrastructure.repositories.demand.ProblemTagReposi
 import com.capstone2024.scss.infrastructure.repositories.student.CounselingProfileRepository;
 import com.capstone2024.scss.infrastructure.repositories.student.StudentRepository;
 import com.capstone2024.scss.infrastructure.repositories.booking_counseling.CounselingAppointmentRepository;
+import com.capstone2024.scss.infrastructure.repositories.student.academic.AcademicTranscriptRepository;
+import com.capstone2024.scss.infrastructure.repositories.student.academic.AttendanceDetailRepository;
+import com.capstone2024.scss.infrastructure.repositories.student.academic.StudentStudyRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +58,9 @@ public class StudentServiceImpl implements StudentService {
     private final DemandProblemTagRepository demandProblemTagRepository;
     private final ProblemTagRepository problemTagRepository;
     private final OpenAIService openAIService;
+    private final StudentStudyRepository studentStudyRepository;
+    private final AttendanceDetailRepository attendanceDetailRepository;
+    private final AcademicTranscriptRepository academicTranscriptRepository;
 
     @Value("${server.api.fap.system.base.url}")
     private String fapServerUrl;
@@ -142,12 +153,24 @@ public class StudentServiceImpl implements StudentService {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new NotFoundException("Student not found with id " + studentId));
 
-        String url = fapServerUrl + "/api/studies/" + student.getStudentCode();
-        StudyDTO[] studiesArray = restTemplate.getForObject(url, StudyDTO[].class);
-        if(studiesArray == null) {
-            return new ArrayList<>();
-        }
-        return List.of(studiesArray);
+        List<AcademicTranscript> academicTranscripts = academicTranscriptRepository.findByStudent(student);
+        return academicTranscripts.stream()
+                .map(academicTranscript -> StudyDTO.builder()
+                        .grade(academicTranscript.getGrade())
+                        .term(academicTranscript.getTerm())
+                        .subjectCode(academicTranscript.getSubjectCode())
+                        .subjectName(academicTranscript.getSubjectName())
+                        .status(academicTranscript.getStatus().name())
+                        .semester(academicTranscript.getSemester().getName())
+                        .build())
+                .collect(Collectors.toList());
+
+//        String url = fapServerUrl + "/api/studies/" + student.getStudentCode();
+//        StudyDTO[] studiesArray = restTemplate.getForObject(url, StudyDTO[].class);
+//        if(studiesArray == null) {
+//            return new ArrayList<>();
+//        }
+//        return List.of(studiesArray);
     }
 
     @Override
@@ -158,12 +181,37 @@ public class StudentServiceImpl implements StudentService {
         Semester semester = semesterRepository.findByName(semesterName)
                 .orElseThrow(() -> new NotFoundException("Semester not found with name: " + semesterName));
 
-        String url = fapServerUrl + "/api/students/" + student.getStudentCode() + "/semester/" + semesterName;
-        AttendanceDTO[] attendanceDTOS = restTemplate.getForObject(url, AttendanceDTO[].class);
-        if(attendanceDTOS == null) {
-            return new ArrayList<>();
-        }
-        return List.of(attendanceDTOS);
+//        String url = fapServerUrl + "/api/students/" + student.getStudentCode() + "/semester/" + semesterName;
+//        AttendanceDTO[] attendanceDTOS = restTemplate.getForObject(url, AttendanceDTO[].class);
+//        if(attendanceDTOS == null) {
+//            return new ArrayList<>();
+//        }
+//        return List.of(attendanceDTOS);
+        List<StudentStudy> attendances = studentStudyRepository.findByStudent_StudentCodeAndSemester_Name(student.getStudentCode(), semesterName);
+        return attendances.stream()
+                .map(attendance -> AttendanceDTO.builder()
+                        .id(attendance.getId())
+                        .startDate(attendance.getStartDate())
+                        .grade(attendance.getFinalGrade())
+                        .totalSlot(attendance.getTotalSlot())
+                        .studentCode(attendance.getStudent().getStudentCode())
+                        .subjectName(attendance.getSubjectName()) // giả sử Subject có thuộc tính name
+                        .semesterName(attendance.getSemester().getName())
+                        .detais(attendance.getAttendanceDetails().stream().map(this::toDetailDTO).collect(Collectors.toList()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private AttendanceDetailDTO toDetailDTO(AttendanceDetail detail) {
+        return AttendanceDetailDTO.builder()
+                .date(detail.getDate())
+                .slot(detail.getSlot())
+                .room(detail.getRoom())
+                .lecturer(detail.getLecturer())
+                .groupName(detail.getGroupName())
+                .status(AttendanceStatus.valueOf(detail.getStatus().name()))
+                .lecturerComment(detail.getLecturerComment())
+                .build();
     }
 
     @Override
@@ -171,12 +219,17 @@ public class StudentServiceImpl implements StudentService {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new NotFoundException("Student not found with id " + studentId));
 
-        String url = fapServerUrl + "/api/students/" + student.getStudentCode() + "/attendance/" + attendanceId;
-        AttendanceDetailDTO[] attendanceDTOS = restTemplate.getForObject(url, AttendanceDetailDTO[].class);
-        if(attendanceDTOS == null) {
-            return new ArrayList<>();
-        }
-        return List.of(attendanceDTOS);
+        List<AttendanceDetail> attendanceDetails = attendanceDetailRepository.findByStudentStudy_IdAndStudentStudy_Student_StudentCode(attendanceId, student.getStudentCode());
+
+        return attendanceDetails.stream()
+                .map(this::toDetailDTO)
+                .collect(Collectors.toList());
+//        String url = fapServerUrl + "/api/students/" + student.getStudentCode() + "/attendance/" + attendanceId;
+//        AttendanceDetailDTO[] attendanceDTOS = restTemplate.getForObject(url, AttendanceDetailDTO[].class);
+//        if(attendanceDTOS == null) {
+//            return new ArrayList<>();
+//        }
+//        return List.of(attendanceDTOS);
     }
 
     public static List<SubjectOpenAi> parseBehaviorTags(Map<String, List<DemandProblemTagResponseDTO>> input) {
@@ -455,46 +508,76 @@ public class StudentServiceImpl implements StudentService {
     private List<String> getAttendanceCountFilter(StudentAttendanceAsCountFilterDTO filterRequest) {
         String semester = getSemesterCodeById(filterRequest.getSemesterId());
 
-        String url = StudentFilterHelper.buildAttendanceCountFilterURL(fapServerUrl, semester, filterRequest);
+//        String url = StudentFilterHelper.buildAttendanceCountFilterURL(fapServerUrl, semester, filterRequest);
+//
+//        ResponseEntity<String[]> response = restTemplate.getForEntity(url, String[].class);
+//        String[] studentCode = response.getBody();
 
-        ResponseEntity<String[]> response = restTemplate.getForEntity(url, String[].class);
-        String[] studentCode = response.getBody();
+        List<Student> students = studentRepository.findStudentsWithAbsenceCountRange(
+                semester,
+                Long.valueOf(filterRequest.getFrom()),
+                Long.valueOf(filterRequest.getTo()),
+                Long.valueOf(filterRequest.getMinSubject())
+        );
 
-        if (studentCode != null) {
-            return Arrays.asList(studentCode);
-        } else {
-            return new ArrayList<>();
-        }
+        return students.stream()
+                .map(Student::getStudentCode)
+                .collect(Collectors.toList());
+
+//        if (studentCode != null) {
+//            return Arrays.asList(studentCode);
+//        } else {
+//            return new ArrayList<>();
+//        }
     }
 
     private List<String> getAttendancePercentageFilter(StudentAttendanceAsPercentFilterDTO filterRequest) {
         String semester = getSemesterCodeById(filterRequest.getSemesterId());
 
-        String url = StudentFilterHelper.buildAttendancePercentageFilterURL(fapServerUrl, semester, filterRequest);
+//        String url = StudentFilterHelper.buildAttendancePercentageFilterURL(fapServerUrl, semester, filterRequest);
+//
+//        ResponseEntity<String[]> response = restTemplate.getForEntity(url, String[].class);
+//        String[] studentCode = response.getBody();
+//
+//        if (studentCode != null) {
+//            return Arrays.asList(studentCode);
+//        } else {
+//            return new ArrayList<>();
+//        }
+        List<Student> students = studentRepository.findStudentsWithAbsencePercentageRange(
+                semester,
+                filterRequest.getFrom(),
+                filterRequest.getTo(),
+                Long.valueOf(filterRequest.getMinSubject())
+        );
 
-        ResponseEntity<String[]> response = restTemplate.getForEntity(url, String[].class);
-        String[] studentCode = response.getBody();
-
-        if (studentCode != null) {
-            return Arrays.asList(studentCode);
-        } else {
-            return new ArrayList<>();
-        }
+        return students.stream()
+                .map(Student::getStudentCode)
+                .collect(Collectors.toList());
     }
 
     private List<String> getGPAFilter(StudentGPAFilterDTO filterRequest) {
         String semester = getSemesterCodeById(filterRequest.getSemesterId());
+//
+//        String url = StudentFilterHelper.buildGPAFilterURL(fapServerUrl, semester, filterRequest);
+//
+//        ResponseEntity<String[]> response = restTemplate.getForEntity(url, String[].class);
+//        String[] studentCode = response.getBody();
+//
+//        if (studentCode != null) {
+//            return Arrays.asList(studentCode);
+//        } else {
+//            return new ArrayList<>();
+//        }
+        List<Student> students = studentRepository.findStudentsWithGPA(
+                semester,
+                filterRequest.getMin().doubleValue(),
+                filterRequest.getMax().doubleValue()
+        );
 
-        String url = StudentFilterHelper.buildGPAFilterURL(fapServerUrl, semester, filterRequest);
-
-        ResponseEntity<String[]> response = restTemplate.getForEntity(url, String[].class);
-        String[] studentCode = response.getBody();
-
-        if (studentCode != null) {
-            return Arrays.asList(studentCode);
-        } else {
-            return new ArrayList<>();
-        }
+        return students.stream()
+                .map(Student::getStudentCode)
+                .collect(Collectors.toList());
     }
 
     private List<Student> filterStudentsByCode(List<Student> studentPage, List<String> joinedStudentCode) {

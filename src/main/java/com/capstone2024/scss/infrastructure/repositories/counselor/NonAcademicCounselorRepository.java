@@ -15,6 +15,8 @@ public interface NonAcademicCounselorRepository extends JpaRepository<NonAcademi
     @Query("SELECT nac FROM NonAcademicCounselor nac " +
             "LEFT JOIN nac.questionCards q " +
             "WHERE (:expertiseId IS NULL OR nac.expertise.id = :expertiseId) " +
+            "AND (q IS NULL OR FUNCTION('MONTH', q.createdDate) = FUNCTION('MONTH', CURRENT_DATE) " +
+            "AND FUNCTION('YEAR', q.createdDate) = FUNCTION('YEAR', CURRENT_DATE)) " +
             "GROUP BY nac " +
             "ORDER BY COUNT(q) ASC")
     List<NonAcademicCounselor> findNonAcademicCounselorWithLeastQuestions(

@@ -19,9 +19,9 @@ import lombok.experimental.SuperBuilder;
 @PrimaryKeyJoinColumn(name = "counselor_id")
 public class AcademicCounselor extends Counselor {
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "specialization_id")
-    private Specialization specialization;
+//    @ManyToOne(fetch = FetchType.EAGER)
+//    @JoinColumn(name = "specialization_id")
+//    private Specialization specialization;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "department_id", nullable = false)
@@ -31,6 +31,6 @@ public class AcademicCounselor extends Counselor {
     @JoinColumn(name = "major_id", nullable = false)
     private Major major;
 
-    @Column(name = "academic_degree", nullable = false)
+    @Column(name = "academic_degree", nullable = true)
     private String academicDegree; // Bằng cấp học thuật
 }
