@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.1
+    container_name: elastic
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - ELASTICSEARCH_SECURITY_ENABLED=false  # Disable security
+      - xpack.security.enabled=false          # Disable security
+      - xpack.security.authc.apiKey.enabled=false  # Disable API key authentication
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -26,7 +40,7 @@ services:
     container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: admin
-      MYSQL_DATABASE: gym_management_system
+      MYSQL_DATABASE: scss
       MYSQL_USER: admin
       MYSQL_PASSWORD: 112233
     ports:
@@ -39,3 +53,5 @@ volumes:
   rabbitmq_data:
   redis_data:
   mysql_data:
+  elasticsearch-data:
+
