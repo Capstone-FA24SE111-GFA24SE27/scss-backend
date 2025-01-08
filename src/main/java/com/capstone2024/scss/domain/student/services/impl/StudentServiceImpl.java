@@ -161,7 +161,7 @@ public class StudentServiceImpl implements StudentService {
                         .subjectCode(academicTranscript.getSubjectCode())
                         .subjectName(academicTranscript.getSubjectName())
                         .status(academicTranscript.getStatus().name())
-                        .semester(academicTranscript.getSemester().getName())
+                        .semester(academicTranscript.getSemester() != null ? academicTranscript.getSemester().getName() : null)
                         .build())
                 .collect(Collectors.toList());
 
