@@ -15,8 +15,8 @@ public class AppConfig {
         return new RestTemplate();
     }
 
-    @PostConstruct
-    void started() {
-        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
-    }
+//    @PostConstruct
+//    void started() {
+//        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+//    }
 }

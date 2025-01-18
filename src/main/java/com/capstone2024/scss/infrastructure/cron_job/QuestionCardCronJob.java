@@ -25,7 +25,7 @@ public class QuestionCardCronJob {
         LocalDateTime twoDaysAgo = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).minus(2, ChronoUnit.DAYS);
 
         // Lấy tất cả QuestionCard thỏa mãn điều kiện
-        questionCardRepository.findAllByIsClosedFalseAndCreatedDateBefore(twoDaysAgo)
+        questionCardRepository.findAllByIsClosedFalseAndCreatedDateBeforeAndAnswerIsNotNull(twoDaysAgo)
                 .forEach(questionCard -> {
                     questionCardService.closeQuestionCardForCounselor(questionCard.getId(), questionCard.getCounselor().getId());
                 });

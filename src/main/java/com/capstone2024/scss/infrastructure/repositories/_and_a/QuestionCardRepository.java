@@ -161,5 +161,5 @@ public interface QuestionCardRepository extends JpaRepository<QuestionCard, Long
     @Query("SELECT COUNT(q) FROM QuestionCard q WHERE q.student = :student AND q.isClosed = false")
     long countNotClosedQuestionCardsByStudent(@Param("student") Student student);
 
-    List<QuestionCard> findAllByIsClosedFalseAndCreatedDateBefore(LocalDateTime twoDaysAgo);
+    List<QuestionCard> findAllByIsClosedFalseAndCreatedDateBeforeAndAnswerIsNotNull(LocalDateTime twoDaysAgo);
 }

@@ -792,6 +792,7 @@ public class CounselingAppointmentServiceImpl implements CounselingAppointmentSe
                     .meetingType(MeetingType.ONLINE)
                     .student(student)
                     .counselor(counselor)
+                    .reason(requestDTO.getReason())
                     .build();
 
             counselingAppointment = appointmentRepository.save(appointment);

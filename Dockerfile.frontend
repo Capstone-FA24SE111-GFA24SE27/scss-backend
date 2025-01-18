@@ -39,5 +39,5 @@ EXPOSE 8080 6379
 # ENTRYPOINT ["java", "-jar", "/app/scss-0.0.1-SNAPSHOT.jar", "--spring.profiles.active=fe"]
 
 # Run both Redis and Spring Boot with a delay to give Redis time to start
-CMD sh -c "redis-server & sleep 300 && java -jar /app/scss-0.0.1-SNAPSHOT.jar --spring.profiles.active=fe"
+CMD sh -c "redis-server & sleep 0 && java -jar /app/scss-0.0.1-SNAPSHOT.jar --spring.profiles.active=fe"
 

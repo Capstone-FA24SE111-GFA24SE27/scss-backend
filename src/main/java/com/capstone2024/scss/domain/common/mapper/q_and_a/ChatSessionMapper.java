@@ -7,6 +7,10 @@ import com.capstone2024.scss.domain.common.mapper.account.AccountMapper;
 import com.capstone2024.scss.domain.q_and_a.entities.ChatSession;
 import com.capstone2024.scss.domain.q_and_a.entities.Message;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,11 +51,28 @@ public class ChatSessionMapper {
             return null;
         }
 
+        // Lấy thời gian gốc từ message (giả sử là UTC)
+        LocalDateTime sentAtUtc = message.getSentAt();
+
+// Chuyển đổi từ UTC sang múi giờ Việt Nam
+        ZoneId utcZoneId = ZoneId.of("UTC");
+        ZoneId vietnamZoneId = ZoneId.of("Asia/Ho_Chi_Minh");
+
+// Tạo ZonedDateTime từ UTC
+        ZonedDateTime zonedDateTimeUtc = sentAtUtc.atZone(utcZoneId);
+
+// Chuyển sang múi giờ Việt Nam
+        ZonedDateTime zonedDateTimeVietnam = zonedDateTimeUtc.withZoneSameInstant(vietnamZoneId);
+
+// Định dạng chuỗi
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+        String sendAt = zonedDateTimeVietnam.format(formatter);
+
         return MessageDTO.builder()
                 .id(message.getId())
                 .sender(AccountMapper.toAccountDTO(message.getSender()))
                 .content(message.getContent())
-                .sentAt(DateTimeHelper.toZoneDateTimeString(message.getSentAt()))
+                .sentAt(sendAt)
                 .isRead(message.isRead())
                 .build();
     }
@@ -61,11 +82,28 @@ public class ChatSessionMapper {
             return null;
         }
 
+        // Lấy thời gian gốc từ message (giả sử là UTC)
+        LocalDateTime sentAtUtc = message.getSentAt();
+
+// Chuyển đổi từ UTC sang múi giờ Việt Nam
+        ZoneId utcZoneId = ZoneId.of("UTC");
+        ZoneId vietnamZoneId = ZoneId.of("Asia/Ho_Chi_Minh");
+
+// Tạo ZonedDateTime từ UTC
+        ZonedDateTime zonedDateTimeUtc = sentAtUtc.atZone(utcZoneId);
+
+// Chuyển sang múi giờ Việt Nam
+        ZonedDateTime zonedDateTimeVietnam = zonedDateTimeUtc.withZoneSameInstant(vietnamZoneId);
+
+// Định dạng chuỗi
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+        String sendAt = zonedDateTimeVietnam.format(formatter);
+
         return MessageDTO.builder()
                 .id(message.getId())
                 .sender(AccountMapper.toAccountDTO(message.getSender()))
                 .content(message.getContent())
-                .sentAt(message.getSentAt().toString())
+                .sentAt(sendAt)
                 .isRead(message.isRead())
                 .chatSessionId(chatSessionId)
                 .build();

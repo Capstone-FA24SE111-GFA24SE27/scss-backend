@@ -15,6 +15,7 @@ import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appoi
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OfflineAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.OnlineAppointment;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment.enums.CounselingAppointmentStatus;
+import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_report.entities.AppointmentReport;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.CounselingAppointmentRequest;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.CounselingAppointmentRequestStatus;
 import com.capstone2024.scss.domain.counseling_booking.entities.counseling_appointment_request.enums.MeetingType;
@@ -149,7 +150,6 @@ public class DatabaseSeeder implements CommandLineRunner {
             seedQuestionsAndAttachWithCategory();
 
             seedStudentStudy();
-//            seedStudentStudy();
             seedAllQuestionCards();
             seedAppointment();
         } else {
@@ -736,29 +736,29 @@ public class DatabaseSeeder implements CommandLineRunner {
                     .build();
 
             // Conditionally add StudentCounselingProfile
-            if (createCounselingProfile) {
-                StudentCounselingProfile counselingProfile = StudentCounselingProfile.builder()
-                        .student(studentProfile)
-                        .introduction("Introduction")
-                        .currentHealthStatus("Healthy")
-                        .psychologicalStatus("Stable")
-                        .stressFactors("Low stress")
-                        .academicDifficulties("None")
-                        .studyPlan("Plan to excel in studies")
-                        .careerGoals("Become a Software Engineer")
-                        .partTimeExperience("Intern at Tech Company")
-                        .internshipProgram("Summer Internship 2024")
-                        .extracurricularActivities("Football Club")
-                        .personalInterests("Reading, Traveling")
-                        .socialRelationships("Good relationships with peers")
-                        .financialSituation("Stable")
-                        .financialSupport("Parents")
-                        .desiredCounselingFields("Career Counseling, Mental Health")
-                        .status(CounselingProfileStatus.VERIFIED)
-                        .build();
-
-                studentProfile.setCounselingProfile(counselingProfile);
-            }
+//            if (createCounselingProfile) {
+//                StudentCounselingProfile counselingProfile = StudentCounselingProfile.builder()
+//                        .student(studentProfile)
+//                        .introduction("Introduction")
+//                        .currentHealthStatus("Healthy")
+//                        .psychologicalStatus("Stable")
+//                        .stressFactors("Low stress")
+//                        .academicDifficulties("None")
+//                        .studyPlan("Plan to excel in studies")
+//                        .careerGoals("Become a Software Engineer")
+//                        .partTimeExperience("Intern at Tech Company")
+//                        .internshipProgram("Summer Internship 2024")
+//                        .extracurricularActivities("Football Club")
+//                        .personalInterests("Reading, Traveling")
+//                        .socialRelationships("Good relationships with peers")
+//                        .financialSituation("Stable")
+//                        .financialSupport("Parents")
+//                        .desiredCounselingFields("Career Counseling, Mental Health")
+//                        .status(CounselingProfileStatus.VERIFIED)
+//                        .build();
+//
+//                studentProfile.setCounselingProfile(counselingProfile);
+//            }
 
             logger.info("Student account created with email '{}'.", studentEmail);
             return profileRepository.save(studentProfile);
@@ -2524,23 +2524,33 @@ public class DatabaseSeeder implements CommandLineRunner {
                     "What is the role of APIs in software integration?",
                     "How do databases ensure data consistency and integrity?",
                     "Explain the concept of cloud computing and its impact on business.",
-                    "Describe the process of DevOps and its importance."
+                    "Describe the process of DevOps and its importance.",
+                    "What are effective ways to master object-oriented programming?",
+                    "Which practices ensure clean and maintainable code?",
+                    "How can code debugging be done more effectively?",
+                    "What strategies are best for excelling in software engineering exams?",
+                    "How should group projects in software development be organized?"
             ), Arrays.asList(
                     "Supervised vs Unsupervised Learning",
                     "Neural Network Basics",
                     "APIs in Software Integration",
                     "Database Integrity",
                     "Cloud Computing in Business",
-                    "DevOps Essentials"
+                    "DevOps Essentials",
+                    "Focus on grasping the four key principles of OOP: encapsulation, inheritance, abstraction, and polymorphism.",
+                    "Choose descriptive variable names, adhere to SOLID principles, and create thorough unit tests.",
+                    "Follow a step-by-step process: pinpoint the problem, analyze logs, and utilize a debugger.",
+                    "Study previous exam papers, solidify core concepts, and practice solving coding exercises.",
+                    "Allocate tasks clearly, establish specific deadlines, and leverage version control systems for tracking."
             ));
 
             seedQuestionsForCategory(aiCategory, Arrays.asList(
                     "What are the key features of a neural network?",
                     "Explain the concept of overfitting in machine learning.",
-                    "What is the difference between AI and Machine Learning?",
+                    "What is the difference between artificial intelligence and machine learning?",
                     "How does deep learning differ from traditional machine learning?",
-                    "What are the challenges of implementing AI in real-world applications?",
-                    "How does AI contribute to automation in industries?"
+                    "What are the challenges of implementing artificial intelligence in real-world applications?",
+                    "How does artificial intelligence contribute to automation in industries?"
             ), Arrays.asList(
                     "Neural Network Features",
                     "Overfitting in AI",
@@ -2685,7 +2695,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
 
     private void createQuestionCards(
-            Counselor counselor,
+            List<Counselor> counselors,
             List<Student> students,
             String[] titles,
             String[] contents,
@@ -2698,6 +2708,9 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
 
         for (int i = 0; i < titles.length; i++) {
+            // Select a random counselor from the list
+            Counselor counselor = counselors.get((int) (Math.random() * counselors.size()));
+
             QuestionCard questionCard = QuestionCard.builder()
                     .title(titles[i])
                     .content(contents[i])
@@ -2757,10 +2770,12 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void seedQuestionCardForPsychologyCounselor() {
-        NonAcademicCounselor psychologyCounselor = nonAcademicCounselorRepository.findAll()
+        List<Counselor> psychologyCounselor = nonAcademicCounselorRepository.findAll()
                 .stream()
                 .filter(counselor -> counselor.getExpertise().getName().equals("School Psychologist"))
-                .findFirst().orElseThrow(() -> new NotFoundException("Not found Psychology counselor for seeding"));
+                .map(counselor -> (Counselor) counselor)
+                .toList();
+//                .findFirst().orElseThrow(() -> new NotFoundException("Not found Psychology counselor for seeding"));
 
         List<Student> students = studentRepository.findAll();
         String[] titles = {
@@ -2789,10 +2804,12 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void seedQuestionCardForHealthCounselor() {
-        NonAcademicCounselor healthCounselor = nonAcademicCounselorRepository.findAll()
+        List<Counselor> healthCounselor = nonAcademicCounselorRepository.findAll()
                 .stream()
                 .filter(counselor -> counselor.getExpertise().getName().equals("School Health Advisor"))
-                .findFirst().orElseThrow(() -> new NotFoundException("Not found Health counselor for seeding"));
+                .map(counselor -> (Counselor) counselor)
+                .toList();
+//                .findFirst().orElseThrow(() -> new NotFoundException("Not found Health counselor for seeding"));
 
         List<Student> students = studentRepository.findAll();
         String[] titles = {
@@ -2821,10 +2838,12 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void seedQuestionCardForCareerCounselor() {
-        NonAcademicCounselor careerCounselor = nonAcademicCounselorRepository.findAll()
+        List<Counselor> careerCounselor = nonAcademicCounselorRepository.findAll()
                 .stream()
                 .filter(counselor -> counselor.getExpertise().getName().equals("Career Counseling"))
-                .findFirst().orElseThrow(() -> new NotFoundException("Not found Career counselor for seeding"));
+                .map(counselor -> (Counselor) counselor)
+                .toList();
+//                .findFirst().orElseThrow(() -> new NotFoundException("Not found Career counselor for seeding"));
 
         List<Student> students = studentRepository.findAll();
         String[] titles = {
@@ -2853,10 +2872,12 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void seedQuestionCardForSoftwareEngineeringCounselor() {
-        AcademicCounselor softwareEngineeringCounselor = academicCounselorRepository.findAll()
+        List<Counselor> softwareEngineeringCounselor = academicCounselorRepository.findAll()
                 .stream()
                 .filter(counselor -> counselor.getMajor().getName().equals("Software Engineering"))
-                .findFirst().orElseThrow(() -> new NotFoundException("Not found SE counselor for seeding"));
+                .map(counselor -> (Counselor) counselor)
+                .toList();
+//                .findFirst().orElseThrow(() -> new NotFoundException("Not found SE counselor for seeding"));
 
         List<Student> students = studentRepository.findAll();
         String[] titles = {
@@ -2885,10 +2906,12 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void seedQuestionCardForArtificialIntelligenceCounselor() {
-        AcademicCounselor artificialIntelligenceCounselor = academicCounselorRepository.findAll()
+        List<Counselor> artificialIntelligenceCounselor = academicCounselorRepository.findAll()
                 .stream()
                 .filter(counselor -> counselor.getMajor().getName().equals("Artificial Intelligence"))
-                .findFirst().orElseThrow(() -> new NotFoundException("Not found AI counselor for seeding"));
+                .map(counselor -> (Counselor) counselor)
+                .toList();
+//                .findFirst().orElseThrow(() -> new NotFoundException("Not found AI counselor for seeding"));
 
         List<Student> students = studentRepository.findAll();
         String[] titles = {
@@ -2896,31 +2919,51 @@ public class DatabaseSeeder implements CommandLineRunner {
                 "What are the best algorithms for classification tasks?",
                 "How do I improve the performance of a neural network?",
                 "What resources should I use to learn deep learning?",
-                "How do I approach AI project development?"
+                "How do I approach artificial intelligence project development?",
+                "What are the main characteristics of a neural network?",
+                "Describe the phenomenon of overfitting in machine learning.",
+                "How does artificial intelligence differ from machine learning?",
+                "In what ways is deep learning distinct from traditional machine learning?",
+                "What obstacles are faced when applying artificial intelligence to real-world scenarios?",
+                "In what ways does artificial intelligence enhance automation in industries?"
         };
         String[] contents = {
                 "I'm new to machine learning. Where should I begin?",
                 "Which classification algorithms should I focus on?",
                 "My neural network isn't performing well. What should I do?",
                 "Can you recommend deep learning courses or books?",
-                "I need guidance on how to structure an AI project."
+                "I need guidance on how to structure an AI project.",
+                "What are the main characteristics of a neural network?",
+                "Describe the phenomenon of overfitting in machine learning.",
+                "How does artificial intelligence differ from machine learning?",
+                "In what ways is deep learning distinct from traditional machine learning?",
+                "What obstacles are faced when applying artificial intelligence to real-world scenarios?",
+                "In what ways does artificial intelligence enhance automation in industries?"
         };
         String[] answers = {
                 "Start with the basics: learn about supervised vs unsupervised learning and linear regression.",
                 "Focus on algorithms like Logistic Regression, Decision Trees, and Support Vector Machines.",
                 "Try tuning hyperparameters, use more data, or experiment with different architectures.",
                 "Deep Learning with Python by François Chollet and online courses on platforms like Coursera.",
-                "Define the problem, gather and preprocess data, choose the right model, and evaluate its performance."
+                "Define the problem, gather and preprocess data, choose the right model, and evaluate its performance.",
+                "Characteristics of Neural Networks",
+                "Understanding Overfitting in Machine Learning",
+                "Distinction Between Artificial Intelligence and Machine Learning",
+                "Deep Learning versus Traditional Machine Learning",
+                "Challenges in Real-World Implementation of Artificial Intelligence",
+                "The Role of Artificial Intelligence in Industrial Automation"
         };
 
         createQuestionCards(artificialIntelligenceCounselor, students, titles, contents, answers, QuestionType.ACADEMIC, QuestionCard.QuestionCarDifficultyLevel.Medium);
     }
 
     private void seedQuestionCardForInternationalBusinessCounselor() {
-        AcademicCounselor internationalBusinessCounselor = academicCounselorRepository.findAll()
+        List<Counselor> internationalBusinessCounselor = academicCounselorRepository.findAll()
                 .stream()
                 .filter(counselor -> counselor.getMajor().getName().equals("International Business"))
-                .findFirst().orElseThrow(() -> new NotFoundException("Not found IB counselor for seeding"));
+                .map(counselor -> (Counselor) counselor)
+                .toList();
+//                .findFirst().orElseThrow(() -> new NotFoundException("Not found IB counselor for seeding"));
 
         List<Student> students = studentRepository.findAll();
         String[] titles = {
@@ -2949,10 +2992,12 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private void seedQuestionCardForFinanceCounselor() {
-        AcademicCounselor financeCounselor = academicCounselorRepository.findAll()
+        List<Counselor> financeCounselor = academicCounselorRepository.findAll()
                 .stream()
                 .filter(counselor -> counselor.getMajor().getName().equals("Finance"))
-                .findFirst().orElseThrow(() -> new NotFoundException("Not found Finance counselor for seeding"));
+                .map(counselor -> (Counselor) counselor)
+                .toList();
+//                .findFirst().orElseThrow(() -> new NotFoundException("Not found Finance counselor for seeding"));
 
         List<Student> students = studentRepository.findAll();
         String[] titles = {
@@ -3042,6 +3087,25 @@ public class DatabaseSeeder implements CommandLineRunner {
                     absentCounts[monthIndex]++;
                 } else {
                     appointment.setStatus(CounselingAppointmentStatus.ATTEND);
+                    // Create and set an AppointmentReport for the appointment
+                    AppointmentReport report = AppointmentReport.builder()
+                            .interventionType("Initial Consultation")  // Example field value
+                            .interventionDescription("Discussed student's challenges and goals.")  // Example field value
+                            .counselorConclusion("Student needs follow-up consultation.")  // Example field value
+                            .followUpNeeded(true)  // Example boolean value
+                            .followUpNotes("Student will be contacted in 2 weeks.")  // Example field value
+                            .summaryOfDiscussion("The student expressed concerns about their academic performance.")  // Example field value
+                            .mainIssues("Time management and stress management.")  // Example field value
+                            .studentEmotions("Anxious, overwhelmed.")  // Example field value
+                            .studentReactions("Nervous but open to guidance.")  // Example field value
+                            .specificGoal("Improve time management skills.")  // Example field value
+                            .reason("Student expressed difficulty with balancing study and personal life.")  // Example field value
+                            .student(request.getStudent())
+                            .counselor(request.getCounselor())
+                            .counselingAppointment(appointment)  // Link the report to the appointment
+                            .build();
+
+                    appointment.setReport(report);
                 }
 
                 appointment.setAppointmentRequest(request);

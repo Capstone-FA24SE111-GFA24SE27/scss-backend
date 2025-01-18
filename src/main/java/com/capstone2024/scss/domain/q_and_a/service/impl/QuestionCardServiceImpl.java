@@ -435,13 +435,13 @@ public class QuestionCardServiceImpl implements QuestionCardService {
         message.setChatSession(chatSession);
         message.setContent(content);
 
-        ZoneId vietnam = ZoneId.of("Asia/Ho_Chi_Minh");
-        ZonedDateTime now = ZonedDateTime.now();
-        ZonedDateTime nowVietNam = now.withZoneSameInstant(vietnam);
-        LocalDateTime vietNamDateTime = nowVietNam.toLocalDateTime();
+//        ZoneId vietnam = ZoneId.of("Asia/Ho_Chi_Minh");
+//        ZonedDateTime now = ZonedDateTime.now();
+//        ZonedDateTime nowVietNam = now.withZoneSameInstant(vietnam);
+//        LocalDateTime vietNamDateTime = nowVietNam.toLocalDateTime();
 
-//        LocalDateTime now = LocalDateTime.now();
-        message.setSentAt(vietNamDateTime);
+        LocalDateTime now = LocalDateTime.now();
+        message.setSentAt(now);
         message.setRead(false);
 
         if (!chatSession.isClosed()) {
