@@ -1,27 +1,28 @@
 # Student Counseling and Support System with Advanced Search at FPTU HCM Campus (SCSS)
 
-The Student Counseling and Support System (SCSS) is designed to offer comprehensive support services to students at FPT University HCM Campus, including academic counseling, career advice, and mental health resources.
-
+Developed and implemented a system to connect students with suitable advisors based on their counseling needs, leveraging OpenAI's API to enhance the functionality. The system also enables FPTU staff to identify students who may face academic challenges and need support, facilitating timely reminders and assisting in connecting students with appropriate advisors
+- Note: The system aims to integrate with the FPT university's server to leverage student data, enabling the implementation of the advanced search feature based on students' academic progress, further enhancing personalized support and intervention capabilities.
 ## Table of Contents
 
 - [Features](#features)
+- [Overall System Architecture](#overall-system-architecture)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Running the Application](#running-the-application)
     - [Development Environment](#development-environment)
     - [Development Environment Integrating With Front-End](#development-environment-integrating-with-front-end)
-    - [Production Environment (TBD)](#production-environment-tbd)
+    - [Production Environment](#production-environment)
     - [Run .Jar file after being built by using maven](#run-jar-file-after-being-built-by-using-maven)
 - [API Documentation](#api-documentation)
 
 ## Features
 
-- **Document Storage**: Store and manage digital documents securely.
-- **Indexing**: Efficiently index documents for quick retrieval.
-- **Search**: Full-text search functionality to find documents easily.
-- **Metadata Management**: Manage metadata associated with each document.
-- **Role-Based Access Control**: Secure access based on user roles.
+- **Advisor Matching:** Utilized AI to align student counseling objectives with suitable advisors, ensuring personalized guidance.
+- **Question Recommendation:** When students ask a question, the system uses AI to recommend similar questions asked by other students or relevant answers from the FAQ, helping students find immediate, relevant information without waiting for a response.
+- **Advanced Search for Staff:** Developed an advanced search feature that allows FPTU staff to easily identify students at risk based on their academic performance, helping staff provide targeted support and connect them with the right advisors.
 
+## Overall System Architecture
+![SCSS Overall System Architecture.png](./SCSS-Overall-System-Architecture.png)
 ## Prerequisites
 
 - **Java 21** or higher
@@ -76,7 +77,7 @@ To run the application in the development environment, follow these steps:
 
    ```sh
    docker-compose -f docker-compose.fe.yml up -d
-### Production Environment (TBD)
+### Production Environment
 
 To run the application in the production environment, follow these steps:
 1. **Run the application**:
@@ -85,10 +86,10 @@ To run the application in the production environment, follow these steps:
 ### Run .Jar file after being built by using maven
 1. **Run with /dev/ profile**:
    ```shell
-   java -jar gym-management-system-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
+   java -jar scss-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
 2. **Run with /prod/ profile**:
    ```sh
-   java -jar gym-management-system-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
+   java -jar scss-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
 ## API Documentation
 
 The project includes Swagger for API documentation. Swagger provides an interactive interface to explore and test the API endpoints.

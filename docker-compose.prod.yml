@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.1
+    container_name: elastic
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - ELASTICSEARCH_SECURITY_ENABLED=false  # Disable security
+      - xpack.security.enabled=false          # Disable security
+      - xpack.security.authc.apiKey.enabled=false  # Disable API key authentication
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -13,20 +27,12 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
 
-  redis:
-    image: redis:latest
-    container_name: redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-
   mysql:
     image: mysql:8.0
     container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: admin
-      MYSQL_DATABASE: gym_management_system
+      MYSQL_DATABASE: scss
       MYSQL_USER: admin
       MYSQL_PASSWORD: 112233
     ports:
@@ -35,16 +41,17 @@ services:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
   server:
-    image: trinhvinhphat2003/capstone-backend-server-prod:latest
+    image: trinhvinhphat2003/capstone-backend-server-fe:latest
     container_name: capstone_server
     ports:
       - "8080:8080"  # Cổng của ứng dụng server
       - "9092:9092"
     depends_on:
       - mysql
-      - redis
+      #      - redis
       - rabbitmq
       - fap-server
+      - elasticsearch
   fap-server:
     image: trinhvinhphat2003/fap-system-server:latest
     container_name: fap_server
@@ -52,20 +59,8 @@ services:
       - "8085:8081"  # Cổng của ứng dụng server
     depends_on:
       - mysql
-  mobile_socket_server:
-    image: trinhvinhphat2003/mobile-socket-capstone-server
-    container_name: mobile_socket_capstone_server
-    build:
-      context: .
-    ports:
-      - "4000:4000"
-    environment:
-      - RABBITMQ_URL=amqp://admin:112233@rabbitmq:5672
-    depends_on:
-      - rabbitmq
-      - server
 
 volumes:
   rabbitmq_data:
-  redis_data:
   mysql_data:
+  elasticsearch-data:
